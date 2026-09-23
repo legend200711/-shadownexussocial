@@ -1,8 +1,8 @@
 {
-  "buildId": "2026-09-24-STABILIZATION",
-  "swVersion": "v48",
+  "buildId": "2026-09-24-STABILIZATION-FOUNDERFIX",
+  "swVersion": "v49",
   "deployedAt": "2026-09-24T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "2.1.0",
-  "note": "Stabilization pass: Firebase duplicate-init fix (getApps guard), heartbeat interval leak fix, logout cleanup, comment deletion permissions (founder/mod can delete any comment), Storm Room app reuse fix, follow/unfollow idempotency confirmed, like transaction safety confirmed, listener teardown on logout confirmed."
+  "note": "Founder Panel architecture fix: TCC sub-panels no longer stripped of active class during tab switches; snxTCCOpen guards against running while feed is active; scroll-to-top on page navigation; adminPage CSS isolation reinforced; openThemeEditor also calls snxTCCOpen."
 }

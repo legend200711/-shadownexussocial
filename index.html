@@ -18146,7 +18146,9 @@ body.arcade-fs-ios body::after { display:none !important; }
       // 'emergency' is now fused into 'pages' — treat it as an alias
       const _tab = (tab === 'emergency') ? 'pages' : tab;
       document.querySelectorAll('#adminTabBar .admin-tab').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('#adminPage .admin-tab-content').forEach(c => c.classList.remove('active'));
+      // Use :not(.tcc-subpanel) so TCC inner sub-panels are NOT cleared when switching
+      // top-level admin tabs — they are managed by snxTCCSwitchSubTab independently.
+      document.querySelectorAll('#adminPage .admin-tab-content:not(.tcc-subpanel)').forEach(c => c.classList.remove('active'));
       const tabEl = document.querySelector(`#adminTabBar .admin-tab[onclick*="'${_tab}'"]`);
       const contentEl = document.getElementById(`adminTab-${_tab}`);
       if (tabEl) tabEl.classList.add('active');
@@ -20257,6 +20259,10 @@ function navTo(pageId) {
         window.snxMusic.stopMusicTab();
     }
     show(pageId);
+    // Scroll to top on every page navigation so Founder Panel content
+    // never appears at the scroll position of a previously-visited page
+    // (e.g. TCC appearing "below" the Eclipse Feed on mobile).
+    window.scrollTo(0, 0);
     // Update active nav highlight
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active-nav'));
     const map = {
@@ -31256,8 +31262,8 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = '2026-09-24-STABILIZATION';
-  var SW_VER   = 'v48';
+  var BUILD_ID = '2026-09-24-STABILIZATION-FOUNDERFIX';
+  var SW_VER   = 'v49';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
 
@@ -31600,6 +31606,11 @@ const TCC_SECTIONS = [
 /* Called when Founder opens the Theme Engine tab */
 window.snxTCCOpen = function() {
   if (window._snxRole !== 'founder') return;
+  // Guard: only run if the admin page is actually the active page.
+  // This prevents any accidental call from initializing TCC while
+  // the public feed is visible.
+  const adminPage = document.getElementById('adminPage');
+  if (!adminPage || !adminPage.classList.contains('active')) return;
   if (!_tccInitialized) {
     _tccBuildColorGrid();
     _tccBuildEffectsGrid();
@@ -31609,6 +31620,9 @@ window.snxTCCOpen = function() {
   _tccLoadThemeLibrary();
   _tccLoadCurrentTheme();
   _tccLoadSchedules();
+  // Ensure the Colors subtab is shown (switchAdminTab may have stripped active
+  // from the subpanels; re-activate Colors as the default landing subtab).
+  snxTCCSwitchSubTab('colors');
 };
 
 function _tccBuildColorGrid() {
@@ -31830,9 +31844,12 @@ async function _tccLoadSchedules() {
 
 /* Sub-tab switcher */
 window.snxTCCSwitchSubTab = function(tab) {
-  document.querySelectorAll('.tcc-subtab').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tcc-subpanel').forEach(p => p.classList.remove('active'));
-  const btn = document.querySelector(`.tcc-subtab[onclick*="'${tab}'"]`);
+  // Scope queries to #adminTab-themes to avoid touching any other page's elements
+  const tccRoot = document.getElementById('adminTab-themes');
+  if (!tccRoot) return;
+  tccRoot.querySelectorAll('.tcc-subtab').forEach(b => b.classList.remove('active'));
+  tccRoot.querySelectorAll('.tcc-subpanel').forEach(p => p.classList.remove('active'));
+  const btn = tccRoot.querySelector(`.tcc-subtab[onclick*="'${tab}'"]`);
   const panel = document.getElementById(`tccSub-${tab}`);
   if (btn)   btn.classList.add('active');
   if (panel) panel.classList.add('active');

@@ -426,7 +426,28 @@ body {
 /* ═══════════════════════════════════════════════════════════════════
    §8  FOUNDER THEME CONTROL CENTER
    Full-page panel inside the existing adminPage tab system.
+   The TCC is structurally a child of #adminPage (.page).
+   #adminPage is hidden with display:none when not active, so all TCC
+   content is automatically invisible until the Founder navigates there.
    ═══════════════════════════════════════════════════════════════════ */
+
+/* Guard: reinforce that #adminPage only exists within the Founder Panel.
+   When .page is display:none the page is fully hidden; this rule is an
+   explicit belt-and-braces to make sure nothing leaks onto the feed. */
+#adminPage:not(.active) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* On mobile, ensure #adminPage scrolls properly and doesn't bleed */
+@media (max-width: 1024px) {
+  #adminPage.active {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
 #adminTab-themes {
   display: none;
 }

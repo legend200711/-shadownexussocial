@@ -1463,7 +1463,10 @@ const ThemeEngine = (() => {
     if (typeof realmNavTo === 'function') realmNavTo('adminPage');
     setTimeout(() => {
       if (typeof window.switchAdminTab === 'function') window.switchAdminTab('themes');
-    }, 100);
+      // snxTCCOpen must run AFTER switchAdminTab so that #adminPage is active
+      // (the guard inside snxTCCOpen checks for adminPage.active)
+      if (typeof window.snxTCCOpen === 'function') window.snxTCCOpen();
+    }, 350);
   }
 
   /** Public getter for current theme id */
