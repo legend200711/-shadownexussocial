@@ -266,6 +266,56 @@ service cloud.firestore {
       allow write: if isFounder();
     }
 
+    // ── NEXUS GLOBAL THEME ENGINE ─────────────────────────────────────────────
+    //
+    //   /siteConfig/globalTheme
+    //     activeThemeId, themeName, version, status, publishedAt, updatedAt,
+    //     updatedBy, effects[], backgroundImageUrl, bannerEnabled, bannerText,
+    //     bannerCountdownEnabled, bannerCountdownTarget, tokenOverrides{}
+    //
+    //   Public READ — every browser needs the active theme on startup.
+    //   WRITE — Founder only (enforced server-side via isFounder() rule check).
+
+    match /siteConfig/{docId} {
+      allow read: if true;
+      allow write: if isFounder();
+    }
+
+    //   /themes/{themeId}
+    //     Custom and draft themes created by the Founder.
+    //     Regular users never touch this collection.
+    //     Read: any authenticated user may read published themes (their browser
+    //           fetches the active theme doc on startup).
+    //     Write: Founder only.
+
+    match /themes/{themeId} {
+      allow read:  if true;
+      allow write: if isFounder();
+    }
+
+    //   /themeSchedules/{schedId}
+    //     Scheduled theme activations.
+    //     Read: public (startup resolution).
+    //     Write: Founder only.
+
+    match /themeSchedules/{schedId} {
+      allow read:  if true;
+      allow write: if isFounder();
+    }
+
+    //   /themeHistory/{histId}
+    //     Immutable publish history records.
+    //     Read: Founder only (shown in Theme History tab).
+    //     Create: Founder only (written by ThemeEngine during publish batch).
+    //     Update/Delete: never — immutable audit trail.
+
+    match /themeHistory/{histId} {
+      allow read:   if isFounder();
+      allow create: if isFounder();
+      allow update: if false;
+      allow delete: if false;
+    }
+
     // ── AI Moderation Log ─────────────────────────────────────────────────────
 
     match /aiModerationLog/{docId} {

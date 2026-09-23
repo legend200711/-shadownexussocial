@@ -10,8 +10,8 @@
  * shadownexussocial.online (/) and any local dev server (/).
  */
 
-const CACHE_VERSION = 'v46';
-const BUILD_ID      = '2026-09-10-STABILIZATION-REPAIR';
+const CACHE_VERSION = 'v47';
+const BUILD_ID      = '2026-09-23-GLOBAL-UPDATE';
 const CACHE_NAME    = `shadow-nexus-${CACHE_VERSION}`;
 const MEDIA_CACHE   = `shadow-nexus-media-${CACHE_VERSION}`;
 
@@ -31,6 +31,7 @@ const SHELL_FILES = [
   'mobile.css',
   'profile-theme.css',
   'profile-music.css',
+  'theme-engine.css',
   'script.js',
   'snx-net.js',
   'snx-gifts.js',

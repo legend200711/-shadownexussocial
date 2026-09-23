@@ -1,8 +1,8 @@
 {
-  "buildId": "2026-09-10-STABILIZATION-REPAIR",
-  "swVersion": "v46",
-  "deployedAt": "2026-09-10T00:00:00Z",
+  "buildId": "2026-09-23-GLOBAL-UPDATE",
+  "swVersion": "v47",
+  "deployedAt": "2026-09-23T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "2.1.0",
-  "note": "Full stabilization pass: sw cache version bump, stale build ID sync across sw.js/index.html/studio.js, profile image pipeline hardening, search fix, follow/unfollow error surfacing, music audio pipeline trace, radio queue fixes, Firebase init dedup, session persistence, Firestore rules audit, mobile responsiveness, error handling improvements."
+  "note": "Global update: Cloud Stream redesign (cinematic player, like system, Up Next, Now Playing, music artwork, remove gifting), Founder Global Theme Engine (holiday/birthday/celebration themes, scheduling, preview/publish, CSS variables, failsafe/reset), Cloudflare R2 storage repairs (feed photos/videos/music, profile pictures, Music Hub, 24-Hour Radio, Cloud Stream artwork), R2 media playback, mobile upload/retry, service-worker cache fixes, Firebase/session fixes, profile/search/follow fixes."
 }
