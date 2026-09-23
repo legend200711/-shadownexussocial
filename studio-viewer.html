@@ -381,18 +381,18 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
 ────────────────────────────────────────────── -->
 <script type="module">
 import { initializeApp, getApps, getApp }
-                                   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+                                   from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
 import { getAuth, onAuthStateChanged }
-                                   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+                                   from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, getDocs, updateDoc, addDoc,
          collection, query, where, orderBy, limit, onSnapshot,
          serverTimestamp, increment, runTransaction, setDoc, deleteDoc,
          arrayUnion, arrayRemove, writeBatch, getDocFromCache, getDocFromServer,
          enableNetwork, disableNetwork }
-                                   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+                                   from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
 import { getDatabase, ref as rtdbRef, set as rtdbSet, get as rtdbGet,
          onValue as rtdbOnValue, off as rtdbOff, push as rtdbPush, remove as rtdbRemove }
-                                   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+                                   from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js';
 
 // ── Firebase config — same project as Shadow Nexus Social ────────────────
 // Using the default (unnamed) app so Firebase Auth automatically reuses

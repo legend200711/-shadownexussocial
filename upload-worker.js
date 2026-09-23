@@ -2581,6 +2581,8 @@ export default {
         r2:             !!env.BUCKET,
         authConfigured: !!env.FIREBASE_WEB_API_KEY,
         stream:         (env.CLOUDFLARE_ACCOUNT_ID && env.CLOUDFLARE_API_TOKEN) ? 'configured' : 'not_configured',
+        corsOrigin:     origin || '(no origin header)',
+        allowedOrigins: ALLOWED_ORIGINS,
       }), {
         status: 200,
         headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })

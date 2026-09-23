@@ -470,12 +470,26 @@
     try {
       const q = query(collection(db(), COLL_PLAYLISTS), where('ownerUid','==', uid), orderBy('createdAt','asc'));
       const snap = await getDocs(q);
-      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log(`[SNX Music] loadPlaylists → ${results.length} playlist(s) for uid ${uid}`);
+      return results;
     } catch (err) {
-      console.warn('[SNX Music] loadPlaylists index fallback:', err.message);
-      const q2 = query(collection(db(), COLL_PLAYLISTS), where('ownerUid', '==', uid));
-      const snap2 = await getDocs(q2);
-      return snap2.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (err.code === 'permission-denied') {
+        console.error('[SNX Music] loadPlaylists PERMISSION DENIED — check Firestore rules for profilePlaylists:', err.message);
+        return [];
+      }
+      // Index missing → retry without orderBy
+      console.warn('[SNX Music] loadPlaylists index fallback:', err.code || '', err.message);
+      try {
+        const q2 = query(collection(db(), COLL_PLAYLISTS), where('ownerUid', '==', uid));
+        const snap2 = await getDocs(q2);
+        const results2 = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
+        console.log(`[SNX Music] loadPlaylists fallback → ${results2.length} playlist(s) for uid ${uid}`);
+        return results2;
+      } catch (e2) {
+        console.error('[SNX Music] loadPlaylists fallback failed:', e2.code || '', e2.message);
+        return [];
+      }
     }
   }
 

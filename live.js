@@ -46,17 +46,17 @@
 import { SNXAudioMixer } from './snx-audio-mixer.js';
 
 /* ── Main Firebase imports (Firestore + Auth) ── */
-import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
 import {
   getAuth, onAuthStateChanged,
   browserLocalPersistence, setPersistence
-} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
 import {
   getFirestore,
   doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc,
   collection, query, orderBy, limit, onSnapshot,
   serverTimestamp, increment, where, deleteField, arrayUnion
-} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
 
 /* ── Realtime Database imports (signaling + room status) ── */
 import {
@@ -64,7 +64,7 @@ import {
   ref, set, get, update, remove, push, onValue, off, onDisconnect,
   runTransaction,
   serverTimestamp as rtdbTimestamp
-} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js';
 
 /* ════════════════════════════════════════════════════
    MAIN Firebase — live.html may load standalone OR

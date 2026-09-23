@@ -10,8 +10,8 @@
  * shadownexussocial.online (/) and any local dev server (/).
  */
 
-const CACHE_VERSION = 'v42';
-const BUILD_ID      = '2026-09-02-CLOUDSTREAM-WORKER-REDEPLOYED-V1.5.0';
+const CACHE_VERSION = 'v46';
+const BUILD_ID      = '2026-09-10-STABILIZATION-REPAIR';
 const CACHE_NAME    = `shadow-nexus-${CACHE_VERSION}`;
 const MEDIA_CACHE   = `shadow-nexus-media-${CACHE_VERSION}`;
 

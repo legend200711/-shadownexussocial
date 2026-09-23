@@ -25,8 +25,8 @@
 /* ═══════════════════════════════════════════════════════
    0. CONSTANTS
 ═══════════════════════════════════════════════════════ */
-var STUDIO_VERSION = '1.2.0';
-var APP_BUILD_VERSION = '2026-08-27-STABILITY-FIX';
+var STUDIO_VERSION = '1.3.0';
+var APP_BUILD_VERSION = '2026-09-10-STABILIZATION-REPAIR';
 
 // Expose for debug panels and version verification
 window.SNX_STUDIO_BUILD = APP_BUILD_VERSION;
@@ -2600,8 +2600,12 @@ function _csMusicLoadPlaylists() {
         _csMusic.playlists.push(Object.assign({ id: d.id }, d.data()));
       });
     }
+    console.log('[SNX Studio] Playlists loaded:', _csMusic.playlists.length);
     _renderCSPlaylistPanel();
-  }).catch(function() { _renderCSPlaylistPanel(); });
+  }).catch(function(e) {
+    console.error('[SNX Studio] _csMusicLoadPlaylists failed:', e.code || '', e.message);
+    _renderCSPlaylistPanel();
+  });
 }
 
 window.snxCSMusicCreatePlaylist = function() {

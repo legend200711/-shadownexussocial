@@ -27,16 +27,16 @@
 'use strict';
 
 import { initializeApp, getApps, getApp }
-  from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+  from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
 import {
   getAuth, onAuthStateChanged, browserLocalPersistence, setPersistence
-} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
 import {
   getFirestore,
   doc, getDoc, getDocs, setDoc, updateDoc, addDoc,
   collection, query, orderBy, limit, where, onSnapshot,
   serverTimestamp, documentId
-} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
 
 /* ── Firebase config (matches firebase-config.js) ─────────────────── */
 const _CFG = {
@@ -516,7 +516,7 @@ window.csrStartBroadcast = async function() {
       duration: t.duration || t.durationSecs || 0
     }));
 
-    const idToken = await _user.getIdToken();
+    const idToken = await _user.getIdToken(true);
     const startRes = await fetch(WORKER_URL + '/api/stream/start', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
@@ -666,7 +666,7 @@ async function _stopBroadcast() {
   _stopHealthMonitor();
 
   try {
-    const idToken = await _user.getIdToken();
+    const idToken = await _user.getIdToken(true);
     await fetch(WORKER_URL + '/api/stream/stop', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
@@ -706,7 +706,7 @@ async function _stopBroadcast() {
 window.csrSkipTrack = async function() {
   if (!_streamId || !_user) return;
   try {
-    const idToken = await _user.getIdToken();
+    const idToken = await _user.getIdToken(true);
     await fetch(WORKER_URL + '/api/stream/music/control', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },

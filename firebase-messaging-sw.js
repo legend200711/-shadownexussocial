@@ -11,8 +11,8 @@
  *   mention | tag | repost | wallPost | announcement | system | live
  */
 
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/12.18.0/firebase-messaging-compat.js');
 
 // ── Guard: prevent double-initialisation if SW is reused ──────────────────────
 if (!self._snxFbInitialised) {

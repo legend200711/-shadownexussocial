@@ -1,8 +1,8 @@
 {
-  "buildId": "2026-09-02-CLOUDSTREAM-WORKER-REDEPLOYED-V1.5.0",
-  "swVersion": "v42",
-  "deployedAt": "2026-09-02T10:41:00Z",
+  "buildId": "2026-09-10-STABILIZATION-REPAIR",
+  "swVersion": "v46",
+  "deployedAt": "2026-09-10T00:00:00Z",
   "project": "horr-a08f4",
-  "studioVersion": "2.0.0",
-  "note": "ROOT FIX: The live Cloudflare Worker snx-cloudstream was running v1.0 (an old build) that returned {\"error\":\"Unauthorized\"} for ALL /api/stream/start requests regardless of the Authorization header sent. The current source (v1.5.0) uses Firebase ID token verification via identitytoolkit accounts:lookup, which was never deployed. Fixed by: (1) adding chrislegendofshadows.com to ALLOWED_ORIGINS in cloudstream-worker.js, (2) deploying the current v1.5.0 worker (version ID 40b6c48a). CORS preflight now returns Access-Control-Allow-Origin: https://chrislegendofshadows.com. Unauthenticated POST returns 401 with descriptive message. Authenticated POST with valid Firebase ID token from project horr-a08f4 will be accepted and broadcast will start."
+  "studioVersion": "2.1.0",
+  "note": "Full stabilization pass: sw cache version bump, stale build ID sync across sw.js/index.html/studio.js, profile image pipeline hardening, search fix, follow/unfollow error surfacing, music audio pipeline trace, radio queue fixes, Firebase init dedup, session persistence, Firestore rules audit, mobile responsiveness, error handling improvements."
 }

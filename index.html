@@ -10787,11 +10787,11 @@ body.arcade-fs-ios body::after { display:none !important; }
 
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, browserLocalPersistence, setPersistence, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, getDocFromCache, getDocFromServer, updateDoc, deleteDoc, collection, addDoc, query, orderBy, limit, onSnapshot, arrayUnion, arrayRemove, runTransaction, where, getDocs, writeBatch, increment, serverTimestamp, enableNetwork, disableNetwork } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
-  import { getDatabase as _getRtdb, ref as _rtdbRef, set as _rtdbSet, remove as _rtdbRemove, get as _rtdbGet, onDisconnect as _rtdbOnDisconnect, serverTimestamp as _rtdbServerTimestamp, onValue as _rtdbOnValue, off as _rtdbOff } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, browserLocalPersistence, setPersistence, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, getDocFromCache, getDocFromServer, updateDoc, deleteDoc, collection, addDoc, query, orderBy, limit, onSnapshot, arrayUnion, arrayRemove, runTransaction, where, getDocs, writeBatch, increment, serverTimestamp, enableNetwork, disableNetwork } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-messaging.js";
+  import { getDatabase as _getRtdb, ref as _rtdbRef, set as _rtdbSet, remove as _rtdbRemove, get as _rtdbGet, onDisconnect as _rtdbOnDisconnect, serverTimestamp as _rtdbServerTimestamp, onValue as _rtdbOnValue, off as _rtdbOff } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyByZRmp6R9HY17T2_WdJUFWeeaLNOP6y2Y",
@@ -12411,7 +12411,7 @@ body.arcade-fs-ios body::after { display:none !important; }
 
           // Count how many users joined before this user (must be < 100)
           const { query: fsQuery, collection: fsCollection, where, orderBy, limit, getDocs } =
-              await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+              await import('https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js');
           const earlier = await getDocs(
               fsQuery(fsCollection(db, 'users'), where('joinedAt', '<', u.joinedAt), orderBy('joinedAt'), limit(100))
           );
@@ -14051,11 +14051,20 @@ body.arcade-fs-ios body::after { display:none !important; }
       };
 
       try {
-          // Query 1: username prefix match (usernames stored lowercase)
-          const [snapU, snapD] = await Promise.all([
+          // Query 1: username prefix match (usernames are stored lowercase)
+          // Query 2: displayName prefix — try both original-case and lowercase variants
+          // Firestore prefix queries are case-sensitive; we run both q and
+          // the Title-cased version so "alice" finds "Alice" entries.
+          const qTitle = q.charAt(0).toUpperCase() + q.slice(1);
+          const [snapU, snapD, snapDLower] = await Promise.all([
               getDocs(query(collection(db, 'users'),
                   where('username', '>=', q),
                   where('username', '<', q + '\uf8ff'),
+                  limit(20)
+              )),
+              getDocs(query(collection(db, 'users'),
+                  where('displayName', '>=', qTitle),
+                  where('displayName', '<', qTitle + '\uf8ff'),
                   limit(20)
               )),
               getDocs(query(collection(db, 'users'),
@@ -14066,10 +14075,16 @@ body.arcade-fs-ios body::after { display:none !important; }
           ]);
           addResults(snapU);
           addResults(snapD);
-      } catch(_) {
-          // Firestore index may be missing — fall back to full scan (max 200 docs)
+          addResults(snapDLower);
+      } catch(searchErr) {
+          console.warn('[SNX Search] Firestore query failed, falling back to full scan:', searchErr.message);
+      }
+
+      // Always run a full scan fallback for substring matching (catches
+      // mixed-case display names the prefix query misses).
+      if (seen.size === 0) {
           try {
-              const snap = await getDocs(query(collection(db, 'users'), limit(200)));
+              const snap = await getDocs(query(collection(db, 'users'), limit(300)));
               snap.forEach(d => {
                   const u = d.data();
                   if (!u.uid || u.uid === currentUser.uid || seen.has(u.uid)) return;
@@ -14081,7 +14096,9 @@ body.arcade-fs-ios body::after { display:none !important; }
                       seen.add(u.uid); results.push(u);
                   }
               });
-          } catch(_) {}
+          } catch(fallbackErr) {
+              console.error('[SNX Search] Full-scan fallback failed:', fallbackErr.message);
+          }
       }
       if (!results.length) {
           resultsBox.innerHTML = `<div class="search-empty">No users found matching "<strong style="color:#4a7aaa">${escFeed(q)}</strong>".<br><span style="font-size:12px;color:#3a5a7a;">Invite your friends to join Shadow Nexus Social!</span></div>`;
@@ -15081,6 +15098,13 @@ body.arcade-fs-ios body::after { display:none !important; }
   let activeProfileUnsubscribe = null;
 
   window.viewProfile = async function(uid) {
+      if (!uid) { console.warn('[SNX Profile] viewProfile called with no uid'); return; }
+      // If auth has not yet resolved, wait briefly then retry
+      if (!currentUser) {
+          console.warn('[SNX Profile] viewProfile called before auth resolved — queuing');
+          window._snxOnAuthReady(() => window.viewProfile(uid));
+          return;
+      }
       activeProfileUid = uid;
       window.activeProfileUid = uid;
       show('profile');
@@ -15199,22 +15223,40 @@ body.arcade-fs-ios body::after { display:none !important; }
               joinedEl.textContent = `📅 Joined ${d.toLocaleDateString('en-GB', {month:'long', year:'numeric'})}`;
           } else if (joinedEl) { joinedEl.textContent = ''; }
 
-          // Avatar — use image background if set, otherwise show first-letter initial
-          // Preserve child elements (edit button) by only touching text nodes and background
+          // Avatar — use image background if set, otherwise show first-letter initial.
+          // Guard against gs:// paths (Firebase Storage internal URLs) and broken URLs
+          // by probing with an Image() object before applying as background-image.
           const avatarEl = document.getElementById("profileAvatar");
-          // Tag with uid for data-uid attribute
           avatarEl.setAttribute('data-uid', uid);
-          if (p.avatar && p.avatar.trim()) {
-              avatarEl.style.backgroundImage    = `url('${p.avatar}')`;
-              avatarEl.style.backgroundSize     = 'cover';
-              avatarEl.style.backgroundPosition = 'center';
-              avatarEl.style.backgroundRepeat   = 'no-repeat';
-              avatarEl.childNodes.forEach(n => { if (n.nodeType === Node.TEXT_NODE) n.remove(); });
-          } else {
+          const _avatarUrl = (p.avatar || '').trim();
+          const _avatarLetter = (p.displayName || p.username || '?')[0].toUpperCase();
+
+          function _applyAvatarFallback() {
               avatarEl.style.backgroundImage = 'none';
-              const letter = (p.displayName || p.username || '?')[0].toUpperCase();
               avatarEl.childNodes.forEach(n => { if (n.nodeType === Node.TEXT_NODE) n.remove(); });
-              avatarEl.insertAdjacentText('afterbegin', letter);
+              avatarEl.insertAdjacentText('afterbegin', _avatarLetter);
+          }
+
+          if (_avatarUrl && !_avatarUrl.startsWith('gs://') && !_avatarUrl.startsWith('blob:')) {
+              // Probe the URL — if it loads, apply it; if it 404s/errors, show initials
+              const _probe = new Image();
+              _probe.onload = () => {
+                  avatarEl.style.backgroundImage    = `url('${_avatarUrl}')`;
+                  avatarEl.style.backgroundSize     = 'cover';
+                  avatarEl.style.backgroundPosition = 'center';
+                  avatarEl.style.backgroundRepeat   = 'no-repeat';
+                  avatarEl.childNodes.forEach(n => { if (n.nodeType === Node.TEXT_NODE) n.remove(); });
+              };
+              _probe.onerror = () => {
+                  console.warn('[SNX Profile] Avatar URL failed to load — showing fallback initials:', _avatarUrl);
+                  _applyAvatarFallback();
+              };
+              _probe.src = _avatarUrl;
+          } else {
+              if (_avatarUrl.startsWith('gs://')) {
+                  console.warn('[SNX Profile] Avatar URL is a Firebase Storage path (gs://) — not displayable in browser. Re-upload the image to fix this.');
+              }
+              _applyAvatarFallback();
           }
 
           // Banner — use image if set, otherwise keep the default CSS gradient
@@ -15597,31 +15639,53 @@ body.arcade-fs-ios body::after { display:none !important; }
   }
 
   async function toggleFollowLink(uid, activeState) {
+      if (!currentUser) { toastNotification("Please sign in to follow users."); return; }
+      if (uid === currentUser.uid) { toastNotification("You cannot follow yourself."); return; }
+
       const targetRef = doc(db, "users", uid);
       const myRef     = doc(db, "users", currentUser.uid);
-      if (activeState) {
-          // Unfollow — safe filter with fallback to empty array
-          const [tSnap, mSnap] = await Promise.all([getDoc(targetRef), getDoc(myRef)]);
-          const fers = (tSnap.data()?.followers || []).filter(x => x !== currentUser.uid);
-          const fing = (mSnap.data()?.following || []).filter(x => x !== uid);
-          await Promise.all([
-              updateDoc(targetRef, { followers: fers }),
-              updateDoc(myRef,     { following: fing })
-          ]);
-          toastNotification("Unfollowed.");
-      } else {
-          // Follow — use arrayUnion to avoid duplicates
-          await Promise.all([
-              updateDoc(targetRef, { followers: arrayUnion(currentUser.uid) }),
-              updateDoc(myRef,     { following: arrayUnion(uid) })
-          ]);
-          await pushNotification(uid, {
-              type: 'follow',
-              fromUid: currentUser.uid,
-              fromName: userData.displayName,
-              fromAvatar: userData.avatar || ''
-          });
-          toastNotification("Following!");
+
+      // Disable the follow button for the duration of the request
+      const btnFollow = document.getElementById("btnFollowAction");
+      if (btnFollow) btnFollow.disabled = true;
+
+      try {
+          if (activeState) {
+              // Unfollow — safe filter with fallback to empty array
+              const [tSnap, mSnap] = await Promise.all([getDoc(targetRef), getDoc(myRef)]);
+              if (!tSnap.exists()) { toastNotification("User not found."); return; }
+              const fers = (tSnap.data()?.followers || []).filter(x => x !== currentUser.uid);
+              const fing = (mSnap.data()?.following || []).filter(x => x !== uid);
+              await Promise.all([
+                  updateDoc(targetRef, { followers: fers }),
+                  updateDoc(myRef,     { following: fing })
+              ]);
+              toastNotification("Unfollowed.");
+          } else {
+              // Follow — use arrayUnion to avoid duplicates
+              await Promise.all([
+                  updateDoc(targetRef, { followers: arrayUnion(currentUser.uid) }),
+                  updateDoc(myRef,     { following: arrayUnion(uid) })
+              ]);
+              await pushNotification(uid, {
+                  type: 'follow',
+                  fromUid: currentUser.uid,
+                  fromName: userData.displayName,
+                  fromAvatar: userData.avatar || ''
+              });
+              toastNotification("Following!");
+          }
+      } catch(e) {
+          console.error('[SNX Follow] toggleFollowLink error:', e.code || '', e.message);
+          if (e.code === 'permission-denied') {
+              toastNotification("Follow failed: permission denied. Please try again.");
+          } else if (e.code === 'not-found') {
+              toastNotification("Follow failed: user not found.");
+          } else {
+              toastNotification("Follow failed: " + (e.message || 'unknown error'));
+          }
+      } finally {
+          if (btnFollow) btnFollow.disabled = false;
       }
   }
 
@@ -22549,9 +22613,9 @@ window.clearBannerUpload   = clearBannerUpload;
 
 <script type="module">
 /* ── Storm Rooms uses the same Firebase app but Realtime Database ── */
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, off, set, remove, serverTimestamp, onDisconnect, get }
-    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
 
 const _STORM_CFG = {
     apiKey: "AIzaSyByZRmp6R9HY17T2_WdJUFWeeaLNOP6y2Y",
@@ -28560,7 +28624,7 @@ window.adminLoadLiveRooms = async function() {
   list.innerHTML = '<div style="color:#4a6a8a;font-size:13px;text-align:center;padding:20px 0;">Loading…</div>';
 
   // Load from RTDB (all rooms — active + ended)
-  const { getDatabase, ref: rtdbRef, get: rtdbGet } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+  const { getDatabase, ref: rtdbRef, get: rtdbGet } = await import('https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js');
   const rtdb = getDatabase(window._snxApp);
   let rtdbRooms = {};
   try {
@@ -28621,7 +28685,7 @@ window.adminEndLiveRoom = async function(roomId, hostId, btn) {
   if (btn) { btn.disabled = true; btn.textContent = 'Ending…'; }
   try {
     // RTDB
-    const { getDatabase, ref: rtdbRef, update: rtdbUpdate, remove: rtdbRemove } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+    const { getDatabase, ref: rtdbRef, update: rtdbUpdate, remove: rtdbRemove } = await import('https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js');
     const rtdb = getDatabase(window._snxApp);
     await rtdbUpdate(rtdbRef(rtdb, `liveRooms/${roomId}`), { status: 'ended', isLive: false, endedAt: Date.now() });
     await rtdbRemove(rtdbRef(rtdb, `liveConnections/${roomId}`));
@@ -28652,7 +28716,7 @@ window.adminDeleteLiveRoom = async function(roomId, hostId, btn) {
   if (!confirm('Permanently delete this room from the database?')) return;
   if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
   try {
-    const { getDatabase, ref: rtdbRef, remove: rtdbRemove } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+    const { getDatabase, ref: rtdbRef, remove: rtdbRemove } = await import('https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js');
     const rtdb = getDatabase(window._snxApp);
     await rtdbRemove(rtdbRef(rtdb, `liveRooms/${roomId}`));
     await rtdbRemove(rtdbRef(rtdb, `liveConnections/${roomId}`));
@@ -28674,7 +28738,7 @@ window.adminDeleteLiveRoom = async function(roomId, hostId, btn) {
 window.adminPurgeEndedRooms = async function() {
   if (!founderOnly()) return;
   if (!confirm('Delete ALL ended/inactive rooms from both RTDB and Firestore?')) return;
-  const { getDatabase, ref: rtdbRef, get: rtdbGet, remove: rtdbRemove } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+  const { getDatabase, ref: rtdbRef, get: rtdbGet, remove: rtdbRemove } = await import('https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js');
   const rtdb = getDatabase(window._snxApp);
   let deleted = 0;
   try {
@@ -30764,8 +30828,8 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = '2026-08-29-CLOUD-STREAM-AS-STUDIO';
-  var SW_VER   = 'v35';
+  var BUILD_ID = '2026-09-10-STABILIZATION-REPAIR';
+  var SW_VER   = 'v46';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
 
