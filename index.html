@@ -7144,6 +7144,9 @@ body.arcade-fs-ios body::after { display:none !important; }
                     <button id="btnEditProfile" style="display:none;" onclick="openEditProfileModal()">✏️ Edit Profile</button>
                     <!-- Watch Live — shown on OTHER user's profile when they are streaming -->
                     <a id="btnWatchLive" href="live.html" target="_blank" rel="noopener" style="display:none;background:linear-gradient(135deg,#880020,#dd1133);border:1px solid rgba(255,34,68,0.7);color:#fff;font-weight:800;letter-spacing:0.5px;box-shadow:0 0 16px rgba(255,30,60,0.45);padding:7px 16px;border-radius:20px;font-size:13px;text-decoration:none;align-items:center;gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:#fff;display:inline-block;animation:snxLiveDot 1s ease-in-out infinite;flex-shrink:0;"></span>Watch Live</a>
+                    <!-- Block / Report — shown on OTHER user's profile only -->
+                    <button id="btnBlockUser" style="display:none;border-color:rgba(255,51,102,0.4);color:#ff5577;font-size:12px;padding:6px 12px;border-radius:20px;" onclick="snxToggleBlockUser()">🚫 Block</button>
+                    <button id="btnReportUser" style="display:none;border-color:rgba(255,170,0,0.4);color:#ffaa44;font-size:12px;padding:6px 12px;border-radius:20px;" onclick="snxOpenReportModal('user',window.activeProfileUid,null,'this user')">🚨 Report</button>
                 </div>
 
                 <div class="badge-container" id="profileBadges"></div>
@@ -7600,6 +7603,7 @@ body.arcade-fs-ios body::after { display:none !important; }
     <div class="msg-ctx-divider"></div>
     <div class="msg-ctx-item danger" id="msgCtxDeleteMe"  onclick="msgCtxDeleteMe()">🗑 Delete for Me</div>
     <div class="msg-ctx-item danger" id="msgCtxDeleteAll" onclick="msgCtxDeleteAll()">🚫 Unsend for Everyone</div>
+    <div class="msg-ctx-item danger" id="msgCtxReport"    onclick="msgCtxReportMsg()" style="display:none;">🚨 Report Message</div>
 </div>
 
 <!-- ═══════════════════════════════════════════
@@ -8224,6 +8228,22 @@ body.arcade-fs-ios body::after { display:none !important; }
             </div>
         </div>
 
+        <!-- ── Blocked Users section ── -->
+        <div class="settings-section" id="blockedUsersSection">
+            <h4>🚫 Blocked Users</h4>
+            <p style="font-size:12px;color:#6a90b8;margin:0 0 10px;line-height:1.5;">Blocked users cannot message you, follow you, or interact with your content. Blocking is private.</p>
+            <div id="blockedUsersList"><div style="font-size:13px;color:#3a5a7a;padding:8px 0;">Loading…</div></div>
+            <div id="blockedUsersEmpty" style="display:none;font-size:13px;color:#3a5a7a;padding:8px 0;">You haven't blocked anyone.</div>
+        </div>
+
+        <!-- ── Saved Posts section ── -->
+        <div class="settings-section" id="savedPostsSection">
+            <h4>🔖 Saved Posts</h4>
+            <p style="font-size:12px;color:#6a90b8;margin:0 0 10px;line-height:1.5;">Posts you've saved are private — only you can see them.</p>
+            <div id="savedPostsList"></div>
+            <div id="savedPostsEmpty" style="display:none;font-size:13px;color:#3a5a7a;padding:8px 0;">No saved posts yet. Tap 🔖 on any post to save it.</div>
+        </div>
+
         <div class="settings-section">
             <h4>⚠️ Danger Zone</h4>
             <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
@@ -8274,6 +8294,56 @@ body.arcade-fs-ios body::after { display:none !important; }
         <div style="display:flex;gap:10px;justify-content:flex-end;">
             <button id="reauthCancelBtn" style="padding:10px 18px;border-radius:8px;border:1px solid rgba(100,130,160,0.4);background:transparent;color:#8aaac8;font-size:13px;cursor:pointer;">Cancel</button>
             <button id="reauthConfirmBtn" style="padding:10px 20px;border-radius:8px;border:1px solid rgba(255,51,80,0.55);background:rgba(180,10,30,0.18);color:#ff4466;font-size:13px;font-weight:700;cursor:pointer;">Confirm &amp; Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SNX CONFIRM MODAL — General-purpose styled confirmation dialog
+     Replaces browser confirm() for all destructive actions.
+     Usage: snxConfirm({title, body, confirmText, danger}).then(ok => …)
+     ═══════════════════════════════════════════════════════════ -->
+<div id="snxConfirmModal" role="dialog" aria-modal="true" style="display:none;position:fixed;inset:0;background:rgba(0,3,12,0.88);z-index:9200;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;backdrop-filter:blur(6px);">
+    <div style="background:#060d1e;border:1px solid rgba(0,174,239,0.35);border-radius:16px;width:100%;max-width:400px;padding:26px 22px;box-sizing:border-box;animation:deleteModalIn 0.2s cubic-bezier(0.34,1.56,0.64,1) both;">
+        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:10px;" id="snxConfirmTitle">Confirm</div>
+        <div style="font-size:13px;color:#9bbdd8;line-height:1.65;margin-bottom:20px;" id="snxConfirmBody"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button id="snxConfirmCancelBtn" style="padding:10px 20px;border-radius:8px;border:1px solid rgba(100,130,160,0.35);background:transparent;color:#8aaac8;font-size:13px;cursor:pointer;">Cancel</button>
+            <button id="snxConfirmOKBtn" style="padding:10px 22px;border-radius:8px;border:1px solid rgba(0,174,239,0.55);background:linear-gradient(135deg,#003d99,#0066cc);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     REPORT MODAL — Report posts, comments, messages, users, live sessions
+     ═══════════════════════════════════════════════════════════ -->
+<div id="snxReportModal" role="dialog" aria-modal="true" onclick="if(event.target===this)snxCloseReportModal()" style="display:none;position:fixed;inset:0;background:rgba(0,3,12,0.88);z-index:9100;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;backdrop-filter:blur(6px);">
+    <div style="background:#060d1e;border:1px solid rgba(255,51,80,0.35);border-radius:16px;width:100%;max-width:420px;padding:24px 20px;box-sizing:border-box;animation:deleteModalIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both;max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <h3 style="margin:0;font-size:16px;color:#ff4466;">🚨 Report Content</h3>
+            <button onclick="snxCloseReportModal()" style="background:none;border:none;color:#556;font-size:20px;cursor:pointer;padding:2px 6px;border-radius:6px;line-height:1;" aria-label="Close">✕</button>
+        </div>
+        <div style="font-size:12px;color:#6a90b8;margin-bottom:14px;" id="snxReportTargetLabel"></div>
+        <label style="font-size:12px;color:#9bbdd8;display:block;margin-bottom:6px;">Reason</label>
+        <select id="snxReportReason" style="width:100%;margin-bottom:12px;font-size:13px;">
+            <option value="spam">🔁 Spam or repetitive content</option>
+            <option value="harassment">😤 Harassment or bullying</option>
+            <option value="threats">⚠️ Threats or violence</option>
+            <option value="hate">🚫 Hate speech or abuse</option>
+            <option value="impersonation">👤 Impersonation</option>
+            <option value="inappropriate">🔞 Inappropriate content</option>
+            <option value="scam">💸 Scam or fraud</option>
+            <option value="misinformation">📰 Misinformation</option>
+            <option value="other">🔸 Other</option>
+        </select>
+        <label style="font-size:12px;color:#9bbdd8;display:block;margin-bottom:6px;">Additional details <small style="color:#4a7a9a;">(optional)</small></label>
+        <textarea id="snxReportDetails" rows="3" placeholder="Describe the issue in more detail…" style="width:100%;box-sizing:border-box;resize:vertical;font-size:13px;margin-bottom:14px;"></textarea>
+        <input type="hidden" id="snxReportType">
+        <input type="hidden" id="snxReportTargetId">
+        <input type="hidden" id="snxReportTargetUid">
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button onclick="snxCloseReportModal()" style="padding:10px 18px;border-radius:8px;border:1px solid rgba(100,130,160,0.35);background:transparent;color:#8aaac8;font-size:13px;cursor:pointer;">Cancel</button>
+            <button onclick="snxSubmitReport()" id="snxReportSubmitBtn" style="padding:10px 22px;border-radius:8px;border:1px solid rgba(255,51,80,0.6);background:linear-gradient(135deg,#660022,#cc0044);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">🚨 Submit Report</button>
         </div>
     </div>
 </div>
@@ -13350,7 +13420,10 @@ body.arcade-fs-ios body::after { display:none !important; }
                         ${!post.isRepost ? `<button class="react-btn" id="repost-btn-${pDoc.id}" onclick="processPostReaction('${pDoc.id}','repost',this)">🔄 <span class="repost-count">${post.repostCount || 0}</span></button>` : ''}
                         <button class="react-btn" onclick="sharePostItem('${pDoc.id}')">🔗 Share</button>
                         ${!isOwner && !isBotPost ? `<button class="react-btn gift-btn" title="Send a gift to this creator" onclick="snxgOpenGiftTray('${pDoc.id}','${authorUid}',false)">🎁</button>` : ''}
+                        <button class="react-btn save-post-btn" id="save-btn-${pDoc.id}" title="${snxIsSaved(pDoc.id)?'Unsave post':'Save post'}" onclick="snxToggleSavePost('${pDoc.id}',this)" style="${snxIsSaved(pDoc.id)?'color:#ffcc44;border-color:rgba(255,200,50,0.55);':''}">🔖</button>
                         ${isOwner && !isBotPost ? `<button class="react-btn btn-del-post" onclick="window.deleteTimelinePost('${pDoc.id}')">🗑️ Delete</button>` : ''}
+                        ${isOwner && !isBotPost ? `<button class="react-btn" style="border-color:rgba(0,174,239,0.35);color:#66ccff;font-size:12px;" onclick="snxEditPost('${pDoc.id}',this)">✏️ Edit</button>` : ''}
+                        ${!isOwner && !isBotPost ? `<button class="react-btn" style="border-color:rgba(255,170,0,0.3);color:#ffaa44;font-size:12px;" onclick="snxOpenReportModal('post','${pDoc.id}','${authorUid}','post by ${escFeed(authorName)}')">🚨</button>` : ''}
                         ${isBotPost && isFounderViewing ? `<button class="react-btn btn-del-bot-post" title="Delete Shadow Bot message (Founder only)" onclick="window.deleteBotPost('${pDoc.id}')">🤖🗑 Delete Bot Msg</button>` : ''}
                     </div>
                     <div class="commentBox" id="comments-${pDoc.id}" data-count="0"></div>
@@ -13531,9 +13604,16 @@ body.arcade-fs-ios body::after { display:none !important; }
 
   // Delete post — only callable by owner (button only shown to owner)
   window.deleteTimelinePost = async (id) => {
-      if (!confirm("Delete this post? This cannot be undone.")) return;
-      await deleteDoc(doc(db, "posts", id));
-      toastNotification("Post deleted.");
+      const ok = await (typeof window.snxConfirm === 'function'
+          ? window.snxConfirm('Delete this post?', 'This cannot be undone.', 'Delete', 'Cancel', true)
+          : Promise.resolve(confirm('Delete this post? This cannot be undone.')));
+      if (!ok) return;
+      try {
+          await deleteDoc(doc(db, 'posts', id));
+          toastNotification('🗑️ Post deleted.');
+      } catch(e) {
+          toastNotification('Delete failed: ' + (e.message || 'unknown error'));
+      }
   };
 
   // Delete a Shadow Bot post — founder only (enforced client-side AND by Firestore rules)
@@ -13542,7 +13622,10 @@ body.arcade-fs-ios body::after { display:none !important; }
           toastNotification('⛔ Founder access only.');
           return;
       }
-      if (!confirm('Delete this Shadow Bot message? This cannot be undone.')) return;
+      const ok = await (typeof window.snxConfirm === 'function'
+          ? window.snxConfirm('Delete Shadow Bot message?', 'This cannot be undone.', 'Delete', 'Cancel', true)
+          : Promise.resolve(confirm('Delete this Shadow Bot message? This cannot be undone.')));
+      if (!ok) return;
       try {
           await deleteDoc(doc(db, 'posts', id));
           toastNotification('🤖🗑 Shadow Bot message deleted.');
@@ -14034,7 +14117,7 @@ body.arcade-fs-ios body::after { display:none !important; }
                       fromUid: currentUser.uid,
                       fromName: userData.displayName,
                       fromAvatar: userData.avatar || '',
-                      postId
+                      postId: postId || ref.id || ''
                   }).catch(() => {});
               }
           } catch(e) {
@@ -14343,6 +14426,7 @@ body.arcade-fs-ios body::after { display:none !important; }
           badgeHtml = `<span class="badge-inline badge-founder" title="Founder">👑 Founder</span>`;
       }
       const commentMoodHtml = buildMoodChipHtml(c.authorMoodType || '', c.authorMoodValue || '');
+      const _notMyComment = c.authorUid !== currentUser?.uid;
       d.innerHTML = `
         <div class="comment-body">
             <span style="display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap;">
@@ -14351,9 +14435,10 @@ body.arcade-fs-ios body::after { display:none !important; }
             <span class="comment-text" style="margin-left:4px;">${escFeed(c.text)}</span>
             ${tsLabel ? `<span class="comment-ts">${tsLabel}</span>` : ''}
         </div>
-        ${canDelete
-          ? `<button class="comment-del-btn" title="Delete comment" onclick="deletePostComment('${postId}', ${c.ts}, '${c.authorUid}')">✕</button>`
-          : ''}
+        <div style="display:flex;gap:3px;flex-shrink:0;">
+          ${_notMyComment ? `<button class="comment-del-btn" title="Report comment" style="color:#ffaa44;" onclick="snxOpenReportModal('comment','${postId}:${c.ts}','${c.authorUid}','comment')">🚨</button>` : ''}
+          ${canDelete ? `<button class="comment-del-btn" title="Delete comment" onclick="deletePostComment('${postId}', ${c.ts}, '${c.authorUid}')">✕</button>` : ''}
+        </div>
       `;
       return d;
   }
@@ -14991,11 +15076,11 @@ body.arcade-fs-ios body::after { display:none !important; }
           } else if (n.type === 'like') {
               icon = '❤️';
               text = `<b>${escFeed(n.fromName)}</b> liked your post.`;
-              navFn = `viewProfile('${n.fromUid}')`;
+              navFn = n.postId ? `snxOpenPost('${n.postId}')` : `navTo('feed')`;
           } else if (n.type === 'comment') {
               icon = '💬';
               text = `<b>${escFeed(n.fromName)}</b> commented: <i>"${escFeed(n.commentText || '')}"</i>`;
-              navFn = `navTo('feed')`;
+              navFn = n.postId ? `snxOpenPost('${n.postId}')` : `navTo('feed')`;
           } else if (n.type === 'follow') {
               icon = '👤';
               text = `<b>${escFeed(n.fromName)}</b> started following you.`;
@@ -15003,7 +15088,7 @@ body.arcade-fs-ios body::after { display:none !important; }
           } else if (n.type === 'repost') {
               icon = '🔄';
               text = `<b>${escFeed(n.fromName)}</b> reposted your post.`;
-              navFn = `navTo('feed')`;
+              navFn = n.postId ? `snxOpenPost('${n.postId}')` : `navTo('feed')`;
           } else if (n.type === 'message') {
               icon = '💬';
               text = `<b>${escFeed(n.fromName)}</b> sent you a message`;
@@ -15118,18 +15203,22 @@ body.arcade-fs-ios body::after { display:none !important; }
   };
 
   window.clearAllNotifs = async function() {
-      if (!confirm("Clear all notifications? This cannot be undone.")) return;
+      const ok = await snxConfirm({ title: 'Clear All Notifications', body: 'This will remove all your notifications. This cannot be undone.', confirmText: 'Clear All', danger: true });
+      if (!ok) return;
       await updateDoc(doc(db,"users",currentUser.uid),{notifications:[]});
-      toastNotification("Notifications cleared.");
+      toastNotification("✓ Notifications cleared.");
   };
 
   function fmtTimeAgo(ts) {
       if(!ts) return '';
-      const d=Date.now()-ts;
-      if(d<60000) return 'just now';
-      if(d<3600000) return Math.floor(d/60000)+'m ago';
-      if(d<86400000) return Math.floor(d/3600000)+'h ago';
-      return Math.floor(d/86400000)+'d ago';
+      const diffMs = Date.now() - ts;
+      if(diffMs < 60000) return 'just now';
+      if(diffMs < 3600000) return Math.floor(diffMs/60000)+'m ago';
+      if(diffMs < 86400000) return Math.floor(diffMs/3600000)+'h ago';
+      if(diffMs < 172800000) return 'Yesterday';
+      const days = Math.floor(diffMs/86400000);
+      if(days < 7) return days + 'd ago';
+      return new Date(ts).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -15817,6 +15906,22 @@ body.arcade-fs-ios body::after { display:none !important; }
                   }, 600);
               }
           };
+
+          // Block / Report buttons — show on other users' profiles only
+          const btnBlock  = document.getElementById('btnBlockUser');
+          const btnReport = document.getElementById('btnReportUser');
+          if (btnBlock) {
+              if (!isSelf) {
+                  const isBlocked = (window._snxBlockedUsers || []).includes(uid);
+                  btnBlock.style.display  = '';
+                  btnBlock.textContent    = isBlocked ? '✓ Blocked' : '🚫 Block';
+                  btnBlock.style.color    = isBlocked ? '#39FF14' : '#ff5577';
+                  btnBlock.style.borderColor = isBlocked ? 'rgba(57,255,20,0.4)' : 'rgba(255,51,102,0.4)';
+              } else {
+                  btnBlock.style.display = 'none';
+              }
+          }
+          if (btnReport) btnReport.style.display = isSelf ? 'none' : '';
 
           // Wall input row visibility — hide if wall is private
           const wallPrivacyNow = p.privacySettings?.wall || p.privacy || 'open';
@@ -16805,6 +16910,13 @@ body.arcade-fs-ios body::after { display:none !important; }
     // ── Send a message ─────────────────────────────────────────
     async function _ibSend() {
         if (!currentUser || !_ibActiveChId || !_ibReady) return;
+
+        // Block gate: prevent sending to users who have blocked you or who you blocked
+        if (_ibActiveUid && typeof window.snxIsBlocked === 'function' && window.snxIsBlocked(_ibActiveUid)) {
+            if (typeof toastNotification === 'function') toastNotification('🚫 You cannot message this user.');
+            return;
+        }
+
         const inp = document.getElementById('inboxChatInput');
         const text = inp ? inp.value.trim() : '';
         const hasMedia = !!_ibMediaUrl;
@@ -17387,6 +17499,11 @@ body.arcade-fs-ios body::after { display:none !important; }
         if (unsendEl) {
             unsendEl.style.display = (isMine && !msg.deleted && (Date.now() - (msg.timestamp||0)) < 3600000) ? 'flex' : 'none';
         }
+        // Report — only for received messages, not deleted
+        const reportEl = document.getElementById('msgCtxReport');
+        if (reportEl) {
+            reportEl.style.display = (!isMine && !msg.deleted) ? 'flex' : 'none';
+        }
 
         menu.style.display = 'block';
         const vw = window.innerWidth, vh = window.innerHeight;
@@ -17521,15 +17638,26 @@ body.arcade-fs-ios body::after { display:none !important; }
     window.msgCtxDeleteAll = async function() {
         _ctxHide();
         if (!_ctxMine || _ctxChId === null || _ctxIdx === null) return;
-        if (!confirm('Unsend this message for everyone? This cannot be undone.')) return;
+        const ok = await snxConfirm({ title: '↩️ Unsend for Everyone', body: 'This message will be removed for both you and the recipient. This cannot be undone.', confirmText: 'Unsend', danger: true });
+        if (!ok) return;
         try {
             const snap = await getDoc(doc(db, 'chats', _ctxChId));
             if (!snap.exists()) return;
             const msgs = [...(snap.data().messages || [])];
             if (!msgs[_ctxIdx]) return;
+            // Security: verify the current user is the original sender before unsending
+            if (msgs[_ctxIdx].sender !== currentUser.uid) { toastNotification('⛔ You can only unsend your own messages.'); return; }
             msgs[_ctxIdx] = { sender: msgs[_ctxIdx].sender, type: 'text', text: '', timestamp: msgs[_ctxIdx].timestamp, deleted: true };
             await updateDoc(doc(db, 'chats', _ctxChId), { messages: msgs });
+            toastNotification('✓ Message unsent.');
         } catch(e) { toastNotification('Unsend failed: ' + e.message); }
+    };
+
+    window.msgCtxReportMsg = function() {
+        _ctxHide();
+        if (!_ctxMsg || _ctxMine) return; // can't report own messages
+        const preview = _ctxMsg.deleted ? '(deleted)' : (_ctxMsg.text || '[media]').substring(0, 60);
+        snxOpenReportModal('message', _ctxChId + ':' + _ctxIdx, _ctxMsg.sender || '', 'message: "' + preview + '"');
     };
 
     function _ctxHide() {
@@ -18982,14 +19110,20 @@ body.arcade-fs-ios body::after { display:none !important; }
       if(!founderOnly())return;
       const box=document.getElementById('adminReportList'); if(!box)return;
       box.innerHTML='<div class="empty-state">Loading…</div>';
+      // Reason labels for the new report format
+      const REASON_LABELS = {spam:'Spam',harassment:'Harassment',threats:'Threats/Violence',hate:'Hate/Abuse',impersonation:'Impersonation',inappropriate:'Inappropriate',scam:'Scam/Fraud',misinformation:'Misinformation',other:'Other','user':'User Report'};
       try {
-          const q=query(collection(db,'reports'),where('type','==',type),where('status','==','open'),orderBy('ts','desc'),limit(40));
+          const q=query(collection(db,'reports'),where('status','==','open'),orderBy('ts','desc'),limit(50));
           const snap=await getDocs(q);
           if(snap.empty){box.innerHTML='<div class="empty-state">No open reports.</div>';return;}
           box.innerHTML='';
           snap.forEach(rDoc=>{
               const r=rDoc.data(); const card=document.createElement('div'); card.className='report-card';
-              card.innerHTML=`<div class="report-card-header"><span>From: <b>${escFeed(r.fromName||'?')}</b></span><span>${r.ts?new Date(r.ts).toLocaleDateString():''}</span></div>${r.target?`<div style="font-size:11px;color:#6a90b8;margin-bottom:4px;">Target: ${escFeed(r.target)}</div>`:''}<div class="report-card-body">${escFeed(r.body||'')}</div><div class="report-card-actions"><button onclick="adminResolveReport('${rDoc.id}')" style="font-size:11px;padding:4px 10px;border-radius:8px;border-color:rgba(57,255,20,0.5);color:#39FF14;">✓ Resolve</button><button onclick="adminDeleteReport('${rDoc.id}')" style="font-size:11px;padding:4px 10px;border-radius:8px;border-color:rgba(255,51,102,0.4);color:#ff6680;">🗑 Dismiss</button></div>`;
+              const reasonLabel = REASON_LABELS[r.reason] || escFeed(r.reason||'');
+              const contentType = r.type ? `<span style="display:inline-block;padding:2px 7px;border-radius:10px;background:rgba(0,100,200,0.18);color:#5aabff;font-size:10px;margin-bottom:6px;">${escFeed(r.type)}</span>` : '';
+              const reasonBadge = reasonLabel ? `<span style="display:inline-block;padding:2px 7px;border-radius:10px;background:rgba(255,51,80,0.12);color:#ff6680;font-size:10px;margin-left:4px;">${escFeed(reasonLabel)}</span>` : '';
+              const bodyText   = r.body ? `<div class="report-card-body">${escFeed(r.body)}</div>` : '';
+              card.innerHTML=`<div class="report-card-header"><span>From: <b>${escFeed(r.fromName||'?')}</b></span><span>${r.ts?new Date(r.ts).toLocaleDateString():''}</span></div><div style="margin-bottom:6px;">${contentType}${reasonBadge}</div>${r.target?`<div style="font-size:11px;color:#6a90b8;margin-bottom:4px;">Target ID: <code style="font-size:10px;">${escFeed(r.target)}</code></div>`:''}<div class="report-card-actions"><button onclick="adminResolveReport('${rDoc.id}')" style="font-size:11px;padding:4px 10px;border-radius:8px;border-color:rgba(57,255,20,0.5);color:#39FF14;">✓ Resolve</button><button onclick="adminDeleteReport('${rDoc.id}')" style="font-size:11px;padding:4px 10px;border-radius:8px;border-color:rgba(255,51,102,0.4);color:#ff6680;">🗑 Dismiss</button></div>`;
               box.appendChild(card);
           });
       }catch(e){box.innerHTML=`<div class="empty-state" style="color:#ff5566;">${escFeed(e.message)}</div>`;}
@@ -32225,6 +32359,569 @@ function _tccConfirm(title, message) {
 window.ThemeEngine_publishPreview = () => window.ThemeEngine?.publishPreview();
 window.ThemeEngine_exitPreview    = () => window.ThemeEngine?.exitPreview();
 window.ThemeEngine_openEditor     = () => window.ThemeEngine?.openThemeEditor();
+
+/* ════════════════════════════════════════════════════════════════
+   SNX CONFIRM MODAL — Styled replacement for browser confirm()
+   Usage: const ok = await snxConfirm({ title, body, confirmText, danger })
+   ════════════════════════════════════════════════════════════════ */
+window.snxConfirm = function({ title = 'Confirm', body = '', confirmText = 'Confirm', danger = false } = {}) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('snxConfirmModal');
+    const titleEl = document.getElementById('snxConfirmTitle');
+    const bodyEl  = document.getElementById('snxConfirmBody');
+    const okBtn   = document.getElementById('snxConfirmOKBtn');
+    const cancelBtn = document.getElementById('snxConfirmCancelBtn');
+    if (!modal) { resolve(window.confirm(body || title)); return; }
+
+    if (titleEl) titleEl.textContent = title;
+    if (bodyEl)  bodyEl.textContent  = body;
+    if (okBtn) {
+      okBtn.textContent = confirmText;
+      okBtn.style.background = danger
+        ? 'linear-gradient(135deg,#660022,#cc0044)'
+        : 'linear-gradient(135deg,#003d99,#0066cc)';
+      okBtn.style.borderColor = danger ? 'rgba(255,51,80,0.6)' : 'rgba(0,174,239,0.55)';
+    }
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    const cleanup = (result) => {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+      okBtn.onclick = null; cancelBtn.onclick = null; modal.onclick = null;
+      resolve(result);
+    };
+
+    if (okBtn)     okBtn.onclick     = () => cleanup(true);
+    if (cancelBtn) cancelBtn.onclick = () => cleanup(false);
+    modal.onclick = e => { if (e.target === modal) cleanup(false); };
+    // Keyboard: Enter = confirm, Escape = cancel
+    const onKey = e => {
+      if (e.key === 'Enter')  { document.removeEventListener('keydown', onKey); cleanup(true); }
+      if (e.key === 'Escape') { document.removeEventListener('keydown', onKey); cleanup(false); }
+    };
+    document.addEventListener('keydown', onKey);
+  });
+};
+
+/* ════════════════════════════════════════════════════════════════
+   BLOCK / UNBLOCK SYSTEM
+   ════════════════════════════════════════════════════════════════ */
+
+// Cache of blocked UIDs for the current session
+window._snxBlockedUsers = [];
+
+// Load blocked users when settings page opens
+window.snxLoadBlockedUsers = async function() {
+  if (!window._snxCurrentUser) return;
+  const { db, doc, getDoc, updateDoc, arrayRemove } = window._snxFirestore || {};
+  if (!db) return;
+  try {
+    const snap = await getDoc(doc(db, 'users', window._snxCurrentUser.uid));
+    const blocked = snap.exists() ? (snap.data().blockedUsers || []) : [];
+    window._snxBlockedUsers = blocked;
+
+    const listEl  = document.getElementById('blockedUsersList');
+    const emptyEl = document.getElementById('blockedUsersEmpty');
+    if (!listEl) return;
+
+    if (!blocked.length) {
+      listEl.innerHTML = '';
+      if (emptyEl) emptyEl.style.display = 'block';
+      return;
+    }
+    if (emptyEl) emptyEl.style.display = 'none';
+
+    // Fetch display info for blocked users
+    const { getDocs, collection, query, where, limit } = window._snxFirestore || {};
+    listEl.innerHTML = '<div style="font-size:12px;color:#3a5a7a;padding:6px 0;">Loading…</div>';
+    const chunks = [];
+    for (let i = 0; i < blocked.length; i += 30) chunks.push(blocked.slice(i, i + 30));
+    const users = {};
+    for (const chunk of chunks) {
+      try {
+        const us = await getDocs(query(collection(db, 'users'), where('uid', 'in', chunk)));
+        us.forEach(d => { users[d.id] = d.data(); });
+      } catch(_) {}
+    }
+
+    listEl.innerHTML = '';
+    blocked.forEach(uid => {
+      const u = users[uid] || {};
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,51,102,0.2);';
+      const av = u.avatar ? `background-image:url('${u.avatar}');background-size:cover;background-position:center;` : '';
+      row.innerHTML = `
+        <div style="width:40px;height:40px;border-radius:50%;background:#0B1F3A;${av}border:2px solid rgba(255,51,102,0.4);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;color:#ff5577;">${!u.avatar ? (u.displayName||'?')[0].toUpperCase() : ''}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:#e0f0ff;">${u.displayName || uid.substring(0,8)}</div>
+          <div style="font-size:11px;color:#6a90b8;">@${u.username || ''}</div>
+        </div>
+        <button onclick="snxUnblockUser('${uid}')" style="font-size:11px;padding:5px 12px;border-radius:10px;border:1px solid rgba(57,255,20,0.45);color:#39FF14;background:rgba(57,255,20,0.06);cursor:pointer;white-space:nowrap;">✓ Unblock</button>`;
+      listEl.appendChild(row);
+    });
+  } catch(e) { console.warn('[SNX Block] loadBlockedUsers:', e.message); }
+};
+
+// Called from profile Block button
+window.snxToggleBlockUser = async function() {
+  const { db, doc, getDoc, updateDoc, arrayUnion, arrayRemove } = window._snxFirestore || {};
+  if (!db || !window._snxCurrentUser) return;
+  const targetUid = window.activeProfileUid;
+  if (!targetUid || targetUid === window._snxCurrentUser.uid) return;
+
+  const isBlocked = (window._snxBlockedUsers || []).includes(targetUid);
+
+  if (isBlocked) {
+    await snxUnblockUser(targetUid);
+    return;
+  }
+
+  const ok = await snxConfirm({
+    title: '🚫 Block User',
+    body: 'Blocked users cannot message you, follow you, or interact with your content. You can unblock them in Settings at any time.',
+    confirmText: 'Block',
+    danger: true
+  });
+  if (!ok) return;
+
+  try {
+    await updateDoc(doc(db, 'users', window._snxCurrentUser.uid), { blockedUsers: arrayUnion(targetUid) });
+    window._snxBlockedUsers = [...(window._snxBlockedUsers || []), targetUid];
+    // Also remove any existing follow/friend relationship
+    // (unfollow them silently; don't notify the blocked user)
+    const mySnap = await getDoc(doc(db, 'users', window._snxCurrentUser.uid));
+    const myData = mySnap.exists() ? mySnap.data() : {};
+    const theirSnap = await getDoc(doc(db, 'users', targetUid));
+    const theirData = theirSnap.exists() ? theirSnap.data() : {};
+    // Remove from following/followers
+    const myFollowing = (myData.following || []).filter(x => x !== targetUid);
+    const theirFollowers = (theirData.followers || []).filter(x => x !== window._snxCurrentUser.uid);
+    await updateDoc(doc(db, 'users', window._snxCurrentUser.uid), { following: myFollowing });
+    if (theirSnap.exists()) await updateDoc(doc(db, 'users', targetUid), { followers: theirFollowers });
+
+    // Update profile UI
+    const btn = document.getElementById('btnBlockUser');
+    if (btn) { btn.textContent = '✓ Blocked'; btn.style.borderColor = 'rgba(57,255,20,0.4)'; btn.style.color = '#39FF14'; }
+    const followBtn = document.getElementById('btnFollowAction');
+    if (followBtn) followBtn.style.display = 'none';
+    const msgBtn = document.getElementById('btnMessageAction');
+    if (msgBtn) msgBtn.style.display = 'none';
+    if (typeof toastNotification === 'function') toastNotification('🚫 User blocked.');
+  } catch(e) {
+    if (typeof toastNotification === 'function') toastNotification('Block failed: ' + e.message);
+  }
+};
+
+window.snxUnblockUser = async function(targetUid) {
+  const { db, doc, updateDoc, arrayRemove } = window._snxFirestore || {};
+  if (!db || !window._snxCurrentUser) return;
+  const ok = await snxConfirm({
+    title: '✓ Unblock User',
+    body: 'This user will be able to message and interact with you again. Previous follow relationships are NOT automatically restored.',
+    confirmText: 'Unblock'
+  });
+  if (!ok) return;
+  try {
+    await updateDoc(doc(db, 'users', window._snxCurrentUser.uid), { blockedUsers: arrayRemove(targetUid) });
+    window._snxBlockedUsers = (window._snxBlockedUsers || []).filter(u => u !== targetUid);
+    if (typeof toastNotification === 'function') toastNotification('✓ User unblocked.');
+    // Refresh the blocked users list if visible
+    if (document.getElementById('settingsPage')?.classList.contains('active')) {
+      snxLoadBlockedUsers();
+    }
+    // If we're on their profile, update block button
+    if (window.activeProfileUid === targetUid) {
+      const btn = document.getElementById('btnBlockUser');
+      if (btn) { btn.textContent = '🚫 Block'; btn.style.borderColor = 'rgba(255,51,102,0.4)'; btn.style.color = '#ff5577'; }
+    }
+  } catch(e) {
+    if (typeof toastNotification === 'function') toastNotification('Unblock failed: ' + e.message);
+  }
+};
+
+// Check if a UID is blocked — used before opening chat
+window.snxIsBlocked = function(uid) {
+  return (window._snxBlockedUsers || []).includes(uid);
+};
+
+/* ════════════════════════════════════════════════════════════════
+   REPORT MODAL SYSTEM
+   ════════════════════════════════════════════════════════════════ */
+
+window.snxOpenReportModal = function(type, targetId, targetUid, labelText) {
+  const modal    = document.getElementById('snxReportModal');
+  const labelEl  = document.getElementById('snxReportTargetLabel');
+  const typeEl   = document.getElementById('snxReportType');
+  const targetEl = document.getElementById('snxReportTargetId');
+  const uidEl    = document.getElementById('snxReportTargetUid');
+  const detailEl = document.getElementById('snxReportDetails');
+  if (!modal) return;
+  if (labelEl)  labelEl.textContent  = 'Reporting: ' + (labelText || type);
+  if (typeEl)   typeEl.value         = type;
+  if (targetEl) targetEl.value       = targetId || '';
+  if (uidEl)    uidEl.value          = targetUid || '';
+  if (detailEl) detailEl.value       = '';
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+};
+
+window.snxCloseReportModal = function() {
+  const modal = document.getElementById('snxReportModal');
+  if (modal) modal.style.display = 'none';
+  document.body.style.overflow = '';
+};
+
+window.snxSubmitReport = async function() {
+  const { db, addDoc, collection, serverTimestamp } = window._snxFirestore || {};
+  if (!db || !window._snxCurrentUser) { if (typeof toastNotification === 'function') toastNotification('You must be signed in to report.'); return; }
+
+  const type     = document.getElementById('snxReportType')?.value     || 'unknown';
+  const targetId = document.getElementById('snxReportTargetId')?.value || '';
+  const targetUid= document.getElementById('snxReportTargetUid')?.value|| '';
+  const reason   = document.getElementById('snxReportReason')?.value    || 'other';
+  const details  = document.getElementById('snxReportDetails')?.value.trim() || '';
+
+  const btn = document.getElementById('snxReportSubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+
+  try {
+    await addDoc(collection(db, 'reports'), {
+      type,
+      target: targetId,
+      targetUid,
+      reason,
+      body: details,
+      fromUid: window._snxCurrentUser.uid,
+      fromName: window._snxUserData?.displayName || window._snxCurrentUser.uid,
+      ts: Date.now(),
+      status: 'open'
+    });
+    snxCloseReportModal();
+    if (typeof toastNotification === 'function') toastNotification('🚨 Report submitted. Thank you.');
+  } catch(e) {
+    if (typeof toastNotification === 'function') toastNotification('Report failed: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🚨 Submit Report'; }
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   SAVED POSTS SYSTEM
+   ════════════════════════════════════════════════════════════════ */
+
+window.snxIsSaved = function(postId) {
+  return (window._snxSavedPosts || []).includes(postId);
+};
+
+window.snxToggleSavePost = async function(postId, btn) {
+  const { db, doc, updateDoc, arrayUnion, arrayRemove } = window._snxFirestore || {};
+  if (!db || !window._snxCurrentUser) { if (typeof toastNotification === 'function') toastNotification('Sign in to save posts.'); return; }
+
+  const isSaved = snxIsSaved(postId);
+  try {
+    if (isSaved) {
+      await updateDoc(doc(db, 'users', window._snxCurrentUser.uid), { savedPosts: arrayRemove(postId) });
+      window._snxSavedPosts = (window._snxSavedPosts || []).filter(p => p !== postId);
+      if (btn) { btn.style.color = ''; btn.style.borderColor = ''; btn.title = 'Save post'; }
+      if (typeof toastNotification === 'function') toastNotification('🔖 Post unsaved.');
+    } else {
+      await updateDoc(doc(db, 'users', window._snxCurrentUser.uid), { savedPosts: arrayUnion(postId) });
+      if (!window._snxSavedPosts) window._snxSavedPosts = [];
+      window._snxSavedPosts.push(postId);
+      if (btn) { btn.style.color = '#ffcc44'; btn.style.borderColor = 'rgba(255,200,50,0.55)'; btn.title = 'Unsave post'; }
+      if (typeof toastNotification === 'function') toastNotification('🔖 Post saved!');
+    }
+  } catch(e) {
+    if (typeof toastNotification === 'function') toastNotification('Save failed: ' + e.message);
+  }
+};
+
+// Load saved posts for Settings page
+window.snxLoadSavedPosts = async function() {
+  const { db, doc, getDoc, getDocs, collection, query, where, orderBy, limit } = window._snxFirestore || {};
+  if (!db || !window._snxCurrentUser) return;
+  try {
+    const snap = await getDoc(doc(db, 'users', window._snxCurrentUser.uid));
+    const savedIds = snap.exists() ? (snap.data().savedPosts || []) : [];
+    window._snxSavedPosts = savedIds;
+
+    const listEl  = document.getElementById('savedPostsList');
+    const emptyEl = document.getElementById('savedPostsEmpty');
+    if (!listEl) return;
+    if (!savedIds.length) {
+      listEl.innerHTML = '';
+      if (emptyEl) emptyEl.style.display = 'block';
+      return;
+    }
+    if (emptyEl) emptyEl.style.display = 'none';
+    listEl.innerHTML = '<div style="font-size:12px;color:#3a5a7a;padding:6px 0;">Loading…</div>';
+
+    // Fetch post data in batches
+    const postDocs = {};
+    for (let i = 0; i < savedIds.length; i += 10) {
+      const chunk = savedIds.slice(i, i + 10);
+      try {
+        const { getDocs: gd, collection: col, query: q, where: w } = window._snxFirestore || {};
+        const ps = await gd(q(col(db, 'posts'), w('__name__', 'in', chunk)));
+        ps.forEach(d => { postDocs[d.id] = d.data(); });
+      } catch(_) {}
+    }
+
+    listEl.innerHTML = '';
+    savedIds.forEach(id => {
+      const p = postDocs[id];
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,51,102,0.2);cursor:pointer;';
+      const preview = p ? (p.text || '').substring(0, 60) + (p.text && p.text.length > 60 ? '…' : '') : '(post deleted)';
+      const author  = p ? (p.authorName || p.displayName || '?') : '?';
+      row.innerHTML = `
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;color:#c8e8ff;">by ${author}</div>
+          <div style="font-size:12px;color:#6a90b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${preview}</div>
+        </div>
+        <button onclick="snxToggleSavePost('${id}',this);snxLoadSavedPosts();" style="font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid rgba(255,51,102,0.4);color:#ff5577;background:rgba(255,51,102,0.06);white-space:nowrap;">✕ Unsave</button>`;
+      row.querySelector('div[style]').onclick = () => snxOpenPost(id);
+      listEl.appendChild(row);
+    });
+  } catch(e) { console.warn('[SNX Save] loadSavedPosts:', e.message); }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   POST NAVIGATION — Open a specific post in the feed
+   ════════════════════════════════════════════════════════════════ */
+window.snxOpenPost = function(postId) {
+  if (!postId) return;
+  // Navigate to feed if not already there
+  if (typeof navTo === 'function') navTo('feed');
+  else if (typeof realmNavTo === 'function') realmNavTo('feed');
+  // Give the feed a moment to render, then scroll to the post
+  setTimeout(() => {
+    const el = document.getElementById('post-' + postId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Brief highlight animation
+      el.style.transition = 'box-shadow 0.3s';
+      el.style.boxShadow  = '0 0 24px rgba(0,174,239,0.65), 0 0 6px rgba(57,255,20,0.3)';
+      setTimeout(() => { el.style.boxShadow = ''; }, 2500);
+    }
+  }, 600);
+};
+
+/* ════════════════════════════════════════════════════════════════
+   POST EDITING
+   ════════════════════════════════════════════════════════════════ */
+window.snxEditPost = async function(postId) {
+  const { db, doc, getDoc, updateDoc } = window._snxFirestore || {};
+  if (!db || !window._snxCurrentUser) return;
+  try {
+    const snap = await getDoc(doc(db, 'posts', postId));
+    if (!snap.exists()) { if (typeof toastNotification === 'function') toastNotification('Post not found.'); return; }
+    const post = snap.data();
+    // Only owner can edit
+    if (post.uid !== window._snxCurrentUser.uid && post.authorUid !== window._snxCurrentUser.uid) {
+      if (typeof toastNotification === 'function') toastNotification('⛔ You can only edit your own posts.');
+      return;
+    }
+
+    // Build an inline edit UI inside the post box
+    const postEl = document.getElementById('post-' + postId);
+    if (!postEl) return;
+    const textEl = postEl.querySelector('p[style]');
+    if (!textEl) return;
+
+    const original = post.text || '';
+    textEl.innerHTML = '';
+    const textarea = document.createElement('textarea');
+    textarea.value = original;
+    textarea.style.cssText = 'width:100%;box-sizing:border-box;min-height:80px;resize:vertical;font-size:13px;padding:8px 10px;background:rgba(7,20,42,0.95);border:1px solid rgba(0,174,239,0.5);color:#fff;border-radius:8px;font-family:inherit;';
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = '💾 Save';
+    saveBtn.style.cssText = 'padding:7px 16px;border-radius:8px;background:linear-gradient(135deg,#003d99,#0066cc);border:1px solid rgba(0,174,239,0.6);color:#fff;font-weight:700;cursor:pointer;';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding:7px 14px;border-radius:8px;border:1px solid rgba(100,130,160,0.35);background:transparent;color:#8aaac8;cursor:pointer;';
+    btnRow.appendChild(saveBtn);
+    btnRow.appendChild(cancelBtn);
+    textEl.appendChild(textarea);
+    textEl.appendChild(btnRow);
+    textarea.focus();
+
+    cancelBtn.onclick = () => {
+      textEl.innerHTML = '';
+      if (typeof renderPostText === 'function') textEl.innerHTML = renderPostText(original);
+      else textEl.textContent = original;
+    };
+
+    saveBtn.onclick = async () => {
+      const newText = textarea.value.trim();
+      if (!newText) { if (typeof toastNotification === 'function') toastNotification('Post text cannot be empty.'); return; }
+      saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+      try {
+        await updateDoc(doc(db, 'posts', postId), { text: newText, edited: true, editedAt: Date.now() });
+        textEl.innerHTML = '';
+        if (typeof renderPostText === 'function') textEl.innerHTML = renderPostText(newText) + ' <span style="font-size:11px;color:#4a7a9a;">(edited)</span>';
+        else textEl.textContent = newText;
+        if (typeof toastNotification === 'function') toastNotification('✅ Post updated.');
+      } catch(e) {
+        if (typeof toastNotification === 'function') toastNotification('Edit failed: ' + e.message);
+        saveBtn.disabled = false; saveBtn.textContent = '💾 Save';
+      }
+    };
+  } catch(e) {
+    if (typeof toastNotification === 'function') toastNotification('Edit failed: ' + e.message);
+  }
+};
+
+/* ════════════════════════════════════════════════════════════════
+   SETTINGS PAGE HOOKS — Load dynamic data when settings opens
+   ════════════════════════════════════════════════════════════════ */
+
+// Extend existing navTo / realmNavTo to load dynamic settings data
+(function() {
+  const _orig = window.navTo || function(){};
+  window.navTo = function(pageId, ...args) {
+    const result = _orig.call(this, pageId, ...args);
+    if (pageId === 'settingsPage') {
+      setTimeout(() => {
+        if (typeof window.snxLoadBlockedUsers === 'function') snxLoadBlockedUsers();
+        if (typeof window.snxLoadSavedPosts   === 'function') snxLoadSavedPosts();
+      }, 200);
+    }
+    return result;
+  };
+})();
+
+// Also initialise saved-posts cache on auth ready
+if (window._snxAuthReadyQueue) {
+  window._snxAuthReadyQueue.push(async function() {
+    const { db, doc, getDoc } = window._snxFirestore || {};
+    if (!db || !window._snxCurrentUser) return;
+    try {
+      const snap = await getDoc(doc(db, 'users', window._snxCurrentUser.uid));
+      window._snxSavedPosts   = snap.exists() ? (snap.data().savedPosts   || []) : [];
+      window._snxBlockedUsers = snap.exists() ? (snap.data().blockedUsers || []) : [];
+    } catch(_) {}
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BLOCK GATE — check before sending DMs via inbox _ibSend
+   Expose a check that the inbox send function can call.
+   ════════════════════════════════════════════════════════════════ */
+// This is read by the inbox _ibSend function via window.snxIsBlocked
+// We re-expose it here in case the IIFE that defines _ibSend runs before
+// this file's late-loading code. The function was already declared above.
+
+/* ════════════════════════════════════════════════════════════════
+   ANDROID BACK BUTTON / BROWSER BACK — MODAL & OVERLAY INTERCEPT
+   Push a history state whenever a modal/overlay opens; intercept
+   the popstate event to close it instead of leaving the page.
+   ════════════════════════════════════════════════════════════════ */
+(function() {
+  'use strict';
+
+  // Track whether we pushed a modal history entry so we can pop it cleanly
+  let _snxModalHistoryPushed = false;
+
+  // Call this when any modal opens to push a sentinel history state
+  window.snxModalHistoryPush = function(label) {
+    if (_snxModalHistoryPushed) return; // already tracked
+    history.pushState({ snxModal: true, label: label || 'modal' }, '');
+    _snxModalHistoryPushed = true;
+  };
+
+  // Call when a modal closes without a back-button press
+  window.snxModalHistoryPop = function() {
+    if (!_snxModalHistoryPushed) return;
+    _snxModalHistoryPushed = false;
+    // history.back() would navigate away; only go back if our state is current
+    if (history.state && history.state.snxModal) {
+      history.back();
+    }
+  };
+
+  // Order of priority for back-button modal dismissal:
+  // 1. snxConfirmModal (highest z-index — action confirmation)
+  // 2. snxReportModal
+  // 3. ipcModal (floating chat)
+  // 4. any other visible overlay
+  window.addEventListener('popstate', function(e) {
+    _snxModalHistoryPushed = false; // state was already popped by the browser
+
+    // 1. SNX Confirm modal
+    const confirmModal = document.getElementById('snxConfirmModal');
+    if (confirmModal && confirmModal.style.display !== 'none') {
+      const cancelBtn = document.getElementById('snxConfirmCancelBtn');
+      if (cancelBtn) cancelBtn.click();
+      return;
+    }
+
+    // 2. SNX Report modal
+    const reportModal = document.getElementById('snxReportModal');
+    if (reportModal && reportModal.style.display !== 'none') {
+      if (typeof window.snxCloseReportModal === 'function') window.snxCloseReportModal();
+      return;
+    }
+
+    // 3. ipcModal floating chat overlay
+    const ipcModal = document.getElementById('ipcModal');
+    if (ipcModal && ipcModal.classList.contains('open')) {
+      if (typeof window.ipcModalClose === 'function') window.ipcModalClose();
+      return;
+    }
+
+    // 4. Re-auth modal
+    const reauthModal = document.getElementById('reauthModal');
+    if (reauthModal && reauthModal.style.display !== 'none') {
+      reauthModal.style.display = 'none';
+      document.body.style.overflow = '';
+      return;
+    }
+
+    // 5. If nothing else matched, let normal navigation happen
+    // (the browser already popped history so we just do nothing)
+  });
+
+  // Auto-push history when modals open so back button works
+  // Patch snxConfirm to push/pop history
+  const _origSnxConfirm = window.snxConfirm;
+  if (typeof _origSnxConfirm === 'function') {
+    window.snxConfirm = function(...args) {
+      snxModalHistoryPush('confirm');
+      return _origSnxConfirm(...args).finally(() => {
+        _snxModalHistoryPushed = false;
+      });
+    };
+  }
+
+  // Patch snxOpenReportModal / snxCloseReportModal
+  const _origOpenReport = window.snxOpenReportModal;
+  const _origCloseReport = window.snxCloseReportModal;
+  if (typeof _origOpenReport === 'function') {
+    window.snxOpenReportModal = function(...args) {
+      _origOpenReport(...args);
+      snxModalHistoryPush('report');
+    };
+  }
+  if (typeof _origCloseReport === 'function') {
+    window.snxCloseReportModal = function(...args) {
+      _snxModalHistoryPushed = false;
+      _origCloseReport(...args);
+    };
+  }
+
+  // Patch ipcModalClose to not double-pop
+  const _origIpcClose = window.ipcModalClose;
+  if (typeof _origIpcClose === 'function') {
+    window.ipcModalClose = function(...args) {
+      _snxModalHistoryPushed = false;
+      _origIpcClose(...args);
+    };
+  }
+})();
 
 </script>
 
