@@ -1629,19 +1629,73 @@ async function _loadHistory() {
 }
 
 /* ── Artwork (broadcast cover) ── */
+// Uploads the chosen image to Cloudflare R2 and stores the permanent URL.
+// Falls back to a local blob URL for the preview while the upload is in flight.
+const _R2_UPLOAD_WORKER = 'https://yellow-term-11e6.nthntjrn.workers.dev';
 window.csrLoadArtwork = function(evt) {
   const file = evt.target.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    _artworkDataUrl = e.target.result;
-    const img = _el('csrArtworkImg');
-    if (img) img.src = _artworkDataUrl;
-    _show('csrArtworkPreview', true);
-    const btn = _el('csrArtworkBtn');
+  if (!file || !file.type.startsWith('image/')) return;
+
+  // Show local preview immediately while we upload to R2
+  const blobUrl = URL.createObjectURL(file);
+  const img = _el('csrArtworkImg');
+  if (img) img.src = blobUrl;
+  _show('csrArtworkPreview', true);
+  const btn = _el('csrArtworkBtn');
+  if (btn) btn.textContent = '🖼 Uploading…';
+
+  // Require auth
+  if (!_user || typeof _user.getIdToken !== 'function') {
+    _artworkDataUrl = blobUrl; // fallback — no permanent URL
     if (btn) btn.textContent = '🖼 Change Image';
-  };
-  reader.readAsDataURL(file);
+    return;
+  }
+
+  _user.getIdToken(true).then(function(idToken) {
+    const uid = _user.uid;
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
+    const r2Key = 'cloud-stream/' + uid + '/artwork/' + Date.now() + '_' + safeName;
+
+    const form = new FormData();
+    form.append('file', file, file.name);
+    form.append('path', r2Key);
+
+    const xhr = new XMLHttpRequest();
+    xhr.timeout = 3 * 60 * 1000; // 3 min
+
+    xhr.onload = function() {
+      URL.revokeObjectURL(blobUrl);
+      if (xhr.status === 200) {
+        try {
+          const res = JSON.parse(xhr.responseText);
+          if (res.url) {
+            _artworkDataUrl = res.url; // permanent R2 URL
+            if (img) img.src = res.url;
+            if (btn) btn.textContent = '🖼 Change Image';
+            return;
+          }
+        } catch(_) {}
+      }
+      // Upload failed — keep the blob url as a local fallback
+      console.warn('[CloudStream] Artwork R2 upload failed. HTTP', xhr.status, xhr.responseText);
+      _artworkDataUrl = ''; // do not store data URL in Firestore
+      if (btn) btn.textContent = '🖼 Retry Image';
+    };
+    xhr.onerror = xhr.ontimeout = function() {
+      URL.revokeObjectURL(blobUrl);
+      console.warn('[CloudStream] Artwork upload network error.');
+      _artworkDataUrl = '';
+      if (btn) btn.textContent = '🖼 Retry Image';
+    };
+
+    xhr.open('POST', _R2_UPLOAD_WORKER + '/');
+    xhr.setRequestHeader('Authorization', 'Bearer ' + idToken);
+    xhr.send(form);
+  }).catch(function(e) {
+    console.warn('[CloudStream] Artwork upload auth error:', e.message);
+    _artworkDataUrl = '';
+    if (btn) btn.textContent = '🖼 Change Image';
+  });
 };
 window.csrRemoveArtwork = function() {
   _artworkDataUrl = null;

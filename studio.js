@@ -3766,6 +3766,9 @@ function _uploadOneTrack(job) {
 
   _state.user.getIdToken(true).then(function(idToken) {
     var xhr = new XMLHttpRequest();
+    // Timeout: 10 minutes for large audio files on slow mobile connections.
+    xhr.timeout = 10 * 60 * 1000;
+    // POST to the generic upload endpoint which now honours the 'path' FormData field.
     xhr.open('POST', UPLOAD_WORKER_URL + '/');
     xhr.setRequestHeader('Authorization', 'Bearer ' + idToken);
 
@@ -3790,7 +3793,15 @@ function _uploadOneTrack(job) {
         if (existing === -1) _music.tracks.unshift(Object.assign({}, trackDoc));
         else _music.tracks[existing] = Object.assign({}, trackDoc);
       } else {
-        _handleUploadFail(job, 'HTTP ' + xhr.status);
+        var errMsg = 'HTTP ' + xhr.status;
+        try {
+          var errBody = JSON.parse(xhr.responseText);
+          if (errBody && errBody.error) errMsg = errBody.error;
+        } catch(_) {}
+        if (xhr.status === 401) errMsg = 'Session expired — please sign in again.';
+        else if (xhr.status === 413) errMsg = 'File too large (' + Math.round(job.file.size / 1024 / 1024) + ' MB).';
+        else if (xhr.status === 415) errMsg = 'File format not supported.';
+        _handleUploadFail(job, errMsg);
       }
       _renderUploadDashboard();
       _renderLibrary();
@@ -3800,7 +3811,18 @@ function _uploadOneTrack(job) {
 
     xhr.onerror = function() {
       _music.uploadActive--;
-      _handleUploadFail(job, 'Network error');
+      // xhr.status=0 is a network drop or CORS block, not a server error.
+      console.error('[SNX Studio] XHR upload error. Target:', UPLOAD_WORKER_URL,
+        '| File:', job.file.name, '| Status:', xhr.status,
+        xhr.status === 0 ? '| Likely: mobile network handoff, CORS, or DNS.' : '');
+      _handleUploadFail(job, xhr.status === 0 ? 'Upload interrupted — will retry' : 'Network error (' + xhr.status + ')');
+      _processUploadQueue();
+    };
+
+    xhr.ontimeout = function() {
+      _music.uploadActive--;
+      console.error('[SNX Studio] XHR upload timed out. File:', job.file.name, '(', Math.round(job.file.size / 1024 / 1024), 'MB)');
+      _handleUploadFail(job, 'Upload timed out — connection too slow');
       _processUploadQueue();
     };
 

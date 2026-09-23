@@ -56,6 +56,8 @@
 <link rel="stylesheet" href="cloud-stream.css">
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library / Upload / Playlists / Queue ── -->
 <link rel="stylesheet" href="studio.css">
+<!-- ── Nexus Global Theme Engine ── -->
+<link rel="stylesheet" href="theme-engine.css">
 
 <!-- ── Preconnect to Firebase + R2 CDN so first load is faster ── -->
 <link rel="preconnect" href="https://www.gstatic.com">
@@ -8732,6 +8734,7 @@ body.arcade-fs-ios body::after { display:none !important; }
     <button class="admin-tab" onclick="switchAdminTab('gifts');snxgAdminLoadGifts();snxgAdminLoadCoinStats()">🎁 Gifts &amp; Coins</button>
     <button class="admin-tab" onclick="switchAdminTab('cointesting');snxgLoadCoinTestingTab()">🪙 Coin Testing</button>
     <button class="admin-tab" onclick="switchAdminTab('cloudstreams');snxAdminLoadCloudStreams()">☁️ CloudStreams</button>
+    <button class="admin-tab" onclick="switchAdminTab('themes');snxTCCOpen()">🎨 Theme Engine</button>
 </div>
 
 <!-- ══════════════════════════════════
@@ -9861,6 +9864,334 @@ body.arcade-fs-ios body::after { display:none !important; }
     </div>
 </div><!-- end adminTab-cloudstreams -->
 
+<!-- ══════════════════════════════════
+     TAB: NEXUS GLOBAL THEME ENGINE
+     Founder-only — ThemeEngine module required
+══════════════════════════════════ -->
+<div class="admin-tab-content" id="adminTab-themes">
+
+<div style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+  <div>
+    <h3 style="margin:0;font-size:15px;font-weight:800;color:#00d4ff;text-transform:uppercase;letter-spacing:0.8px;">🎨 Nexus Theme Control Center</h3>
+    <p style="margin:4px 0 0;font-size:12px;color:#6a90b8;">Control the visual identity of Shadow Nexus Social for every user.</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="tcc-btn tcc-btn-save"    onclick="snxTCCSaveDraft()">💾 Save Draft</button>
+    <button class="tcc-btn tcc-btn-preview" onclick="snxTCCPreview()">👁 Preview</button>
+    <button class="tcc-btn tcc-btn-publish" onclick="snxTCCPublish()">🌐 Publish Globally</button>
+  </div>
+</div>
+
+<!-- Current Active Theme Header -->
+<div class="tcc-panel" style="margin-bottom:14px;">
+  <div class="tcc-current-header">
+    <div class="tcc-current-swatch" id="tccCurrentSwatch" style="background:#0B1F3A;"></div>
+    <div class="tcc-current-info">
+      <div class="tcc-current-name" id="tccCurrentName">Shadow Nexus Default</div>
+      <div class="tcc-current-meta" id="tccCurrentMeta">Published — Loading…</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <span class="tcc-live-badge">● LIVE</span>
+      <button class="tcc-btn tcc-btn-reset" onclick="snxTCCEmergencyReset()">⚠️ Restore Default</button>
+    </div>
+  </div>
+</div>
+
+<!-- Main two-column layout -->
+<div class="tcc-layout">
+
+  <!-- LEFT: Theme library / navigation -->
+  <div class="tcc-sidebar">
+
+    <!-- Prebuilt Presets -->
+    <div class="tcc-sidebar-section">
+      <h4>⚡ Prebuilt Themes</h4>
+      <div id="tccPresetList"></div>
+    </div>
+
+    <!-- Custom Themes -->
+    <div class="tcc-sidebar-section">
+      <h4>🎨 My Custom Themes <button onclick="snxTCCNewTheme()" style="float:right;background:rgba(0,174,239,0.15);border:1px solid rgba(0,174,239,0.30);color:#00AEEF;border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer;">+ New</button></h4>
+      <div id="tccCustomThemeList"><div style="padding:12px 14px;font-size:12px;color:#6a90b8;">Loading themes…</div></div>
+    </div>
+
+    <!-- Schedule Quick View -->
+    <div class="tcc-sidebar-section">
+      <h4>📅 Schedules</h4>
+      <div id="tccScheduleList"><div style="padding:10px 14px;font-size:11px;color:#6a90b8;">No active schedules</div></div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: Editor panels -->
+  <div class="tcc-main">
+
+    <!-- Sub-tab navigation -->
+    <div class="tcc-panel" style="overflow:hidden;">
+      <div class="tcc-subtabs" id="tccSubTabs">
+        <button class="tcc-subtab active" onclick="snxTCCSwitchSubTab('colors')">🎨 Colors</button>
+        <button class="tcc-subtab" onclick="snxTCCSwitchSubTab('background')">🖼 Background</button>
+        <button class="tcc-subtab" onclick="snxTCCSwitchSubTab('effects')">✨ Effects</button>
+        <button class="tcc-subtab" onclick="snxTCCSwitchSubTab('banner')">📢 Banner</button>
+        <button class="tcc-subtab" onclick="snxTCCSwitchSubTab('schedule')">📅 Schedule</button>
+        <button class="tcc-subtab" onclick="snxTCCSwitchSubTab('sections')">📑 Sections</button>
+        <button class="tcc-subtab" onclick="snxTCCSwitchSubTab('info')">ℹ️ Info</button>
+        <button class="tcc-subtab" onclick="snxTCCSwitchSubTab('history')">📜 History</button>
+      </div>
+
+      <!-- SUB-TAB: COLORS -->
+      <div class="admin-tab-content active tcc-subpanel" id="tccSub-colors">
+        <div class="tcc-panel-body">
+          <div class="tcc-color-grid" id="tccColorGrid">
+            <!-- Populated by JS -->
+          </div>
+          <div id="tccContrastWarn" style="display:none;" class="tcc-a11y-warn">
+            ⚠️ <span id="tccContrastWarnText">Low contrast detected — text may be difficult to read.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-TAB: BACKGROUND -->
+      <div class="admin-tab-content tcc-subpanel" id="tccSub-background">
+        <div class="tcc-panel-body">
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="tcc-color-row">
+              <div class="tcc-color-label">Background Type</div>
+              <select class="tcc-select" id="tccBgType" onchange="snxTCCBgTypeChange(this.value)">
+                <option value="solid">Solid Color</option>
+                <option value="gradient">Gradient</option>
+                <option value="image">Image</option>
+              </select>
+            </div>
+            <div id="tccBgSolidRow" class="tcc-color-row">
+              <div class="tcc-color-label">Background Color</div>
+              <div class="tcc-color-input-row">
+                <div class="tcc-color-swatch-btn" id="tccBgColorSwatch" style="position:relative;background:#0B1F3A;">
+                  <input type="color" value="#0B1F3A" oninput="snxTCCColorPick('--theme-background',this.value)" onchange="snxTCCColorChange('--theme-background',this.value)">
+                </div>
+                <input type="text" class="tcc-hex-input" id="tccHex---theme-background" value="#0B1F3A" placeholder="#0B1F3A" oninput="snxTCCHexInput('--theme-background',this.value)">
+              </div>
+            </div>
+            <div id="tccBgGradRow" class="tcc-color-row" style="display:none;">
+              <div class="tcc-color-label">Gradient Start</div>
+              <div class="tcc-color-input-row">
+                <div class="tcc-color-swatch-btn" style="position:relative;background:#0B1F3A;">
+                  <input type="color" value="#0B1F3A" id="tccGradStart" onchange="snxTCCGradientChange()">
+                </div>
+                <input type="text" class="tcc-hex-input" id="tccGradStartHex" value="#0B1F3A" placeholder="#0B1F3A">
+              </div>
+              <div class="tcc-color-label" style="margin-top:8px;">Gradient End</div>
+              <div class="tcc-color-input-row">
+                <div class="tcc-color-swatch-btn" style="position:relative;background:#071428;">
+                  <input type="color" value="#071428" id="tccGradEnd" onchange="snxTCCGradientChange()">
+                </div>
+                <input type="text" class="tcc-hex-input" id="tccGradEndHex" value="#071428" placeholder="#071428">
+              </div>
+            </div>
+            <div id="tccBgImgRow" class="tcc-color-row" style="display:none;">
+              <div class="tcc-color-label">Upload Background Image</div>
+              <label class="tcc-upload-zone" id="tccBgUploadZone">
+                <input type="file" id="tccBgFile" accept="image/*" onchange="snxTCCBgUpload(this)">
+                <div>📁 Click to upload or drag image here</div>
+                <div style="font-size:11px;margin-top:4px;color:#4a6a8a;">JPG, PNG, WebP — max 5 MB recommended</div>
+              </label>
+              <div id="tccBgUploadProgress" style="display:none;margin-top:8px;">
+                <div style="height:4px;background:rgba(0,174,239,0.15);border-radius:2px;overflow:hidden;">
+                  <div id="tccBgProgressBar" style="height:100%;width:0%;background:#00AEEF;transition:width 0.3s;border-radius:2px;"></div>
+                </div>
+              </div>
+              <div id="tccBgPreviewUrl" style="margin-top:8px;font-size:11px;color:#6a90b8;word-break:break-all;"></div>
+            </div>
+            <!-- Image controls -->
+            <div id="tccBgImgControls" style="display:none;flex-direction:column;gap:10px;">
+              <div class="tcc-color-row">
+                <div class="tcc-color-label">Opacity <span id="tccBgOpacityVal">1.0</span></div>
+                <input type="range" class="tcc-range" min="0.1" max="1" step="0.05" value="1" oninput="snxTCCBgParam('--theme-bg-opacity',this.value,'tccBgOpacityVal')">
+              </div>
+              <div class="tcc-color-row">
+                <div class="tcc-color-label">Blur <span id="tccBgBlurVal">0px</span></div>
+                <input type="range" class="tcc-range" min="0" max="20" step="1" value="0" oninput="snxTCCBgParam('--theme-bg-blur',this.value+'px','tccBgBlurVal',v=>v+'px')">
+              </div>
+              <div class="tcc-color-row">
+                <div class="tcc-color-label">Brightness <span id="tccBgBrightVal">1.0</span></div>
+                <input type="range" class="tcc-range" min="0.2" max="1.5" step="0.05" value="1" oninput="snxTCCBgParam('--theme-bg-brightness',this.value,'tccBgBrightVal')">
+              </div>
+              <div class="tcc-color-row">
+                <div class="tcc-color-label">Overlay Darkness <span id="tccBgOverlayVal">0</span></div>
+                <input type="range" class="tcc-range" min="0" max="0.85" step="0.05" value="0" oninput="snxTCCBgOverlay(this.value)">
+              </div>
+              <div class="tcc-color-row">
+                <div class="tcc-color-label">Size</div>
+                <select class="tcc-select" onchange="document.documentElement.style.setProperty('--theme-bg-size',this.value);snxTCCMarkDirty()">
+                  <option value="cover">Cover</option>
+                  <option value="contain">Contain</option>
+                  <option value="100% 100%">Stretch</option>
+                </select>
+              </div>
+              <div class="tcc-color-row">
+                <div class="tcc-color-label">Attachment</div>
+                <select class="tcc-select" onchange="document.documentElement.style.setProperty('--theme-bg-attachment',this.value);snxTCCMarkDirty()">
+                  <option value="scroll">Scroll</option>
+                  <option value="fixed">Fixed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-TAB: EFFECTS -->
+      <div class="admin-tab-content tcc-subpanel" id="tccSub-effects">
+        <div class="tcc-panel-body">
+          <p style="font-size:12px;color:#6a90b8;margin:0 0 14px;">Select optional visual effects. All effects respect reduced-motion preferences.</p>
+          <div class="tcc-effects-grid" id="tccEffectsGrid">
+            <!-- Populated by JS -->
+          </div>
+          <div style="margin-top:14px;">
+            <div class="tcc-color-row">
+              <div class="tcc-color-label">Effect Intensity</div>
+              <input type="range" class="tcc-range" id="tccEffectIntensity" min="1" max="5" step="1" value="3">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-TAB: BANNER -->
+      <div class="admin-tab-content tcc-subpanel" id="tccSub-banner">
+        <div class="tcc-panel-body">
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div class="tcc-color-label">Enable Banner</div>
+              <label class="notif-toggle-wrap"><input type="checkbox" id="tccBannerEnabled" class="notif-toggle-cb" onchange="snxTCCBannerToggle(this.checked)"><span class="notif-toggle-slider"></span></label>
+            </div>
+            <div id="tccBannerEditArea" style="display:none;flex-direction:column;gap:12px;">
+              <div class="tcc-banner-preview" id="tccBannerPreviewText">🎃 HAPPY HALLOWEEN LEGENDS</div>
+              <div class="tcc-color-row">
+                <div class="tcc-color-label">Banner Text</div>
+                <input type="text" class="tcc-input" id="tccBannerText" placeholder="🎃 HAPPY HALLOWEEN LEGENDS" oninput="document.getElementById('tccBannerPreviewText').textContent=this.value;snxTCCMarkDirty()">
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div class="tcc-color-label">Enable Countdown</div>
+                <label class="notif-toggle-wrap"><input type="checkbox" id="tccCountdownEnabled" class="notif-toggle-cb" onchange="snxTCCCountdownToggle(this.checked)"><span class="notif-toggle-slider"></span></label>
+              </div>
+              <div id="tccCountdownArea" style="display:none;flex-direction:column;gap:10px;">
+                <div class="tcc-color-row">
+                  <div class="tcc-color-label">Countdown Target</div>
+                  <input type="datetime-local" class="tcc-sched-input" id="tccCountdownTarget" onchange="snxTCCMarkDirty()">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-TAB: SCHEDULE -->
+      <div class="admin-tab-content tcc-subpanel" id="tccSub-schedule">
+        <div class="tcc-panel-body">
+          <p style="font-size:12px;color:#6a90b8;margin:0 0 14px;">Schedule a theme to activate automatically for a time range. The previous theme restores when the schedule ends.</p>
+          <div class="tcc-color-row">
+            <div class="tcc-color-label">Theme to Schedule</div>
+            <select class="tcc-select" id="tccSchedThemeSelect">
+              <option value="">Select a theme…</option>
+            </select>
+          </div>
+          <div class="tcc-sched-row">
+            <div class="tcc-sched-field">
+              <div class="tcc-sched-label">Start Date &amp; Time</div>
+              <input type="datetime-local" class="tcc-sched-input" id="tccSchedStart">
+            </div>
+            <div class="tcc-sched-field">
+              <div class="tcc-sched-label">End Date &amp; Time</div>
+              <input type="datetime-local" class="tcc-sched-input" id="tccSchedEnd">
+            </div>
+          </div>
+          <div id="tccSchedConflictWarn" style="display:none;" class="tcc-conflict-warn">
+            ⛔ <span id="tccSchedConflictText">Schedule conflict detected.</span>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:8px;">
+            <button class="tcc-btn tcc-btn-sched" onclick="snxTCCAddSchedule()">📅 Add Schedule</button>
+          </div>
+          <div style="margin-top:16px;">
+            <div class="tcc-color-label" style="margin-bottom:8px;">Current Schedules</div>
+            <div id="tccScheduleFull"><div style="font-size:12px;color:#6a90b8;">No schedules configured.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-TAB: SECTIONS -->
+      <div class="admin-tab-content tcc-subpanel" id="tccSub-sections">
+        <div class="tcc-panel-body">
+          <p style="font-size:12px;color:#6a90b8;margin:0 0 14px;">Override theme for specific sections. The global theme applies to everything else. These are cosmetic overrides only.</p>
+          <div id="tccSectionOverrides" style="display:flex;flex-direction:column;gap:10px;">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-TAB: THEME INFO -->
+      <div class="admin-tab-content tcc-subpanel" id="tccSub-info">
+        <div class="tcc-panel-body">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div class="tcc-color-row">
+              <div class="tcc-color-label">Theme Name</div>
+              <input type="text" class="tcc-input" id="tccThemeName" placeholder="My Custom Theme" oninput="snxTCCMarkDirty()">
+            </div>
+            <div class="tcc-color-row">
+              <div class="tcc-color-label">Description</div>
+              <textarea class="tcc-input" id="tccThemeDesc" rows="3" placeholder="Describe this theme…" oninput="snxTCCMarkDirty()" style="resize:vertical;"></textarea>
+            </div>
+            <div class="tcc-color-row">
+              <div class="tcc-color-label">Border Radius</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <input type="range" class="tcc-range" min="0" max="24" step="1" value="10" oninput="snxTCCRadiusChange(this.value)">
+                <span id="tccRadiusVal" style="font-size:12px;color:#b8d4f0;min-width:36px;">10px</span>
+              </div>
+            </div>
+            <div class="tcc-color-row">
+              <div class="tcc-color-label">Font Family</div>
+              <select class="tcc-select" id="tccFontSelect" onchange="snxTCCFontChange(this.value)">
+                <option value="'Segoe UI', Arial, sans-serif">Segoe UI (Default)</option>
+                <option value="'Inter', sans-serif">Inter</option>
+                <option value="'Roboto', sans-serif">Roboto</option>
+                <option value="'Orbitron', sans-serif">Orbitron (Cyber)</option>
+                <option value="'Courier New', monospace">Courier (Terminal)</option>
+                <option value="Georgia, serif">Georgia</option>
+              </select>
+            </div>
+            <div class="tcc-color-row">
+              <div class="tcc-color-label">Birthday Person / Event Name</div>
+              <input type="text" class="tcc-input" id="tccEventName" placeholder="e.g. HAPPY BIRTHDAY CHRIS" oninput="snxTCCMarkDirty()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-TAB: HISTORY -->
+      <div class="admin-tab-content tcc-subpanel" id="tccSub-history">
+        <div class="tcc-panel-body">
+          <div id="tccHistoryContent">
+            <div style="font-size:12px;color:#6a90b8;text-align:center;padding:20px 0;">Loading history…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom action bar -->
+      <div class="tcc-action-bar">
+        <button class="tcc-btn tcc-btn-save"    onclick="snxTCCSaveDraft()">💾 Save Draft</button>
+        <button class="tcc-btn tcc-btn-preview" onclick="snxTCCPreview()">👁 Private Preview</button>
+        <button class="tcc-btn tcc-btn-publish" onclick="snxTCCPublish()">🌐 Publish Globally</button>
+        <button class="tcc-btn tcc-btn-dupe"    onclick="snxTCCDuplicate()">📋 Duplicate</button>
+        <button class="tcc-btn tcc-btn-danger"  onclick="snxTCCDeleteTheme()">🗑️ Delete</button>
+        <button class="tcc-btn tcc-btn-sched"   onclick="snxTCCSwitchSubTab('schedule')">📅 Schedule</button>
+        <button class="tcc-btn" style="background:rgba(255,80,80,0.12);color:#ff6677;border:1px solid rgba(255,80,80,0.35);" onclick="snxTCCEmergencyReset()">⚠️ Restore Default</button>
+      </div>
+    </div>
+
+  </div><!-- end tcc-main -->
+</div><!-- end tcc-layout -->
+
+</div><!-- end adminTab-themes -->
+
 </div><!-- end adminPage -->
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -10792,6 +11123,7 @@ body.arcade-fs-ios body::after { display:none !important; }
   import { getFirestore, doc, setDoc, getDoc, getDocFromCache, getDocFromServer, updateDoc, deleteDoc, collection, addDoc, query, orderBy, limit, onSnapshot, arrayUnion, arrayRemove, runTransaction, where, getDocs, writeBatch, increment, serverTimestamp, enableNetwork, disableNetwork } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-messaging.js";
   import { getDatabase as _getRtdb, ref as _rtdbRef, set as _rtdbSet, remove as _rtdbRemove, get as _rtdbGet, onDisconnect as _rtdbOnDisconnect, serverTimestamp as _rtdbServerTimestamp, onValue as _rtdbOnValue, off as _rtdbOff } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+  import { getStorage, ref as _storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyByZRmp6R9HY17T2_WdJUFWeeaLNOP6y2Y",
@@ -10807,6 +11139,7 @@ body.arcade-fs-ios body::after { display:none !important; }
   const auth = getAuth(app);
   const db = getFirestore(app);
   const _presenceRtdb = _getRtdb(app);
+  const _storage = getStorage(app);
 
   // ── Ensure auth token is always persisted in localStorage (survives tab/app close) ──
   setPersistence(auth, browserLocalPersistence).catch(() => {});
@@ -21557,23 +21890,29 @@ window._showRolePanels = function() {
 window._showFounderUI = window._showRolePanels;
 
 /* ══════════════════════════════════════════════════════════════
-   R2 UPLOAD SYSTEM  (Firebase Auth + Cloudflare R2 + Firestore)
+   MEDIA UPLOAD SYSTEM  (Cloudflare R2 via Worker)
    ══════════════════════════════════════════════════════════════
    Architecture:
-     1. Validate file type and size client-side.
-     2. Compress images before upload.
-     3. Small files (≤ 20 MB): single POST → /  (progress via XHR).
-        Large files (> 20 MB): chunked POST → /upload-chunk per 10 MB slice,
-                                then POST → /upload-complete to assemble.
-        Both paths return { url, key }.
-     4. After every successful upload save metadata to Firestore
-        /mediaFiles/{autoId} so the spec's metadata requirements are met.
-     5. Return the public Cloudflare R2 URL (string) — existing callers unchanged.
+     1. Validate file MIME type and size client-side.
+     2. Compress images before upload (canvas → WebP/JPEG).
+     3. Obtain a fresh Firebase ID token.
+     4. Upload to Cloudflare R2 via the upload Worker:
+          ≤ 20 MB  → single POST / (XHR with progress)
+          > 20 MB  → chunked: POST /upload-chunk × N, POST /upload-complete
+        Mobile-safe: each chunk is retried up to 3 times on failure.
+     5. After a successful upload save metadata to Firestore
+        /mediaFiles/{autoId}.
+     6. Return the permanent R2 CDN URL (string) — all existing
+        callers (posts, inbox, stories, profiles) unchanged.
    ══════════════════════════════════════════════════════════════ */
+
+// Cloudflare Worker / R2 CDN base URL
 const R2_UPLOAD_URL = 'https://yellow-term-11e6.nthntjrn.workers.dev';
 
-// Chunk size for resumable uploads — 10 MB per chunk
-const _R2_CHUNK_SIZE = 10 * 1024 * 1024;
+// Chunk size for chunked uploads (> 20 MB files).
+// Must stay ≤ 50 MB (Worker enforces this limit per chunk).
+// 10 MB gives good granularity for mobile retry without too many round-trips.
+const _R2_CHUNK_SIZE = 10 * 1024 * 1024; // 10 MB per chunk
 
 /**
  * Compress an image File to JPEG/WebP before upload.
@@ -21665,43 +22004,13 @@ function _saveMediaFileMeta(meta) {
     }
 }
 
-/**
- * Get a fresh Firebase ID token for the current user.
- *
- * Uses auth.currentUser (Firebase Auth SDK) as the authoritative source so
- * uploads are always gated on a real, live Firebase session — not on a stale
- * window._snxCurrentUser reference that may have survived a sign-out.
- *
- * Error messages are intentionally user-friendly without exposing credentials.
- * Throws if no user is signed in or if token refresh fails.
- */
+/** @deprecated The R2 token helper is no longer used for new uploads.
+ *  Kept to avoid breaking any external callers that imported it. */
 async function _r2GetIdToken() {
-    // Prefer the live Firebase Auth SDK user over the cached window reference.
-    // auth is the Firebase Auth instance imported at page initialisation.
-    const liveUser = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser
-                   : window._snxCurrentUser || null;
-
-    if (!liveUser) {
-        throw new Error('No authenticated Firebase session. Please sign in again.');
-    }
-    if (typeof liveUser.getIdToken !== 'function') {
-        throw new Error('Your login session is invalid. Please sign in again.');
-    }
-
-    try {
-        // forceRefresh: true — always obtain a fresh token, never use an expired cached one.
-        return await liveUser.getIdToken(true);
-    } catch (e) {
-        // Firebase throws 'auth/network-request-failed', 'auth/user-token-expired', etc.
-        const code = e.code || '';
-        if (code === 'auth/user-token-expired' || code === 'auth/user-disabled') {
-            throw new Error('Your login session expired. Please sign in again.');
-        }
-        if (code === 'auth/network-request-failed') {
-            throw new Error('Upload service unavailable — check your connection and try again.');
-        }
-        throw new Error('Upload authentication failed. Please sign in again.');
-    }
+    const liveUser = (typeof auth !== 'undefined' && auth.currentUser)
+        ? auth.currentUser : (window._snxCurrentUser || null);
+    if (!liveUser) throw new Error('No authenticated Firebase session. Please sign in again.');
+    return liveUser.getIdToken(true);
 }
 
 /**
@@ -21718,6 +22027,9 @@ async function _r2UploadSingle(file, idToken, bar, wrap, attempt) {
 
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+        // Timeout: 8 minutes for large files (≤20 MB goes this path, but be generous for slow mobile).
+        // The chunked path handles files >20 MB with per-chunk timeouts.
+        xhr.timeout = 8 * 60 * 1000;
         xhr.open('POST', R2_UPLOAD_URL);
         xhr.setRequestHeader('Authorization', 'Bearer ' + idToken);
 
@@ -21764,26 +22076,35 @@ async function _r2UploadSingle(file, idToken, bar, wrap, attempt) {
 
         xhr.onerror = () => {
             if (wrap) wrap.style.display = 'none';
+            // status=0 means browser blocked (CORS), DNS failure, or true network drop.
+            // status>0 means the server replied with an error HTTP code.
+            const isNetworkDrop = xhr.status === 0;
+            console.error('[SNX R2] XHR upload error.',
+                'Target:', R2_UPLOAD_URL,
+                '| Origin:', location.origin,
+                '| HTTP status:', xhr.status,
+                '| Attempt:', attempt, '/', MAX_RETRIES,
+                isNetworkDrop ? '| Likely: CORS block, DNS failure, or mobile network handoff.' : '');
             if (attempt < MAX_RETRIES) {
-                const delay = Math.pow(2, attempt - 1) * 1000;
+                const delay = Math.pow(2, attempt - 1) * 1500;
                 toastNotification(`⚠️ Upload interrupted — retrying (${attempt}/${MAX_RETRIES})…`);
                 setTimeout(() => {
                     _r2UploadSingle(file, idToken, bar, wrap, attempt + 1)
                         .then(resolve).catch(reject);
                 }, delay);
             } else {
-                // xhr.onerror fires for true network failures AND browser-blocked CORS.
-                // Log enough detail to diagnose without exposing the token.
-                console.error('[SNX R2] XHR upload failed after', MAX_RETRIES, 'attempts.',
-                    'Target:', R2_UPLOAD_URL,
-                    '| Origin:', location.origin,
-                    '| Status:', xhr.status,
-                    '| If status=0 this is a CORS block or DNS failure.');
                 reject(new Error(
-                    'Upload failed: the upload server rejected the request (CORS or network). ' +
-                    'Status: ' + (xhr.status || 0) + '. See browser console for details.'
+                    isNetworkDrop
+                        ? 'Upload interrupted. Check your connection and try again.'
+                        : 'Upload failed (server error ' + xhr.status + '). Please try again.'
                 ));
             }
+        };
+
+        xhr.ontimeout = () => {
+            if (wrap) wrap.style.display = 'none';
+            console.error('[SNX R2] XHR upload timed out. File size:', file.size, 'bytes. Target:', R2_UPLOAD_URL);
+            reject(new Error('Upload timed out — your connection may be too slow for this file size. Please try again.'));
         };
 
         xhr.send(formData);
@@ -21828,11 +22149,19 @@ async function _r2UploadChunked(file, idToken, bar, wrap) {
             fd.append('chunk',       slice, file.name);
 
             try {
-                const resp = await fetch(`${R2_UPLOAD_URL}/upload-chunk`, {
-                    method:  'POST',
-                    headers: { 'Authorization': 'Bearer ' + idToken },
-                    body:    fd,
-                });
+                const _chunkAbort = new AbortController();
+                const _chunkTimer = setTimeout(() => _chunkAbort.abort(), 5 * 60 * 1000); // 5-min per-chunk timeout
+                let resp;
+                try {
+                    resp = await fetch(`${R2_UPLOAD_URL}/upload-chunk`, {
+                        method:  'POST',
+                        headers: { 'Authorization': 'Bearer ' + idToken },
+                        body:    fd,
+                        signal:  _chunkAbort.signal,
+                    });
+                } finally {
+                    clearTimeout(_chunkTimer);
+                }
                 if (!resp.ok) {
                     const body = await resp.json().catch(() => ({}));
                     const chunkMsg = body.error || '';
@@ -21840,17 +22169,28 @@ async function _r2UploadChunked(file, idToken, bar, wrap) {
                         throw new Error(chunkMsg || 'No authenticated Firebase session. Please sign in again.');
                     } else if (resp.status === 403) {
                         throw new Error(chunkMsg || 'Upload authorization was rejected by the server.');
+                    } else if (resp.status === 413) {
+                        throw new Error('File too large for this upload type. ' + (chunkMsg || ''));
                     } else if (resp.status === 503) {
                         throw new Error(chunkMsg || 'Upload service authentication failed. Please try again.');
                     }
-                    throw new Error(chunkMsg || `Chunk ${i} failed: HTTP ${resp.status}`);
+                    throw new Error(chunkMsg || `Upload interrupted (chunk ${i}, HTTP ${resp.status}). Retrying…`);
                 }
                 succeeded = true;
                 break;
             } catch (e) {
-                if (attempt === MAX_RETRIES) throw new Error(`Chunk ${i} failed after ${MAX_RETRIES} attempts: ` + e.message);
-                const delay = Math.pow(2, attempt - 1) * 1000;
-                toastNotification(`⚠️ Chunk ${i + 1}/${totalChunks} interrupted — retrying…`);
+                const isAbort = e.name === 'AbortError';
+                const isNetErr = e.name === 'TypeError' || isAbort;
+                if (attempt === MAX_RETRIES) {
+                    throw new Error(
+                        isAbort ? 'Upload timed out — your connection may be too slow. Please try again.' :
+                        isNetErr ? 'Upload interrupted. Check your connection and try again.' :
+                        `Upload failed after ${MAX_RETRIES} attempts: ` + e.message
+                    );
+                }
+                const delay = Math.pow(2, attempt - 1) * 1500;
+                console.warn('[SNX R2] Chunk', i, 'attempt', attempt, 'failed:', e.message, '— retrying in', delay, 'ms');
+                toastNotification(`⚠️ Upload interrupted — retrying part ${i + 1}/${totalChunks}…`);
                 await new Promise(r => setTimeout(r, delay));
             }
         }
@@ -30967,6 +31307,697 @@ document.addEventListener('click', function(e) {
   _updatePanel();
   setInterval(_updatePanel, 3000);
 })();
+</script>
+
+<!-- ████ NEXUS GLOBAL THEME ENGINE ████ -->
+<script type="module">
+/**
+ * Shadow Nexus Social — Theme Engine Startup & Theme Control Center (TCC) Controller
+ * Loaded as a module so it can import ThemeEngine from theme-engine.js.
+ * All Founder operations are gated by window._snxRole === 'founder' client-side
+ * AND by Firestore security rules server-side.
+ */
+import { ThemeEngine, PREBUILT_THEMES } from './theme-engine.js';
+
+/* ─── 1. STARTUP — init ThemeEngine as soon as Firebase is ready ─── */
+(function initThemeEngine() {
+  function _tryInit() {
+    const _fsBundle = window._snxFirestore;
+    if (!_fsBundle || !_fsBundle.db) {
+      setTimeout(_tryInit, 300);
+      return;
+    }
+    ThemeEngine.init(_fsBundle.db, window._snxAuth || null);
+    window.ThemeEngine = ThemeEngine;
+  }
+  // Wait for the main module to expose db
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _tryInit);
+  } else {
+    setTimeout(_tryInit, 100);
+  }
+})();
+
+/* ─── 2. THEME CONTROL CENTER (TCC) CONTROLLER ─── */
+/* All functions prefixed snxTCC* to avoid namespace collisions.
+   All Founder-only. Regular users cannot reach this code because
+   the admin tab is only visible to role=founder. */
+
+// Editor state
+let _tccWorkingTheme = null;    // theme currently being edited
+let _tccWorkingId    = null;    // themeId ('new' for unsaved custom)
+let _tccDirty        = false;   // unsaved changes flag
+let _tccInitialized  = false;
+
+const TCC_COLOR_TOKENS = [
+  { token: '--theme-primary',     label: 'Primary Color' },
+  { token: '--theme-secondary',   label: 'Secondary Color' },
+  { token: '--theme-accent',      label: 'Accent Color' },
+  { token: '--theme-background',  label: 'Background' },
+  { token: '--theme-surface',     label: 'Surface' },
+  { token: '--theme-card',        label: 'Card' },
+  { token: '--theme-navbar',      label: 'Navigation' },
+  { token: '--theme-input',       label: 'Input Field' },
+  { token: '--theme-text',        label: 'Text Color' },
+  { token: '--theme-muted-text',  label: 'Muted Text' },
+  { token: '--theme-button',      label: 'Button Color' },
+  { token: '--theme-button-text', label: 'Button Text' },
+  { token: '--theme-link',        label: 'Link Color' },
+  { token: '--theme-border',      label: 'Border Color' },
+  { token: '--theme-glow',        label: 'Glow Color' },
+  { token: '--theme-danger',      label: 'Danger/Error' },
+  { token: '--theme-success',     label: 'Success' },
+  { token: '--theme-warning',     label: 'Warning' },
+];
+
+const TCC_EFFECTS = [
+  { id: 'snow',      icon: '❄️',  name: 'Snow' },
+  { id: 'confetti',  icon: '🎊',  name: 'Confetti' },
+  { id: 'hearts',    icon: '💕',  name: 'Hearts' },
+  { id: 'leaves',    icon: '🍂',  name: 'Falling Leaves' },
+  { id: 'stars',     icon: '⭐',  name: 'Stars' },
+  { id: 'embers',    icon: '🔥',  name: 'Embers' },
+  { id: 'lightning', icon: '⚡',  name: 'Lightning' },
+  { id: 'fog',       icon: '🌫️',  name: 'Fog' },
+  { id: 'cyber',     icon: '💠',  name: 'Cyber Particles' },
+  { id: 'rain',      icon: '🌧️',  name: 'Rain' },
+];
+
+const TCC_SECTIONS = [
+  'Login Page', 'Eclipse Feed', 'Profiles', 'Messages', 'Search',
+  'Music Hub', 'Cloud Radio', 'Cloud Stream', 'Live', 'Arcade',
+  'Notifications', 'Side Menu', 'Founder Panel',
+];
+
+/* Called when Founder opens the Theme Engine tab */
+window.snxTCCOpen = function() {
+  if (window._snxRole !== 'founder') return;
+  if (!_tccInitialized) {
+    _tccBuildColorGrid();
+    _tccBuildEffectsGrid();
+    _tccBuildSectionOverrides();
+    _tccInitialized = true;
+  }
+  _tccLoadThemeLibrary();
+  _tccLoadCurrentTheme();
+  _tccLoadSchedules();
+};
+
+function _tccBuildColorGrid() {
+  const grid = document.getElementById('tccColorGrid');
+  if (!grid) return;
+  grid.innerHTML = TCC_COLOR_TOKENS.map(({ token, label }) => {
+    const safeId = 'tccHex-' + token;
+    const current = getComputedStyle(document.documentElement).getPropertyValue(token).trim() || '#000000';
+    // Approximate hex for color pickers — extract first 7 chars if hex-like
+    const hexVal = current.startsWith('#') ? current.substring(0,7) : '#000000';
+    return `
+      <div class="tcc-color-row">
+        <div class="tcc-color-label">${label}</div>
+        <div class="tcc-color-input-row">
+          <div class="tcc-color-swatch-btn" id="tccSwatch-${token}" style="position:relative;background:${current};">
+            <input type="color" value="${hexVal}"
+              oninput="snxTCCColorPick('${token}',this.value)"
+              onchange="snxTCCColorChange('${token}',this.value)"
+              style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;">
+          </div>
+          <input type="text" class="tcc-hex-input" id="${safeId}" value="${current}" placeholder="${current}"
+            oninput="snxTCCHexInput('${token}',this.value)">
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function _tccBuildEffectsGrid() {
+  const grid = document.getElementById('tccEffectsGrid');
+  if (!grid) return;
+  grid.innerHTML = TCC_EFFECTS.map(e => `
+    <div class="tcc-effect-card" id="tccEff-${e.id}" onclick="snxTCCToggleEffect('${e.id}')">
+      <div class="tcc-effect-icon">${e.icon}</div>
+      <div class="tcc-effect-name">${e.name}</div>
+    </div>`).join('');
+}
+
+function _tccBuildSectionOverrides() {
+  const container = document.getElementById('tccSectionOverrides');
+  if (!container) return;
+  container.innerHTML = TCC_SECTIONS.map(s => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(0,174,239,0.08);">
+      <div style="font-size:13px;color:#b8d4f0;">${s}</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;color:#6a90b8;">Use global</span>
+        <label class="notif-toggle-wrap" style="margin:0;">
+          <input type="checkbox" class="notif-toggle-cb" onchange="snxTCCMarkDirty()">
+          <span class="notif-toggle-slider"></span>
+        </label>
+        <span style="font-size:11px;color:#6a90b8;">Custom</span>
+      </div>
+    </div>`).join('');
+}
+
+async function _tccLoadThemeLibrary() {
+  if (!window.ThemeEngine) return;
+  const themes = await ThemeEngine.loadAllThemes();
+  const activeId = ThemeEngine.getActiveThemeId();
+
+  // Prebuilt list
+  const presetList = document.getElementById('tccPresetList');
+  if (presetList) {
+    presetList.innerHTML = '';
+    for (const [id, data] of Object.entries(PREBUILT_THEMES)) {
+      const el = document.createElement('div');
+      el.className = 'tcc-theme-card' + (id === activeId ? ' active-th' : '');
+      el.innerHTML = `
+        <div class="tcc-theme-swatch" style="background:${data.swatch || data.tokens?.['--theme-background'] || '#0B1F3A'};"></div>
+        <div class="tcc-theme-info">
+          <div class="tcc-theme-name">${data.name}</div>
+          <div class="tcc-theme-status">Built-in</div>
+        </div>
+        ${id === activeId ? '<span class="tcc-live-badge">LIVE</span>' : ''}`;
+      el.onclick = () => _tccLoadTheme(id, null);
+      presetList.appendChild(el);
+    }
+  }
+
+  // Custom themes list
+  const customList = document.getElementById('tccCustomThemeList');
+  if (customList) {
+    const customs = themes.filter(t => !t.isBuiltIn);
+    if (customs.length === 0) {
+      customList.innerHTML = '<div style="padding:12px 14px;font-size:12px;color:#6a90b8;">No custom themes yet.</div>';
+    } else {
+      customList.innerHTML = '';
+      for (const t of customs) {
+        const el = document.createElement('div');
+        el.className = 'tcc-theme-card' + (t.id === activeId ? ' active-th' : '');
+        const badge = t.status === 'published'
+          ? '<span class="tcc-live-badge">LIVE</span>'
+          : t.status === 'draft' ? '<span class="tcc-draft-badge">DRAFT</span>' : '';
+        el.innerHTML = `
+          <div class="tcc-theme-swatch" style="background:${t.swatch || t.tokens?.['--theme-background'] || '#0B1F3A'};"></div>
+          <div class="tcc-theme-info">
+            <div class="tcc-theme-name">${t.name || t.id}</div>
+            <div class="tcc-theme-status">${t.status || 'draft'}</div>
+          </div>${badge}`;
+        el.onclick = () => _tccLoadTheme(t.id, t);
+        customList.appendChild(el);
+      }
+    }
+  }
+
+  // Populate schedule theme selector
+  const sel = document.getElementById('tccSchedThemeSelect');
+  if (sel) {
+    sel.innerHTML = '<option value="">Select a theme…</option>';
+    for (const [id, data] of Object.entries(PREBUILT_THEMES)) {
+      sel.innerHTML += `<option value="${id}">${data.name}</option>`;
+    }
+    themes.filter(t => !t.isBuiltIn).forEach(t => {
+      sel.innerHTML += `<option value="${t.id}">${t.name || t.id}</option>`;
+    });
+  }
+}
+
+function _tccLoadCurrentTheme() {
+  const activeId = window.ThemeEngine?.getActiveThemeId() || 'shadow-nexus-default';
+  const preset = PREBUILT_THEMES[activeId];
+  const swatchEl = document.getElementById('tccCurrentSwatch');
+  const nameEl   = document.getElementById('tccCurrentName');
+  const metaEl   = document.getElementById('tccCurrentMeta');
+  if (preset) {
+    if (swatchEl) swatchEl.style.background = preset.swatch || preset.tokens['--theme-background'];
+    if (nameEl)   nameEl.textContent = preset.name;
+    if (metaEl)   metaEl.textContent = 'Prebuilt theme — live';
+  } else {
+    if (nameEl)   nameEl.textContent = activeId;
+    if (metaEl)   metaEl.textContent = 'Custom theme — live';
+  }
+}
+
+function _tccLoadTheme(themeId, data) {
+  _tccWorkingId = themeId;
+  _tccDirty = false;
+
+  let themeData = data;
+  if (!themeData && PREBUILT_THEMES[themeId]) {
+    themeData = PREBUILT_THEMES[themeId];
+  }
+  if (!themeData) return;
+  _tccWorkingTheme = JSON.parse(JSON.stringify(themeData)); // deep copy
+
+  // Update color pickers with theme's tokens
+  const tokens = themeData.tokens || {};
+  for (const { token } of TCC_COLOR_TOKENS) {
+    const val = tokens[token] || '';
+    if (!val) continue;
+    const hexInput = document.getElementById('tccHex-' + token);
+    if (hexInput) hexInput.value = val;
+    const swatch = document.getElementById('tccSwatch-' + token);
+    if (swatch) swatch.style.background = val;
+    // Update color input value if hex
+    const picker = swatch?.querySelector('input[type=color]');
+    if (picker && val.startsWith('#') && val.length === 7) picker.value = val;
+  }
+
+  // Effects
+  const effects = themeData.effects || [];
+  TCC_EFFECTS.forEach(e => {
+    const card = document.getElementById('tccEff-' + e.id);
+    if (card) card.classList.toggle('on', effects.includes(e.id));
+  });
+
+  // Info tab
+  const nameEl = document.getElementById('tccThemeName');
+  const descEl = document.getElementById('tccThemeDesc');
+  if (nameEl) nameEl.value = themeData.name || '';
+  if (descEl) descEl.value = themeData.description || '';
+
+  // Apply to page immediately (preview in-place)
+  if (window.ThemeEngine) {
+    ThemeEngine._applyTheme(themeData, themeId);
+  }
+}
+
+async function _tccLoadSchedules() {
+  const listEl = document.getElementById('tccScheduleList');
+  const fullEl = document.getElementById('tccScheduleFull');
+  if (!window.ThemeEngine) return;
+  // We use the db reference exposed by the main module
+  const _fs2 = window._snxFirestore;
+  const db = _fs2?.db;
+  if (!db) return;
+  try {
+    const { getDocs, query, collection, where } =
+      await import('https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js');
+    const snap = await getDocs(query(collection(db, 'themeSchedules'), where('active', '==', true)));
+    if (snap.empty) {
+      if (listEl) listEl.innerHTML = '<div style="padding:10px 14px;font-size:11px;color:#6a90b8;">No active schedules</div>';
+      if (fullEl) fullEl.innerHTML = '<div style="font-size:12px;color:#6a90b8;">No schedules configured.</div>';
+      return;
+    }
+    const rows = snap.docs.map(d => {
+      const s = d.data();
+      const start = s.startAt?.toDate ? s.startAt.toDate() : new Date(s.startAt);
+      const end   = s.endAt?.toDate   ? s.endAt.toDate()   : new Date(s.endAt);
+      return { id: d.id, themeId: s.themeId, start, end };
+    });
+    if (listEl) {
+      listEl.innerHTML = rows.map(r => `
+        <div style="padding:8px 12px;font-size:11px;border-bottom:1px solid rgba(0,174,239,0.07);">
+          <div style="color:#c8e8ff;font-weight:700;">${r.themeId}</div>
+          <div style="color:#6a90b8;">${r.start.toLocaleDateString()} → ${r.end.toLocaleDateString()}</div>
+        </div>`).join('');
+    }
+    if (fullEl) {
+      fullEl.innerHTML = '<table class="tcc-history-table"><thead><tr><th>Theme</th><th>Start</th><th>End</th><th></th></tr></thead><tbody>' +
+        rows.map(r => `<tr>
+          <td>${r.themeId}</td>
+          <td>${r.start.toLocaleString()}</td>
+          <td>${r.end.toLocaleString()}</td>
+          <td><button class="tcc-restore-btn" onclick="snxTCCRemoveSchedule('${r.id}')">Remove</button></td>
+        </tr>`).join('') + '</tbody></table>';
+    }
+  } catch (_) {}
+}
+
+/* Sub-tab switcher */
+window.snxTCCSwitchSubTab = function(tab) {
+  document.querySelectorAll('.tcc-subtab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tcc-subpanel').forEach(p => p.classList.remove('active'));
+  const btn = document.querySelector(`.tcc-subtab[onclick*="'${tab}'"]`);
+  const panel = document.getElementById(`tccSub-${tab}`);
+  if (btn)   btn.classList.add('active');
+  if (panel) panel.classList.add('active');
+  if (tab === 'history') _tccLoadHistory();
+};
+
+async function _tccLoadHistory() {
+  const el = document.getElementById('tccHistoryContent');
+  if (!el || !window.ThemeEngine) return;
+  const history = await ThemeEngine.loadThemeHistory();
+  if (history.length === 0) {
+    el.innerHTML = '<div style="font-size:12px;color:#6a90b8;text-align:center;padding:20px 0;">No theme history yet.</div>';
+    return;
+  }
+  el.innerHTML = '<table class="tcc-history-table"><thead><tr><th>Theme</th><th>Published</th><th>Version</th><th></th></tr></thead><tbody>' +
+    history.map(h => {
+      const d = h.publishedAt?.toDate ? h.publishedAt.toDate() : new Date();
+      return `<tr>
+        <td>${h.themeName || h.themeId}</td>
+        <td>${d.toLocaleString()}</td>
+        <td>v${h.version || '—'}</td>
+        <td><button class="tcc-restore-btn" onclick="snxTCCRestoreHistory('${h.themeId}','${(h.themeName||'').replace(/'/g,"\\'")}')">Restore</button></td>
+      </tr>`;
+    }).join('') + '</tbody></table>';
+}
+
+/* Color picker live preview */
+window.snxTCCColorPick = function(token, value) {
+  document.documentElement.style.setProperty(token, value);
+  const hexEl = document.getElementById('tccHex-' + token);
+  if (hexEl) hexEl.value = value;
+  const swatch = document.getElementById('tccSwatch-' + token);
+  if (swatch) swatch.style.background = value;
+  _tccSyncWorkingToken(token, value);
+  _tccDirty = true;
+  _tccCheckContrast();
+};
+
+window.snxTCCColorChange = function(token, value) {
+  window.snxTCCColorPick(token, value);
+};
+
+window.snxTCCHexInput = function(token, value) {
+  const clean = value.trim();
+  if (/^#[0-9A-Fa-f]{6}$/.test(clean) || /^rgba?\(/.test(clean)) {
+    document.documentElement.style.setProperty(token, clean);
+    const swatch = document.getElementById('tccSwatch-' + token);
+    if (swatch) swatch.style.background = clean;
+    const picker = swatch?.querySelector('input[type=color]');
+    if (picker && clean.startsWith('#') && clean.length === 7) picker.value = clean;
+    _tccSyncWorkingToken(token, clean);
+    _tccDirty = true;
+    _tccCheckContrast();
+  }
+};
+
+function _tccSyncWorkingToken(token, value) {
+  if (!_tccWorkingTheme) {
+    _tccWorkingTheme = { tokens: {}, effects: [], name: '', description: '' };
+  }
+  if (!_tccWorkingTheme.tokens) _tccWorkingTheme.tokens = {};
+  _tccWorkingTheme.tokens[token] = value;
+}
+
+function _tccCheckContrast() {
+  const bg = _tccWorkingTheme?.tokens?.['--theme-background'];
+  const fg = _tccWorkingTheme?.tokens?.['--theme-text'];
+  if (!bg || !fg || !bg.startsWith('#') || !fg.startsWith('#')) return;
+  const ratio = ThemeEngine.checkContrast(bg, fg);
+  const warnEl = document.getElementById('tccContrastWarn');
+  const txtEl  = document.getElementById('tccContrastWarnText');
+  if (warnEl) {
+    warnEl.style.display = ratio < 3.5 ? 'flex' : 'none';
+    if (txtEl) txtEl.textContent = `Contrast ratio ${ratio.toFixed(1)}:1 — text may be difficult to read (recommended: 4.5+).`;
+  }
+}
+
+window.snxTCCMarkDirty = function() { _tccDirty = true; };
+
+/* Effects toggle */
+window.snxTCCToggleEffect = function(effectId) {
+  if (!_tccWorkingTheme) _tccWorkingTheme = { tokens: {}, effects: [] };
+  if (!_tccWorkingTheme.effects) _tccWorkingTheme.effects = [];
+  const idx = _tccWorkingTheme.effects.indexOf(effectId);
+  if (idx > -1) {
+    _tccWorkingTheme.effects.splice(idx, 1);
+  } else {
+    _tccWorkingTheme.effects.push(effectId);
+  }
+  const card = document.getElementById('tccEff-' + effectId);
+  if (card) card.classList.toggle('on', _tccWorkingTheme.effects.includes(effectId));
+  // Live preview effects
+  if (window.ThemeEngine) {
+    ThemeEngine._applyTheme(_tccWorkingTheme, _tccWorkingId || 'preview');
+  }
+  _tccDirty = true;
+};
+
+/* Background type change */
+window.snxTCCBgTypeChange = function(type) {
+  const solidRow   = document.getElementById('tccBgSolidRow');
+  const gradRow    = document.getElementById('tccBgGradRow');
+  const imgRow     = document.getElementById('tccBgImgRow');
+  const imgControls = document.getElementById('tccBgImgControls');
+  if (solidRow)    solidRow.style.display    = type === 'solid'    ? '' : 'none';
+  if (gradRow)     gradRow.style.display     = type === 'gradient' ? '' : 'none';
+  if (imgRow)      imgRow.style.display      = type === 'image'    ? '' : 'none';
+  if (imgControls) imgControls.style.display = type === 'image'    ? 'flex' : 'none';
+};
+
+window.snxTCCBgParam = function(token, value, labelId, fmt) {
+  const display = fmt ? fmt(value) : value;
+  document.documentElement.style.setProperty(token, display);
+  const labelEl = document.getElementById(labelId);
+  if (labelEl) labelEl.textContent = display;
+  _tccSyncWorkingToken(token, display);
+  _tccDirty = true;
+};
+
+window.snxTCCBgOverlay = function(val) {
+  const v = parseFloat(val);
+  const overlay = `rgba(0,0,0,${v.toFixed(2)})`;
+  document.documentElement.style.setProperty('--theme-bg-overlay', overlay);
+  const labelEl = document.getElementById('tccBgOverlayVal');
+  if (labelEl) labelEl.textContent = v.toFixed(2);
+  _tccSyncWorkingToken('--theme-bg-overlay', overlay);
+  _tccDirty = true;
+};
+
+window.snxTCCGradientChange = function() {
+  const s = document.getElementById('tccGradStart')?.value || '#0B1F3A';
+  const e = document.getElementById('tccGradEnd')?.value   || '#071428';
+  const grad = `linear-gradient(135deg,${s},${e})`;
+  document.documentElement.style.setProperty('--theme-bg-image', grad);
+  const bgEl = document.getElementById('snx-theme-bg');
+  if (bgEl) bgEl.style.backgroundImage = grad;
+  if (_tccWorkingTheme) _tccWorkingTheme.backgroundGradient = grad;
+  _tccDirty = true;
+};
+
+/* Background image upload */
+window.snxTCCBgUpload = async function(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 8 * 1024 * 1024) {
+    if (typeof toastNotification === 'function') toastNotification('⚠️ Image too large. Max 8 MB.');
+    return;
+  }
+  const progressEl = document.getElementById('tccBgUploadProgress');
+  const barEl      = document.getElementById('tccBgProgressBar');
+  const urlEl      = document.getElementById('tccBgPreviewUrl');
+  if (progressEl) progressEl.style.display = 'block';
+  const url = await ThemeEngine.uploadBackgroundImage(file, pct => {
+    if (barEl) barEl.style.width = pct + '%';
+  });
+  if (progressEl) progressEl.style.display = 'none';
+  if (url) {
+    document.documentElement.style.setProperty('--theme-bg-image', `url('${url}')`);
+    if (_tccWorkingTheme) _tccWorkingTheme.backgroundImageUrl = url;
+    if (urlEl) urlEl.textContent = '✅ ' + url;
+    document.getElementById('tccBgImgControls').style.display = 'flex';
+    _tccDirty = true;
+  }
+};
+
+/* Radius control */
+window.snxTCCRadiusChange = function(val) {
+  const v = val + 'px';
+  document.documentElement.style.setProperty('--theme-radius', v);
+  const labelEl = document.getElementById('tccRadiusVal');
+  if (labelEl) labelEl.textContent = v;
+  _tccSyncWorkingToken('--theme-radius', v);
+  _tccDirty = true;
+};
+
+/* Font change */
+window.snxTCCFontChange = function(font) {
+  document.documentElement.style.setProperty('--theme-font', font);
+  document.body.style.fontFamily = font;
+  _tccSyncWorkingToken('--theme-font', font);
+  _tccDirty = true;
+};
+
+/* Banner controls */
+window.snxTCCBannerToggle = function(on) {
+  const area = document.getElementById('tccBannerEditArea');
+  if (area) area.style.display = on ? 'flex' : 'none';
+  if (_tccWorkingTheme) _tccWorkingTheme.bannerEnabled = on;
+  _tccDirty = true;
+};
+
+window.snxTCCCountdownToggle = function(on) {
+  const area = document.getElementById('tccCountdownArea');
+  if (area) area.style.display = on ? 'flex' : 'none';
+  if (_tccWorkingTheme) _tccWorkingTheme.bannerCountdownEnabled = on;
+  _tccDirty = true;
+};
+
+/* Build working theme object from UI state */
+function _tccCollectThemeData() {
+  const theme = _tccWorkingTheme ? { ..._tccWorkingTheme } : {};
+  theme.tokens    = { ...(theme.tokens || {}) };
+  theme.effects   = theme.effects || [];
+  theme.name        = document.getElementById('tccThemeName')?.value || theme.name || 'Custom Theme';
+  theme.description = document.getElementById('tccThemeDesc')?.value || theme.description || '';
+  theme.bannerEnabled = document.getElementById('tccBannerEnabled')?.checked || false;
+  theme.bannerText    = document.getElementById('tccBannerText')?.value || '';
+  theme.bannerCountdownEnabled = document.getElementById('tccCountdownEnabled')?.checked || false;
+  theme.bannerCountdownTarget  = document.getElementById('tccCountdownTarget')?.value || null;
+  const eventName = document.getElementById('tccEventName')?.value || '';
+  if (eventName && theme.bannerEnabled && !theme.bannerText) theme.bannerText = eventName;
+  return theme;
+}
+
+/* SAVE DRAFT */
+window.snxTCCSaveDraft = async function() {
+  if (window._snxRole !== 'founder') return;
+  if (!window.ThemeEngine) return;
+  const data = _tccCollectThemeData();
+  const id = await ThemeEngine.saveDraft(_tccWorkingId === 'new' ? null : _tccWorkingId, data);
+  if (id) { _tccWorkingId = id; _tccDirty = false; _tccLoadThemeLibrary(); }
+};
+
+/* PREVIEW (private — only Founder sees) */
+window.snxTCCPreview = function() {
+  if (window._snxRole !== 'founder') return;
+  if (!window.ThemeEngine) return;
+  const data = _tccCollectThemeData();
+  ThemeEngine.previewTheme(_tccWorkingId || 'preview', data);
+};
+
+/* PUBLISH GLOBALLY */
+window.snxTCCPublish = async function() {
+  if (window._snxRole !== 'founder') return;
+  if (!window.ThemeEngine) return;
+  const confirmed = await _tccConfirm(
+    '🌐 Publish Theme Globally?',
+    `This will apply "${_tccWorkingTheme?.name || 'this theme'}" to Shadow Nexus Social for ALL users immediately.`
+  );
+  if (!confirmed) return;
+  const data = _tccCollectThemeData();
+  await ThemeEngine.publishTheme(_tccWorkingId || 'shadow-nexus-default', data);
+  _tccDirty = false;
+  _tccLoadCurrentTheme();
+  _tccLoadThemeLibrary();
+};
+
+/* DUPLICATE */
+window.snxTCCDuplicate = async function() {
+  if (window._snxRole !== 'founder') return;
+  if (!_tccWorkingId || !window.ThemeEngine) return;
+  const newId = await ThemeEngine.duplicateTheme(_tccWorkingId);
+  if (newId) { _tccLoadThemeLibrary(); }
+};
+
+/* DELETE */
+window.snxTCCDeleteTheme = async function() {
+  if (window._snxRole !== 'founder') return;
+  if (!_tccWorkingId || !window.ThemeEngine) return;
+  const confirmed = await _tccConfirm('🗑️ Delete Theme?', 'This cannot be undone. This only deletes the theme configuration — no user content is affected.');
+  if (!confirmed) return;
+  await ThemeEngine.deleteTheme(_tccWorkingId);
+  _tccWorkingId = null;
+  _tccWorkingTheme = null;
+  _tccLoadThemeLibrary();
+};
+
+/* NEW THEME */
+window.snxTCCNewTheme = function() {
+  if (window._snxRole !== 'founder') return;
+  _tccWorkingId = 'new';
+  _tccWorkingTheme = JSON.parse(JSON.stringify(PREBUILT_THEMES['shadow-nexus-default']));
+  _tccWorkingTheme.name = 'New Custom Theme';
+  _tccWorkingTheme.status = 'draft';
+  _tccLoadTheme('new', _tccWorkingTheme);
+  if (typeof toastNotification === 'function') toastNotification('✏️ New theme ready — customize and save.');
+};
+
+/* EMERGENCY RESET */
+window.snxTCCEmergencyReset = async function() {
+  if (window._snxRole !== 'founder') return;
+  const confirmed = await _tccConfirm(
+    '⚠️ Emergency Reset',
+    'This will restore Shadow Nexus Default for ALL users immediately. Are you sure?'
+  );
+  if (!confirmed) return;
+  if (window.ThemeEngine) await ThemeEngine.emergencyReset();
+  _tccDirty = false;
+  _tccLoadCurrentTheme();
+  _tccLoadThemeLibrary();
+};
+
+/* RESTORE FROM HISTORY */
+window.snxTCCRestoreHistory = async function(themeId, themeName) {
+  if (window._snxRole !== 'founder') return;
+  const confirmed = await _tccConfirm('♻️ Restore Theme?', `Restore "${themeName}" as the global theme?`);
+  if (!confirmed) return;
+  if (window.ThemeEngine) await ThemeEngine.restoreFromHistory(themeId, themeName);
+  _tccLoadCurrentTheme();
+};
+
+/* SCHEDULE */
+window.snxTCCAddSchedule = async function() {
+  if (window._snxRole !== 'founder') return;
+  const themeId = document.getElementById('tccSchedThemeSelect')?.value;
+  const start   = document.getElementById('tccSchedStart')?.value;
+  const end     = document.getElementById('tccSchedEnd')?.value;
+  if (!themeId || !start || !end) {
+    if (typeof toastNotification === 'function') toastNotification('⚠️ Please select a theme and both dates.');
+    return;
+  }
+  if (new Date(end) <= new Date(start)) {
+    if (typeof toastNotification === 'function') toastNotification('⚠️ End date must be after start date.');
+    return;
+  }
+  const result = await ThemeEngine.scheduleTheme(themeId, start, end);
+  const warnEl = document.getElementById('tccSchedConflictWarn');
+  const warnTxt = document.getElementById('tccSchedConflictText');
+  if (result?.conflict) {
+    if (warnEl) warnEl.style.display = 'flex';
+    if (warnTxt) warnTxt.textContent = `Conflicts with "${result.conflictWith?.themeId}" (${new Date(result.conflictWith?.startAt).toLocaleDateString()}–${new Date(result.conflictWith?.endAt).toLocaleDateString()}).`;
+  } else {
+    if (warnEl) warnEl.style.display = 'none';
+    _tccLoadSchedules();
+  }
+};
+
+window.snxTCCRemoveSchedule = async function(schedId) {
+  if (window._snxRole !== 'founder') return;
+  const _fs3 = window._snxFirestore;
+  const db = _fs3?.db;
+  if (!db) return;
+  try {
+    const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js');
+    await updateDoc(doc(db, 'themeSchedules', schedId), { active: false });
+    _tccLoadSchedules();
+    if (typeof toastNotification === 'function') toastNotification('📅 Schedule removed.');
+  } catch (_) {}
+};
+
+/* Simple confirm modal using existing toastNotification pattern */
+function _tccConfirm(title, message) {
+  return new Promise(resolve => {
+    // Use a lightweight inline confirm div
+    const existing = document.getElementById('snxTCCConfirmModal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'snxTCCConfirmModal';
+    modal.style.cssText = `
+      position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,0.75);padding:20px;`;
+    modal.innerHTML = `
+      <div style="background:rgba(5,10,25,0.97);border:1px solid rgba(0,174,239,0.35);border-radius:14px;
+                  padding:24px;max-width:420px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.8);">
+        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:12px;">${title}</div>
+        <div style="font-size:13px;color:#9bbdd8;line-height:1.6;margin-bottom:20px;">${message}</div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button id="snxTCCConfirmCancel" style="padding:9px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#9bbdd8;font-size:13px;cursor:pointer;">Cancel</button>
+          <button id="snxTCCConfirmOK" style="padding:9px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#0044aa,#0077dd);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Confirm</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    document.getElementById('snxTCCConfirmOK').onclick     = () => { modal.remove(); resolve(true); };
+    document.getElementById('snxTCCConfirmCancel').onclick = () => { modal.remove(); resolve(false); };
+    modal.onclick = e => { if (e.target === modal) { modal.remove(); resolve(false); } };
+  });
+}
+
+/* Wire preview bar buttons exposed globally */
+window.ThemeEngine_publishPreview = () => window.ThemeEngine?.publishPreview();
+window.ThemeEngine_exitPreview    = () => window.ThemeEngine?.exitPreview();
+window.ThemeEngine_openEditor     = () => window.ThemeEngine?.openThemeEditor();
+
 </script>
 
 </body>

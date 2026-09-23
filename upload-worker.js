@@ -398,8 +398,19 @@ async function handleUploadComplete(request, env, cors, sec) {
   const ext      = (fileName.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
   const finalKey = (fd.get('key') || '').replace(/\.\./g, '') || `${verifiedUid}/${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
 
-  // Enforce: the final key must start with the authenticated user's UID namespace
-  const allowedPrefixes = [`${verifiedUid}/`, `profiles/${verifiedUid}/`, `videos/${verifiedUid}/`];
+  // Enforce: the final key must start with the authenticated user's UID namespace.
+  // All organised upload paths are allowed; the user's raw UID prefix is the fallback.
+  const allowedPrefixes = [
+    `${verifiedUid}/`,
+    `profiles/${verifiedUid}/`,
+    `videos/${verifiedUid}/`,
+    `music/${verifiedUid}/`,
+    `posts/${verifiedUid}/`,
+    `radio/${verifiedUid}/`,
+    `cloud-stream/${verifiedUid}/`,
+    `themes/${verifiedUid}/`,
+    `users/${verifiedUid}/`,
+  ];
   if (!allowedPrefixes.some(p => finalKey.startsWith(p))) {
     return new Response(JSON.stringify({ error: 'Forbidden: key does not belong to your account' }), {
       status: 403, headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
@@ -1169,7 +1180,12 @@ async function handleR2Delete(request, env, cors, sec) {
   const ownsKey = safeKey.startsWith(`${safeOwnerId}/`)
                || safeKey.startsWith(`profiles/${safeOwnerId}/`)
                || safeKey.startsWith(`videos/${safeOwnerId}/`)
-               || safeKey.startsWith(`music/${safeOwnerId}/`);
+               || safeKey.startsWith(`music/${safeOwnerId}/`)
+               || safeKey.startsWith(`posts/${safeOwnerId}/`)
+               || safeKey.startsWith(`radio/${safeOwnerId}/`)
+               || safeKey.startsWith(`cloud-stream/${safeOwnerId}/`)
+               || safeKey.startsWith(`themes/${safeOwnerId}/`)
+               || safeKey.startsWith(`users/${safeOwnerId}/`);
   if (!ownsKey) {
     return new Response(JSON.stringify({ error: 'Forbidden: key does not belong to owner' }), {
       status: 403, headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
@@ -2634,11 +2650,11 @@ export default {
     if (url.pathname === '/upload-chunk')    return handleUploadChunk(request, env, cors, sec);
     if (url.pathname === '/upload-complete') return handleUploadComplete(request, env, cors, sec);
 
-    // ── POST /upload-music: upload a profile music file to R2 at a caller-supplied key ──
+    // ── POST /upload-music | /upload-artwork | /upload-theme ─────────────────
+    // Shared handler for audio, artwork, and theme background uploads.
     // The client sends: Authorization: Bearer <idToken>, file, path (the full R2 key)
-    // Path must start with profiles/{verifiedUid}/music/ — enforced server-side using
-    // the authenticated UID, never trusting the client-supplied uid field.
-    if (request.method === 'POST' && url.pathname === '/upload-music') {
+    // Path must start with an allowed prefix for the authenticated user.
+    if (request.method === 'POST' && (url.pathname === '/upload-music' || url.pathname === '/upload-artwork' || url.pathname === '/upload-theme')) {
       // ── Verify Firebase ID token ────────────────────────────────────────────
       let musicUid;
       try { musicUid = await _requireAuth(request, env); }
@@ -2665,23 +2681,32 @@ export default {
         });
       }
 
-      // Enforce: path must be scoped to the AUTHENTICATED user under profiles/{uid}/music/
-      // Uses server-verified UID — ignores any uid sent in the form body
-      const expectedPrefix = `profiles/${musicUid}/music/`;
-      if (!reqPath.startsWith(expectedPrefix)) {
-        return new Response(JSON.stringify({ error: 'Invalid path: must start with profiles/{yourUid}/music/' }), {
+      // Enforce: path must be scoped to the AUTHENTICATED user.
+      // Allowed prefixes cover audio, artwork, and theme asset storage.
+      // Uses server-verified UID — ignores any uid sent in the form body.
+      const musicAllowedPrefixes = [
+        `profiles/${musicUid}/music/`,
+        `music/${musicUid}/`,
+        `radio/${musicUid}/`,
+        `cloud-stream/${musicUid}/`,
+        `users/${musicUid}/`,
+        `themes/${musicUid}/`,
+        `posts/${musicUid}/`,
+      ];
+      if (!reqPath || !musicAllowedPrefixes.some(p => reqPath.startsWith(p))) {
+        return new Response(JSON.stringify({ error: 'Invalid path: must start with an allowed prefix for your account' }), {
           status: 403, headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
         });
       }
 
-      // MIME validation — audio only for music uploads
+      // MIME validation — audio and image allowed (artwork, theme backgrounds)
       let mime = file.type || '';
       const extMime = mimeFromExt(file.name);
       if (!mime || mime === 'application/octet-stream') mime = extMime || mime;
       else if (extMime && mime.startsWith('video/') && extMime.startsWith('audio/')) mime = extMime;
 
       if (!mime.startsWith('audio/') && !mime.startsWith('image/') && mime !== 'application/octet-stream') {
-        return new Response(JSON.stringify({ error: `Only audio or image files are allowed for music uploads. Got: ${file.type}` }), {
+        return new Response(JSON.stringify({ error: `Only audio or image files are allowed for this upload endpoint. Got: ${file.type}` }), {
           status: 415, headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
         });
       }
@@ -2739,7 +2764,12 @@ export default {
       const deleteKeyOwned = key.startsWith(`${deleteUid}/`)
                           || key.startsWith(`profiles/${deleteUid}/`)
                           || key.startsWith(`videos/${deleteUid}/`)
-                          || key.startsWith(`music/${deleteUid}/`);
+                          || key.startsWith(`music/${deleteUid}/`)
+                          || key.startsWith(`posts/${deleteUid}/`)
+                          || key.startsWith(`radio/${deleteUid}/`)
+                          || key.startsWith(`cloud-stream/${deleteUid}/`)
+                          || key.startsWith(`themes/${deleteUid}/`)
+                          || key.startsWith(`users/${deleteUid}/`);
       if (!deleteKeyOwned) {
         return new Response(JSON.stringify({ error: 'Forbidden: key does not belong to your account' }), {
           status: 403, headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
@@ -2854,10 +2884,15 @@ export default {
       }
     }
 
-    // ── POST /: generic upload (profile pics, posts, messages, etc.) ─────────
+    // ── POST /: generic upload (profile pics, posts, messages, music, etc.) ────
     // Requires: Authorization: Bearer <firebase-id-token>
-    // The UID stored in R2 metadata and the key namespace comes from the
-    // verified token — client-supplied uid in FormData is ignored.
+    //
+    // Optional FormData field "path": a caller-supplied R2 key.
+    //   - Must start with one of the allowed prefixes for the authenticated user.
+    //   - If omitted the server generates {uid}/{timestamp}-{random}.{ext}.
+    //
+    // The UID stored in R2 metadata and the key namespace always comes from the
+    // verified Firebase token — the client-supplied "uid" FormData field is ignored.
     if (request.method !== 'POST') {
       return new Response('Method not allowed', {
         status: 405,
@@ -2925,9 +2960,33 @@ export default {
       });
     }
 
-    // ── Store in R2 under userUid/timestamp-random.ext ────────────────────────
+    // ── Determine final R2 key ────────────────────────────────────────────────
     const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const key = `${userUid}/${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
+    const defaultKey = `${userUid}/${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
+
+    // Accept a caller-supplied path but validate ownership — prevents cross-user writes.
+    let key = defaultKey;
+    const callerPath = (formData.get('path') || '').replace(/\.\./g, '').trim();
+    if (callerPath) {
+      const keyAllowedPrefixes = [
+        `${userUid}/`,
+        `profiles/${userUid}/`,
+        `videos/${userUid}/`,
+        `music/${userUid}/`,
+        `posts/${userUid}/`,
+        `radio/${userUid}/`,
+        `cloud-stream/${userUid}/`,
+        `themes/${userUid}/`,
+        `users/${userUid}/`,
+      ];
+      if (!keyAllowedPrefixes.some(p => callerPath.startsWith(p))) {
+        return new Response(JSON.stringify({ error: 'Forbidden: path does not belong to your account' }), {
+          status: 403,
+          headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
+        });
+      }
+      key = callerPath;
+    }
 
     try {
       await env.BUCKET.put(key, buffer, {
