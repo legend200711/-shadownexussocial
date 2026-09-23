@@ -2,23 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Shadow Nexus Cloud Radio</title>
+<title>24-Hour Cloud Stream — Shadow Nexus</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0066FF">
+<meta name="theme-color" content="#00AEEF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SNX Cloud Radio">
+<meta name="apple-mobile-web-app-title" content="SNX Cloud Stream">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
-<meta name="description" content="Shadow Nexus Cloud Radio — 24-hour cloud audio broadcasting">
+<meta name="description" content="Shadow Nexus 24-Hour Cloud Stream — Always-on community media channel">
 
-<!-- Firebase (CDN — same version as the rest of the app) -->
+<!-- Firebase -->
 <script type="importmap">
 {
   "imports": {
     "firebase/app":       "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js",
     "firebase/auth":      "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js",
-    "firebase/firestore": "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js"
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js",
+    "firebase/storage":   "https://www.gstatic.com/firebasejs/12.18.0/firebase-storage.js"
   }
 }
 </script>
@@ -29,65 +30,227 @@
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════════
      HEADER
-════════════════════════════════════════════════════ -->
-<header class="csr-header">
-  <a class="csr-back-btn" href="/?snxPage=studioPage" aria-label="Back to 24-Hour Studio">&#8592; Studio</a>
+═════════════════════════════════════════════════════ -->
+<header class="csr-header" role="banner">
+  <a class="csr-back-btn" href="/?snxPage=studioPage" aria-label="Back to Studio">&#8592; Studio</a>
   <div class="csr-header-center">
-    <div class="csr-logo">&#9925;</div>
+    <div class="csr-logo" aria-hidden="true">&#9925;</div>
     <div>
-      <div class="csr-title">SHADOW NEXUS CLOUD RADIO</div>
-      <div class="csr-subtitle">Broadcast your audio continuously from the cloud.</div>
+      <div class="csr-title">SHADOW NEXUS</div>
+      <div class="csr-subtitle">24-HOUR CLOUD STREAM</div>
     </div>
   </div>
-  <div id="csrAuthBadge" class="csr-auth-badge">…</div>
+  <div id="csrAuthBadge" class="csr-auth-badge" aria-live="polite">…</div>
 </header>
 
-<!-- ═══════════════════════════════════════════════════
-     AUTH GATE — shown until signed in
-════════════════════════════════════════════════════ -->
-<div id="csrAuthGate" class="csr-auth-gate" style="display:none;">
-  <div class="csr-card">
-    <div class="csr-card-icon">&#128274;</div>
+<!-- ══════════════════════════════════════════════════
+     AUTH GATE
+═════════════════════════════════════════════════════ -->
+<div id="csrAuthGate" class="csr-auth-gate" style="display:none;" role="main">
+  <div class="csr-card csr-card-center">
+    <div class="csr-card-icon" aria-hidden="true">&#128274;</div>
     <div class="csr-card-title">Sign In Required</div>
-    <p class="csr-card-desc">Please sign in to Shadow Nexus Social to manage or listen to Cloud Radio broadcasts.</p>
-    <a class="csr-btn csr-btn-primary" href="/?snxPage=studioPage">&#8592; Go to Shadow Nexus Social</a>
+    <p class="csr-card-desc">Sign in to Shadow Nexus Social to watch or manage the Cloud Stream.</p>
+    <a class="csr-btn csr-btn-primary" href="/?snxPage=studioPage">&#8592; Go to Shadow Nexus</a>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     LOADING STATE
-════════════════════════════════════════════════════ -->
-<div id="csrLoading" class="csr-loading">
-  <div class="csr-spinner"></div>
-  <div class="csr-loading-text">Loading Cloud Radio…</div>
+<!-- ══════════════════════════════════════════════════
+     LOADING
+═════════════════════════════════════════════════════ -->
+<div id="csrLoading" class="csr-loading" role="status" aria-label="Loading Cloud Stream">
+  <div class="csr-spinner" aria-hidden="true"></div>
+  <div class="csr-loading-text">Loading Cloud Stream…</div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     MAIN APP (shown after auth)
-════════════════════════════════════════════════════ -->
-<main id="csrApp" style="display:none;">
+<!-- ══════════════════════════════════════════════════
+     MAIN APP
+═════════════════════════════════════════════════════ -->
+<main id="csrApp" style="display:none;" role="main">
 
-  <!-- ── ACTIVE RETURN BANNER (when creator already has a stream) ── -->
-  <div id="csrActiveBanner" class="csr-active-banner" style="display:none;">
-    <span class="csr-live-dot-anim"></span>
+  <!-- ── ACTIVE BANNER ── -->
+  <div id="csrActiveBanner" class="csr-active-banner" style="display:none;" role="alert">
+    <span class="csr-live-dot-anim" aria-hidden="true"></span>
     <span id="csrActiveBannerText">Your cloud broadcast is LIVE</span>
-    <button class="csr-btn csr-btn-sm" onclick="csrScrollToStream()">Manage &#8595;</button>
+    <button class="csr-btn csr-btn-sm" onclick="csrScrollToAdmin()" aria-label="Manage broadcast">Manage &#8595;</button>
   </div>
 
   <!-- ══════════════════════════════════════════════
-       STREAM STATUS PANEL (creator view when active)
+       VIEWER SECTION — cinematic channel player
   ═══════════════════════════════════════════════════ -->
-  <section id="csrStatusPanel" class="csr-section" style="display:none;">
-    <div class="csr-card csr-card-live">
-      <!-- Live badge -->
+  <section id="csrViewerSection" class="csr-viewer-section" style="display:none;" aria-label="24-Hour Cloud Stream Player">
+
+    <!-- Channel branding above player -->
+    <div class="csr-channel-brand">
+      <div class="csr-channel-live-badge">
+        <span class="csr-live-dot-anim" aria-hidden="true"></span>
+        <span>&#128308; 24-HOUR CLOUD STREAM</span>
+      </div>
+      <div class="csr-channel-tagline">ALWAYS ON · AUTOMATED CHANNEL</div>
+    </div>
+
+    <!-- ── MAIN PLAYER STAGE ── -->
+    <div class="csr-stage" id="csrStage" role="region" aria-label="Media Player">
+
+      <!-- Background blur layer (music mode) -->
+      <div class="csr-stage-bg" id="csrStageBg" aria-hidden="true"></div>
+
+      <!-- === MUSIC VISUAL MODE === -->
+      <div class="csr-mode-music" id="csrModeMusic" aria-hidden="true">
+        <div class="csr-music-artwork-wrap" id="csrMusicArtworkWrap">
+          <img class="csr-music-artwork" id="csrMusicArtwork" src="" alt="Album artwork" loading="lazy">
+          <!-- Default artwork SVG fallback -->
+          <div class="csr-music-artwork-default" id="csrMusicArtworkDefault" aria-hidden="true">
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs>
+                <radialGradient id="bg-grad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#0a1e35"/>
+                  <stop offset="100%" stop-color="#020a15"/>
+                </radialGradient>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="3" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <rect width="200" height="200" fill="url(#bg-grad)"/>
+              <!-- Lightning bolt -->
+              <polygon points="115,20 85,95 108,95 85,180 130,80 107,80 130,20" fill="#39FF14" opacity="0.85" filter="url(#glow)"/>
+              <!-- Music note -->
+              <text x="50" y="175" font-size="22" fill="#00AEEF" opacity="0.7" font-family="Arial" filter="url(#glow)">&#9834;</text>
+              <text x="148" y="55" font-size="16" fill="#00AEEF" opacity="0.5" font-family="Arial">&#9835;</text>
+              <!-- SNX label -->
+              <text x="100" y="196" font-size="9" fill="#3a5a7a" font-family="Arial" font-weight="700" letter-spacing="2" text-anchor="middle">SHADOW NEXUS</text>
+            </svg>
+          </div>
+        </div>
+        <!-- Audio Visualizer -->
+        <div class="csr-visualizer-wrap" aria-hidden="true">
+          <canvas class="csr-visualizer-canvas" id="csrVisualizerCanvas" role="presentation"></canvas>
+        </div>
+      </div>
+
+      <!-- === VIDEO MODE === -->
+      <div class="csr-mode-video" id="csrModeVideo" aria-hidden="true">
+        <video
+          id="csrVideoEl"
+          class="csr-video-el"
+          playsinline
+          webkit-playsinline
+          x-webkit-airplay="allow"
+          preload="auto"
+          aria-label="Stream video"
+        ></video>
+      </div>
+
+      <!-- === PICTURE MODE === -->
+      <div class="csr-mode-picture" id="csrModePicture" aria-hidden="true">
+        <div class="csr-picture-bg" id="csrPictureBg" aria-hidden="true"></div>
+        <img class="csr-picture-img" id="csrPictureImg" src="" alt="Stream picture" loading="lazy">
+      </div>
+
+      <!-- === OFFLINE / WAITING STATE === -->
+      <div class="csr-mode-offline" id="csrModeOffline">
+        <div class="csr-offline-icon" aria-hidden="true">
+          <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" width="80" height="80">
+            <polygon points="52,8 28,38 42,38 28,72 60,30 46,30 60,8" fill="#39FF14" opacity="0.7"/>
+          </svg>
+        </div>
+        <div class="csr-offline-title">24-HOUR CLOUD STREAM</div>
+        <div class="csr-offline-sub" id="csrOfflineMsg">Starting up…</div>
+        <button class="csr-btn csr-btn-primary" style="margin-top:16px;width:auto;padding:12px 28px;" onclick="csrRetryConnect()">&#8635; Retry</button>
+      </div>
+
+      <!-- iOS Tap-to-Play overlay -->
+      <div id="csrTapOverlay" class="csr-tap-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Tap to start playback">
+        <button class="csr-tap-btn" id="csrTapBtn" onclick="csrStartListening()" aria-label="Tap to play">
+          <span class="csr-tap-icon" aria-hidden="true">&#9654;</span>
+          <span>Tap to Watch / Listen</span>
+        </button>
+        <div class="csr-tap-hint">Audio is paused — tap to start</div>
+      </div>
+
+      <!-- Fade transition overlay -->
+      <div class="csr-fade-overlay" id="csrFadeOverlay" aria-hidden="true"></div>
+
+      <!-- Fullscreen button -->
+      <button class="csr-fullscreen-btn" id="csrFullscreenBtn" onclick="csrToggleFullscreen()" aria-label="Toggle fullscreen">
+        <span id="csrFullscreenIcon" aria-hidden="true">&#x26F6;</span>
+      </button>
+    </div><!-- end .csr-stage -->
+
+    <!-- ── PLAYER CONTROLS BAR ── -->
+    <div class="csr-controls-bar" role="group" aria-label="Playback controls">
+      <button class="csr-play-btn" id="csrPlayerPlayBtn" onclick="csrTogglePlay()" aria-label="Play/Pause">
+        <span id="csrPlayBtnIcon" aria-hidden="true">&#9654;</span>
+      </button>
+      <div class="csr-progress-section" role="group" aria-label="Playback progress">
+        <span class="csr-time" id="csrCurrentTime" aria-label="Current time">0:00</span>
+        <div class="csr-progress-bar" role="progressbar" aria-label="Track progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" id="csrProgressBar">
+          <div class="csr-progress-fill" id="csrProgressFill"></div>
+        </div>
+        <span class="csr-time" id="csrTotalTime" aria-label="Total duration">—</span>
+      </div>
+      <div class="csr-vol-group" aria-label="Volume control">
+        <span aria-hidden="true">&#128264;</span>
+        <input type="range" min="0" max="100" value="80" id="csrVolSlider" oninput="csrSetVolume(this.value)" class="csr-vol-slider" aria-label="Volume">
+        <span aria-hidden="true">&#128266;</span>
+      </div>
+    </div>
+
+    <!-- ── NOW PLAYING PANEL ── -->
+    <div class="csr-now-playing-panel" id="csrNowPlayingPanel" role="region" aria-label="Now Playing" aria-live="polite">
+      <div class="csr-np-label">NOW PLAYING</div>
+      <div class="csr-np-content">
+        <div class="csr-np-thumb-wrap" aria-hidden="true">
+          <img class="csr-np-thumb" id="csrNpThumb" src="" alt="" loading="lazy">
+          <div class="csr-np-thumb-default" id="csrNpThumbDefault" aria-hidden="true">&#9834;</div>
+        </div>
+        <div class="csr-np-info">
+          <div class="csr-np-title" id="csrNpTitle">—</div>
+          <div class="csr-np-artist" id="csrNpArtist"></div>
+          <div class="csr-np-meta">
+            <span class="csr-np-type-badge" id="csrNpTypeBadge">&#127925; Music</span>
+            <span class="csr-np-uploader" id="csrNpUploader"></span>
+          </div>
+        </div>
+        <div class="csr-np-stats">
+          <!-- Like button -->
+          <button class="csr-like-btn" id="csrLikeBtn" onclick="csrToggleLike()" aria-label="Like this track" aria-pressed="false">
+            <span class="csr-like-heart" id="csrLikeHeart" aria-hidden="true">&#9825;</span>
+            <span class="csr-like-count" id="csrLikeCount">0</span>
+          </button>
+          <!-- Viewer count -->
+          <div class="csr-viewer-count" id="csrViewerBadge" aria-label="Current viewers">
+            <span aria-hidden="true">&#128065;</span>
+            <span id="csrViewerCount">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── UP NEXT ── -->
+    <div class="csr-up-next" id="csrUpNext" role="region" aria-label="Up Next">
+      <div class="csr-up-next-label">UP NEXT</div>
+      <div class="csr-up-next-list" id="csrUpNextList" role="list">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+  </section><!-- end csrViewerSection -->
+
+  <!-- ══════════════════════════════════════════════
+       ADMIN / FOUNDER SECTION (permission-gated)
+  ═══════════════════════════════════════════════════ -->
+  <section id="csrAdminSection" class="csr-admin-section" style="display:none;" aria-label="Stream Management">
+
+    <!-- Stream Status (when active) -->
+    <div id="csrStatusPanel" class="csr-card csr-card-live" style="display:none;">
       <div class="csr-live-header">
         <span id="csrStatusBadge" class="csr-status-badge csr-status-offline">OFFLINE</span>
         <span id="csrStreamId" class="csr-stream-id-label"></span>
       </div>
-
-      <!-- Stream info grid -->
       <div class="csr-info-grid" id="csrInfoGrid">
         <div class="csr-info-row"><span class="csr-info-label">Title</span><span class="csr-info-val" id="csrInfoTitle">—</span></div>
         <div class="csr-info-row"><span class="csr-info-label">Host</span><span class="csr-info-val" id="csrInfoHost">—</span></div>
@@ -95,117 +258,43 @@
         <div class="csr-info-row"><span class="csr-info-label">Started</span><span class="csr-info-val" id="csrInfoStarted">—</span></div>
         <div class="csr-info-row"><span class="csr-info-label">Expires</span><span class="csr-info-val" id="csrInfoExpires">—</span></div>
         <div class="csr-info-row"><span class="csr-info-label">Remaining</span><span class="csr-info-val csr-info-remaining" id="csrInfoRemaining">—</span></div>
-        <div class="csr-info-row"><span class="csr-info-label">Listeners</span><span class="csr-info-val" id="csrInfoListeners">0</span></div>
+        <div class="csr-info-row"><span class="csr-info-label">Viewers</span><span class="csr-info-val" id="csrInfoListeners">0</span></div>
         <div class="csr-info-row"><span class="csr-info-label">Worker</span><span class="csr-info-val" id="csrInfoWorker">—</span></div>
       </div>
-
-      <!-- Now Playing in-stream -->
       <div class="csr-now-playing-strip" id="csrNowPlayingStrip">
         <div class="csr-np-label">&#9834; NOW PLAYING</div>
-        <div class="csr-np-title" id="csrNpTitle">—</div>
-        <div class="csr-np-artist" id="csrNpArtist"></div>
-        <div class="csr-np-next" id="csrNpNext"></div>
+        <div class="csr-np-title" id="csrAdminNpTitle">—</div>
+        <div class="csr-np-artist" id="csrAdminNpArtist"></div>
+        <div class="csr-np-next" id="csrAdminNpNext"></div>
       </div>
-
-      <!-- Controls -->
       <div class="csr-controls-row">
         <button class="csr-btn csr-btn-music" onclick="csrScrollToPlaylist()">&#127925; Manage Playlist</button>
         <button class="csr-btn csr-btn-next" id="csrNextBtn" onclick="csrSkipTrack()">&#9197; Skip Track</button>
-        <button class="csr-btn csr-btn-danger" onclick="csrConfirmStop()" id="csrStopBtn">&#9940; END CLOUD BROADCAST</button>
+        <button class="csr-btn csr-btn-danger" onclick="csrConfirmStop()" id="csrStopBtn">&#9940; END BROADCAST</button>
       </div>
     </div>
-  </section>
 
-  <!-- ══════════════════════════════════════════════
-       LISTENER PLAYER (for non-creators + public)
-  ═══════════════════════════════════════════════════ -->
-  <section id="csrListenerPanel" class="csr-section" style="display:none;">
-    <div class="csr-card csr-card-player">
-      <div class="csr-player-artwork" id="csrPlayerArtwork">&#9835;</div>
-      <div class="csr-player-info">
-        <div class="csr-player-live-badge"><span class="csr-live-dot-anim"></span> LIVE</div>
-        <div class="csr-player-broadcast-title" id="csrPlayerBroadcastTitle">Shadow Nexus Cloud Radio</div>
-        <div class="csr-player-host" id="csrPlayerHost"></div>
-      </div>
-      <div class="csr-player-track-info">
-        <div class="csr-player-track-title" id="csrPlayerTrackTitle">—</div>
-        <div class="csr-player-track-artist" id="csrPlayerTrackArtist"></div>
-      </div>
-      <div class="csr-player-progress-row">
-        <span class="csr-player-time" id="csrPlayerCurrentTime">0:00</span>
-        <div class="csr-player-progress-bar">
-          <div class="csr-player-progress-fill" id="csrPlayerProgressFill"></div>
-        </div>
-        <span class="csr-player-time" id="csrPlayerTotalTime">—</span>
-      </div>
-      <div class="csr-player-controls">
-        <button class="csr-player-btn csr-player-play" id="csrPlayerPlayBtn" onclick="csrTogglePlay()">&#9654;</button>
-        <div class="csr-player-vol-row">
-          <span>&#128264;</span>
-          <input type="range" min="0" max="100" value="80" id="csrVolSlider" oninput="csrSetVolume(this.value)" class="csr-vol-slider">
-          <span>&#128266;</span>
-        </div>
-      </div>
-      <div class="csr-player-next-row" id="csrPlayerNextRow"></div>
-      <div class="csr-player-stats">
-        <span id="csrPlayerListeners">0 listeners</span>
-        <span class="csr-player-stats-sep">·</span>
-        <span id="csrPlayerUptime"></span>
-      </div>
-      <!-- Like button row -->
-      <div class="csr-player-like-row" id="csrPlayerLikeRow">
-        <button class="csr-btn csr-btn-like" id="csrLikeBtn" onclick="csrToggleLike()" aria-label="Like this broadcast">
-          <span id="csrLikeIcon">&#9825;</span>
-          <span id="csrLikeCount">0</span>
-        </button>
-      </div>
-      <!-- iOS / autoplay-blocked Tap to Listen overlay -->
-      <div id="csrTapToListenOverlay" class="csr-tap-overlay" style="display:none;">
-        <button class="csr-btn csr-btn-primary csr-tap-btn" id="csrTapToListenBtn" onclick="csrStartListening()">
-          <span style="font-size:1.4em;">&#9654;</span> Tap to Listen
-        </button>
-        <div class="csr-tap-hint">Audio is paused — tap above to start</div>
-      </div>
-      <!-- Error / offline state -->
-      <div id="csrPlayerOffline" class="csr-player-offline" style="display:none;">
-        <div class="csr-player-offline-icon">&#128262;</div>
-        <div class="csr-player-offline-msg">This broadcast has ended or is not currently live.</div>
-        <a href="/" class="csr-btn csr-btn-primary" style="margin-top:12px;">&#8592; Back to SNX</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══════════════════════════════════════════════
-       CREATE BROADCAST FORM
-  ═══════════════════════════════════════════════════ -->
-  <section id="csrCreatePanel" class="csr-section" style="display:none;">
-    <div class="csr-card">
+    <!-- Create Broadcast Form -->
+    <div id="csrCreatePanel" class="csr-card" style="display:none;">
       <div class="csr-card-title">&#127925; CREATE 24-HOUR BROADCAST</div>
-
-      <!-- Duplicate stream warning -->
       <div id="csrDuplicateWarn" class="csr-warn" style="display:none;">
-        &#9888; You already have an active or starting broadcast.
+        &#9888; You already have an active broadcast.
         <button class="csr-btn csr-btn-sm" onclick="csrOpenExistingStream()" style="margin-left:8px;">View it &#8594;</button>
       </div>
-
-      <!-- Playlist selector (uses existing studioPlaylists/{uid}/playlists) -->
       <div class="csr-form-group">
         <label class="csr-label">&#127925; Playlist / Audio Queue</label>
         <div id="csrPlaylistSelector" class="csr-playlist-selector">
           <div class="csr-playlist-loading">Loading your playlists…</div>
         </div>
         <div id="csrPlaylistHint" class="csr-hint">
-          Select a playlist from your music library. Add or upload tracks in <a href="/" class="csr-link">24-Hour Studio</a> first.
+          Select a playlist from your library. Add tracks in <a href="/?snxPage=studioPage" class="csr-link">24-Hour Studio</a> first.
         </div>
       </div>
-
-      <!-- Queue preview -->
       <div id="csrQueuePreview" class="csr-queue-preview" style="display:none;"></div>
-
       <div class="csr-form-row">
         <div class="csr-form-group">
           <label class="csr-label">Broadcast Title</label>
-          <input class="csr-input" id="csrFormTitle" placeholder="My Cloud Radio" maxlength="100">
+          <input class="csr-input" id="csrFormTitle" placeholder="My Cloud Stream" maxlength="100">
         </div>
         <div class="csr-form-group">
           <label class="csr-label">Category</label>
@@ -221,12 +310,10 @@
           </select>
         </div>
       </div>
-
       <div class="csr-form-group">
         <label class="csr-label">Description <span class="csr-optional">optional</span></label>
         <input class="csr-input" id="csrFormDesc" placeholder="What are you broadcasting?" maxlength="300">
       </div>
-
       <div class="csr-form-row">
         <div class="csr-form-group">
           <label class="csr-label">Maximum Duration</label>
@@ -237,64 +324,51 @@
             <option value="720">12 Hours</option>
             <option value="1440" selected>24 Hours (max)</option>
           </select>
-          <div class="csr-hint" id="csrTestModeHint" style="display:none;">&#9888; Test mode — 5 min broadcast (developer only)</div>
+          <div class="csr-hint" id="csrTestModeHint" style="display:none;">&#9888; Test mode — 5 min (founder only)</div>
         </div>
         <div class="csr-form-group">
           <label class="csr-label">Cover Artwork <span class="csr-optional">optional</span></label>
           <div id="csrArtworkPreview" class="csr-artwork-preview" style="display:none;">
-            <img id="csrArtworkImg" src="" alt="Cover" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
-            <button class="csr-artwork-remove" onclick="csrRemoveArtwork()">&#10005;</button>
+            <img id="csrArtworkImg" src="" alt="Cover">
+            <button class="csr-artwork-remove" onclick="csrRemoveArtwork()" aria-label="Remove artwork">&#10005;</button>
           </div>
           <button class="csr-btn csr-btn-outline" onclick="document.getElementById('csrArtworkInput').click()" id="csrArtworkBtn">&#128444; Choose Image</button>
-          <input type="file" id="csrArtworkInput" accept="image/*" onchange="csrLoadArtwork(event)" style="display:none;">
+          <input type="file" id="csrArtworkInput" accept="image/jpeg,image/jpg,image/png,image/webp" onchange="csrLoadArtwork(event)" style="display:none;" aria-label="Upload cover artwork">
         </div>
       </div>
-
       <div class="csr-form-group">
         <label class="csr-label">Shuffle &amp; Repeat</label>
         <div class="csr-toggle-row">
-          <label class="csr-toggle-label">
-            <input type="checkbox" id="csrFormShuffle"> Shuffle playlist
-          </label>
-          <label class="csr-toggle-label">
-            <input type="checkbox" id="csrFormRepeat" checked> Repeat (loop)
-          </label>
+          <label class="csr-toggle-label"><input type="checkbox" id="csrFormShuffle"> Shuffle playlist</label>
+          <label class="csr-toggle-label"><input type="checkbox" id="csrFormRepeat" checked> Repeat (loop)</label>
         </div>
       </div>
-
       <div id="csrValidationError" class="csr-error" style="display:none;"></div>
-
-      <!-- Start button -->
       <button class="csr-btn csr-btn-start" id="csrStartBtn" onclick="csrStartBroadcast()">
         &#128308; GO LIVE FOR 24 HOURS
       </button>
-
-      <!-- Starting progress -->
       <div id="csrStartingProgress" style="display:none;">
         <div class="csr-handoff-steps" id="csrHandoffSteps"></div>
       </div>
     </div>
-  </section>
 
-  <!-- ══════════════════════════════════════════════
-       BROADCAST HISTORY
-  ═══════════════════════════════════════════════════ -->
-  <section id="csrHistoryPanel" class="csr-section" style="display:none;">
-    <div class="csr-card">
+    <!-- Broadcast History -->
+    <div id="csrHistoryPanel" class="csr-card" style="display:none;">
       <div class="csr-card-title">&#128203; Broadcast History</div>
       <div id="csrHistoryList" class="csr-history-list">
         <div class="csr-loading-text">Loading history…</div>
       </div>
     </div>
-  </section>
+
+  </section><!-- end csrAdminSection -->
 
 </main>
 
-<!-- Toast notification -->
-<div id="csrToast" class="csr-toast" style="display:none;"></div>
+<!-- Toast -->
+<div id="csrToast" class="csr-toast" style="display:none;" role="status" aria-live="polite"></div>
 
-<!-- Confirmation dialog -->
-<div id="csrConfirmOverlay" class="csr-confirm-overlay" style="display:none;">
+<!-- Confirm dialog -->
+<div id="csrConfirmOverlay" class="csr-confirm-overlay" style="display:none;" role="dialog" aria-modal="true">
   <div class="csr-confirm-dialog">
     <div class="csr-confirm-title" id="csrConfirmTitle">Confirm</div>
     <div class="csr-confirm-body" id="csrConfirmBody"></div>
