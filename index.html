@@ -8734,6 +8734,7 @@ body.arcade-fs-ios body::after { display:none !important; }
     <button class="admin-tab" onclick="switchAdminTab('gifts');snxgAdminLoadGifts();snxgAdminLoadCoinStats()">🎁 Gifts &amp; Coins</button>
     <button class="admin-tab" onclick="switchAdminTab('cointesting');snxgLoadCoinTestingTab()">🪙 Coin Testing</button>
     <button class="admin-tab" onclick="switchAdminTab('cloudstreams');snxAdminLoadCloudStreams()">☁️ CloudStreams</button>
+    <button class="admin-tab" onclick="switchAdminTab('r2storage');snxR2StatusOpen()">🗄️ R2 Storage</button>
     <button class="admin-tab" onclick="switchAdminTab('themes');snxTCCOpen()">🎨 Theme Engine</button>
 </div>
 
@@ -9865,6 +9866,72 @@ body.arcade-fs-ios body::after { display:none !important; }
 </div><!-- end adminTab-cloudstreams -->
 
 <!-- ══════════════════════════════════
+     TAB: CLOUDFLARE R2 STORAGE STATUS
+     Founder-only
+══════════════════════════════════ -->
+<div class="admin-tab-content" id="adminTab-r2storage">
+  <div class="section-card">
+    <h3 style="margin:0 0 6px;font-size:14px;font-weight:800;color:#00d4ff;text-transform:uppercase;letter-spacing:0.8px;">🗄️ Cloudflare R2 Storage</h3>
+    <p style="font-size:12px;color:#4a7a9a;margin:0 0 16px;line-height:1.6;">Live connectivity test against the existing R2 Upload Worker. No private credentials are exposed here.</p>
+
+    <!-- Status indicators -->
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;" id="snxR2StatusIndicators">
+      <div style="flex:1;min-width:160px;background:rgba(0,15,40,0.7);border:1px solid rgba(0,174,239,0.25);border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#4a7a9a;letter-spacing:0.5px;margin-bottom:4px;">UPLOAD WORKER</div>
+        <div id="snxR2StatusWorker" style="font-size:14px;font-weight:800;color:#4a7a9a;">⏳ Not tested</div>
+      </div>
+      <div style="flex:1;min-width:160px;background:rgba(0,15,40,0.7);border:1px solid rgba(0,174,239,0.25);border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#4a7a9a;letter-spacing:0.5px;margin-bottom:4px;">R2 BUCKET BINDING</div>
+        <div id="snxR2StatusBucket" style="font-size:14px;font-weight:800;color:#4a7a9a;">⏳ Not tested</div>
+      </div>
+      <div style="flex:1;min-width:160px;background:rgba(0,15,40,0.7);border:1px solid rgba(0,174,239,0.25);border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#4a7a9a;letter-spacing:0.5px;margin-bottom:4px;">AUTH (Firebase)</div>
+        <div id="snxR2StatusAuth" style="font-size:14px;font-weight:800;color:#4a7a9a;">⏳ Not tested</div>
+      </div>
+      <div style="flex:1;min-width:160px;background:rgba(0,15,40,0.7);border:1px solid rgba(0,174,239,0.25);border-radius:10px;padding:12px 14px;">
+        <div style="font-size:10px;color:#4a7a9a;letter-spacing:0.5px;margin-bottom:4px;">CORS</div>
+        <div id="snxR2StatusCors" style="font-size:14px;font-weight:800;color:#4a7a9a;">⏳ Not tested</div>
+      </div>
+    </div>
+
+    <!-- Overall status badge -->
+    <div style="margin-bottom:18px;">
+      <div style="font-size:11px;color:#4a7a9a;letter-spacing:0.5px;margin-bottom:6px;">OVERALL STATUS</div>
+      <div id="snxR2OverallStatus" style="font-size:18px;font-weight:800;color:#4a7a9a;padding:12px 16px;background:rgba(0,15,40,0.7);border:1px solid rgba(0,174,239,0.25);border-radius:10px;display:inline-block;">
+        ⏳ Run a connection test to check status
+      </div>
+    </div>
+
+    <!-- Test button -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+      <button id="snxR2TestBtn" onclick="snxR2RunTest()" style="padding:10px 22px;border-radius:10px;background:linear-gradient(135deg,#003d99,#0066cc);border:1px solid rgba(0,174,239,0.5);color:#fff;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:0.3px;">
+        🔌 TEST R2 CONNECTION
+      </button>
+    </div>
+
+    <!-- Last test info -->
+    <div id="snxR2LastTest" style="font-size:11px;color:#4a7a9a;margin-bottom:18px;"></div>
+
+    <!-- Raw response / detail -->
+    <div id="snxR2RawDetail" style="display:none;background:rgba(0,5,15,0.8);border:1px solid rgba(0,174,239,0.2);border-radius:8px;padding:12px 14px;font-size:11px;font-family:monospace;color:#7ab8d8;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;"></div>
+  </div>
+
+  <!-- Worker configuration (non-sensitive) -->
+  <div class="section-card" style="margin-top:12px;">
+    <h3 style="margin:0 0 10px;font-size:13px;color:#00d4ff;text-transform:uppercase;letter-spacing:0.8px;">📋 R2 Configuration</h3>
+    <div style="font-size:12px;color:#5a80a8;line-height:2;">
+      <div>Upload Worker: <strong style="color:#d8eeff;">yellow-term-11e6.nthntjrn.workers.dev</strong></div>
+      <div>R2 Bucket: <strong style="color:#d8eeff;">legend</strong></div>
+      <div>Binding Name: <strong style="color:#d8eeff;">BUCKET</strong></div>
+      <div>Auth Mechanism: <strong style="color:#d8eeff;">Firebase ID Token (Bearer)</strong></div>
+      <div>Max File Size: <strong style="color:#d8eeff;">Images 10 MB · Audio 200 MB · Video 2 GB</strong></div>
+      <div>Chunk Threshold: <strong style="color:#d8eeff;">&gt; 20 MB → chunked upload</strong></div>
+      <div>CORS Origins: <strong style="color:#d8eeff;">shadownexussocial.online + chrislegendofshadows.com + localhost</strong></div>
+    </div>
+  </div>
+</div><!-- end adminTab-r2storage -->
+
+<!-- ══════════════════════════════════
      TAB: NEXUS GLOBAL THEME ENGINE
      Founder-only — ThemeEngine module required
 ══════════════════════════════════ -->
@@ -10191,6 +10258,10 @@ body.arcade-fs-ios body::after { display:none !important; }
 </div><!-- end tcc-layout -->
 
 </div><!-- end adminTab-themes -->
+
+<!-- Founder-scoped modal root — all Founder confirmation dialogs attach here,
+     NOT to document.body, so they stay inside the Founder Panel. -->
+<div id="founder-modal-root" style="position:relative;z-index:0;"></div>
 
 </div><!-- end adminPage -->
 
@@ -11118,7 +11189,7 @@ body.arcade-fs-ios body::after { display:none !important; }
 
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, browserLocalPersistence, setPersistence, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
   import { getFirestore, doc, setDoc, getDoc, getDocFromCache, getDocFromServer, updateDoc, deleteDoc, collection, addDoc, query, orderBy, limit, onSnapshot, arrayUnion, arrayRemove, runTransaction, where, getDocs, writeBatch, increment, serverTimestamp, enableNetwork, disableNetwork } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-messaging.js";
@@ -11135,7 +11206,8 @@ body.arcade-fs-ios body::after { display:none !important; }
     appId: "1:933810617818:web:efb24f123337dd987c14e3"
   };
 
-  const app = initializeApp(firebaseConfig);
+  // Reuse existing app instance if cloud-stream.js (loaded first) already initialised it
+  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
   const _presenceRtdb = _getRtdb(app);
@@ -11404,6 +11476,7 @@ body.arcade-fs-ios body::after { display:none !important; }
   let feedUnsubscribe      = null;    // timeline feed
   let presenceUnsubscribe  = null;    // all-users presence strip
   let userDataUnsubscribe  = null;    // current user's own doc (settings + notifs + push)
+  let _presenceHeartbeatTimer = null; // clearable heartbeat interval (RTDB presence)
   // Track post IDs already in the DOM to prevent duplicates
   const _renderedPostIds = new Set();
   // Real-time feed: true once the initial snapshot has been rendered
@@ -12158,11 +12231,14 @@ body.arcade-fs-ios body::after { display:none !important; }
           } catch(_) {}
 
           // ── Heartbeat: keep RTDB presence alive every 30 s ──
-          setInterval(() => {
-              if (auth.currentUser) {
-                  try { _rtdbSet(_rtdbRef(_presenceRtdb, 'users/' + auth.currentUser.uid), { online: true, live: false, lastSeen: _rtdbServerTimestamp() }); } catch(_) {}
-              }
-          }, 30000);
+          // Only start once; subsequent sign-in cycles reuse the existing interval.
+          if (!_presenceHeartbeatTimer) {
+              _presenceHeartbeatTimer = setInterval(() => {
+                  if (auth.currentUser) {
+                      try { _rtdbSet(_rtdbRef(_presenceRtdb, 'users/' + auth.currentUser.uid), { online: true, live: false, lastSeen: _rtdbServerTimestamp() }); } catch(_) {}
+                  }
+              }, 30000);
+          }
 
           // Save email to Firestore so username login works for existing accounts
           try {
@@ -12440,6 +12516,8 @@ body.arcade-fs-ios body::after { display:none !important; }
           if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; }
           // notifUnsubscribe removed — notifications are now handled inside userDataUnsubscribe
           if (userDataUnsubscribe) { userDataUnsubscribe(); userDataUnsubscribe = null; }
+          // Clear presence heartbeat so it doesn't fire after logout
+          if (_presenceHeartbeatTimer) { clearInterval(_presenceHeartbeatTimer); _presenceHeartbeatTimer = null; }
           // Tear down profile snapshot so it doesn't fire against null currentUser
           if (typeof activeProfileUnsubscribe !== 'undefined' && activeProfileUnsubscribe) {
               activeProfileUnsubscribe(); activeProfileUnsubscribe = null;
@@ -13368,11 +13446,12 @@ body.arcade-fs-ios body::after { display:none !important; }
       }
   }, { passive: true });
 
-  // XSS escape for feed content
+  // XSS escape for feed content — also exposed globally for non-module scripts
   function escFeed(str) {
       if (!str) return '';
       return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+  window._snxEscFeed = escFeed;
 
   /* ── buildBadgeHtml ─────────────────────────────────────────────────────
      Returns one or more .badge-inline spans for the given badges array.
@@ -14232,13 +14311,15 @@ body.arcade-fs-ios body::after { display:none !important; }
 
   // Delete a single comment by its stable ts+authorUid key — race-condition-safe transaction
   window.deletePostComment = async (postId, commentTs, commentAuthorUid) => {
+      if (!currentUser) return;
       const ref = doc(db, "posts", postId);
       await runTransaction(db, async (transaction) => {
           const snap = await transaction.get(ref);
           if (!snap.exists()) return;
           const post = snap.data();
-          // Guard: only comment author or post owner
-          if (commentAuthorUid !== currentUser.uid && post.uid !== currentUser.uid) return;
+          const isMod = window._snxRole === 'founder' || window._snxRole === 'moderator' || window._snxRole === 'admin';
+          // Guard: only comment author, post owner, or moderator/founder
+          if (commentAuthorUid !== currentUser.uid && post.uid !== currentUser.uid && !isMod) return;
           const filtered = (post.comments || []).filter(
               c => !(c.ts === commentTs && c.authorUid === commentAuthorUid)
           );
@@ -14248,7 +14329,8 @@ body.arcade-fs-ios body::after { display:none !important; }
 
   /* ── Build a single comment DOM node ── */
   function _buildCommentNode(postId, c) {
-      const canDelete = c.authorUid === currentUser?.uid;
+      const _isMod = window._snxRole === 'founder' || window._snxRole === 'moderator' || window._snxRole === 'admin';
+      const canDelete = c.authorUid === currentUser?.uid || _isMod;
       const d = document.createElement("div");
       d.className = "comment-row";
       // Stable key: prefer authorUid+ts, fall back to ts alone
@@ -18080,6 +18162,8 @@ body.arcade-fs-ios body::after { display:none !important; }
       if (tab==='aisafety')    adminLoadAISafetyLog();
       if (tab==='pages' || tab==='emergency') { pvLoadTabData(); emergencyLoadTabData(); }
       if (tab==='messages')    adminLoadAllConversations();
+      // R2 Storage tab — auto-run health check on first open
+      if (tab==='r2storage' && typeof window.snxR2StatusOpen === 'function') window.snxR2StatusOpen();
   };
 
   // ── Founder: conversation moderation tools ────────────────────────────────
@@ -18373,10 +18457,12 @@ body.arcade-fs-ios body::after { display:none !important; }
       if (!founderOnly()) return;
       const currentlyOn = window._aiModerationEnabled !== false;
       if (currentlyOn) {
-          // Show confirmation before disabling
+          // Show confirmation before disabling — attached to Founder Panel, not document.body
+          const existing = document.getElementById('_aiConfirmModal');
+          if (existing) existing.remove();
           const modal = document.createElement('div');
           modal.id = '_aiConfirmModal';
-          modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.78);';
+          modal.style.cssText = 'position:fixed;inset:0;z-index:10500;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.78);';
           modal.innerHTML = `
               <div style="background:#0d2444;border:1px solid rgba(255,51,85,0.55);border-radius:16px;padding:28px 24px;max-width:360px;width:calc(100% - 40px);box-shadow:0 0 40px rgba(255,51,85,0.3);">
                   <div style="font-size:22px;margin-bottom:10px;">⚠️</div>
@@ -18387,9 +18473,10 @@ body.arcade-fs-ios body::after { display:none !important; }
                       <button id="_aiConfirmNo"  style="flex:1;padding:10px;border-radius:10px;background:rgba(0,40,80,0.6);border:1px solid rgba(0,174,239,0.4);color:#66ccff;font-size:13px;font-weight:700;cursor:pointer;">❌ Cancel</button>
                   </div>
               </div>`;
-          document.body.appendChild(modal);
-          document.getElementById('_aiConfirmNo').onclick  = () => modal.remove();
-          document.getElementById('_aiConfirmYes').onclick = async () => {
+          const _fmRoot = document.getElementById('founder-modal-root') || document.getElementById('adminPage') || document.body;
+          _fmRoot.appendChild(modal);
+          modal.querySelector('#_aiConfirmNo').onclick  = () => modal.remove();
+          modal.querySelector('#_aiConfirmYes').onclick = async () => {
               modal.remove();
               await _applyAIToggle(false, currentlyOn);
           };
@@ -22857,15 +22944,16 @@ window.clearBannerUpload   = clearBannerUpload;
                     const tagLabel = TAG_LABELS[d.tag] || d.tag;
                     const hugged = (d.hugs || 0);
                     const postEl = document.createElement('div');
+                    const _cEsc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
                     postEl.className = 'comm-anon-post' + (d.tag === 'support' ? ' support-post' : '');
                     postEl.innerHTML = `
                         <div class="comm-anon-meta">
-                            <div class="comm-anon-avatar">${d.anon ? '🌑' : (d.initials || '?')}</div>
-                            <span class="comm-anon-name">${d.anon ? 'Anonymous' : (d.displayName || 'Member')}</span>
-                            <span class="comm-anon-tag ${tagClass}">${tagLabel}</span>
+                            <div class="comm-anon-avatar">${d.anon ? '🌑' : _cEsc(d.initials || '?')}</div>
+                            <span class="comm-anon-name">${d.anon ? 'Anonymous' : _cEsc(d.displayName || 'Member')}</span>
+                            <span class="comm-anon-tag ${tagClass}">${_cEsc(tagLabel)}</span>
                             <span class="comm-anon-ts">${_relTime(d.ts)}</span>
                         </div>
-                        <div class="comm-anon-text">${d.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+                        <div class="comm-anon-text">${_cEsc(d.text)}</div>
                         <div class="comm-anon-actions">
                             <button class="comm-anon-react" onclick="commHugPost('${doc.id}', this)">🤍 ${hugged > 0 ? hugged + ' Hugs' : 'Send a Hug'}</button>
                             <button class="comm-anon-react" onclick="commReplySupport(this)">💬 Respond</button>
@@ -22953,7 +23041,7 @@ window.clearBannerUpload   = clearBannerUpload;
 
 <script type="module">
 /* ── Storm Rooms uses the same Firebase app but Realtime Database ── */
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, off, set, remove, serverTimestamp, onDisconnect, get }
     from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
 
@@ -22966,9 +23054,8 @@ const _STORM_CFG = {
     messagingSenderId: "933810617818",
     appId: "1:933810617818:web:efb24f123337dd987c14e3"
 };
-// Reuse existing app if already initialized (avoids duplicate-app error)
-const _stormApp = getApps().find(a => a.name === '[DEFAULT]') ||
-    initializeApp(_STORM_CFG, 'storm');
+// Reuse the default app if already initialized (avoids duplicate-app error)
+const _stormApp = getApps().length ? getApp() : initializeApp(_STORM_CFG);
 const _rtdb = getDatabase(_stormApp);
 
 /* ────────────────────────────────
@@ -23138,7 +23225,7 @@ function _stormRenderMsg(m) {
 
     if (isSys) {
         wrap.className = 'storm-msg storm-msg-system';
-        wrap.innerHTML = `<div class="storm-bubble">${m.text}</div>`;
+        wrap.innerHTML = `<div class="storm-bubble">${_esc(m.text)}</div>`;
         return wrap;
     }
 
@@ -23567,7 +23654,7 @@ function _supportRenderMsg(m) {
 
     if (isSys) {
         wrap.className = 'support-msg support-msg-system';
-        wrap.innerHTML = `<div class="support-bubble">${m.text}</div>`;
+        wrap.innerHTML = `<div class="support-bubble">${_esc(m.text)}</div>`;
         return wrap;
     }
 
@@ -29102,6 +29189,7 @@ window.adminPurgeEndedRooms = async function() {
   window.adminLoadLiveRooms();
 };
 
+// Note: r2storage tab handling is in the primary switchAdminTab above.
 const _originalSwitchAdminTab = window.switchAdminTab;
 window.switchAdminTab = function(tab) {
   if (typeof _originalSwitchAdminTab === 'function') _originalSwitchAdminTab(tab);
@@ -31168,8 +31256,8 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = '2026-09-23-GLOBAL-UPDATE';
-  var SW_VER   = 'v47';
+  var BUILD_ID = '2026-09-24-STABILIZATION';
+  var SW_VER   = 'v48';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
 
@@ -31306,6 +31394,126 @@ document.addEventListener('click', function(e) {
 
   _updatePanel();
   setInterval(_updatePanel, 3000);
+})();
+</script>
+
+<!-- ████ CLOUDFLARE R2 STORAGE STATUS — Founder Panel ████ -->
+<script>
+/**
+ * R2 Storage Status Panel — Shadow Nexus Social
+ * Founder-only. Calls GET /upload-health on the R2 upload worker to verify
+ * connectivity without exposing any private credentials.
+ */
+(function() {
+  const R2_WORKER = 'https://yellow-term-11e6.nthntjrn.workers.dev';
+
+  /* Called when Founder opens the R2 Storage tab */
+  window.snxR2StatusOpen = function() {
+    if (window._snxRole !== 'founder') return;
+    // Auto-run a test on first open if not yet tested
+    const workerEl = document.getElementById('snxR2StatusWorker');
+    if (workerEl && workerEl.textContent.includes('Not tested')) {
+      window.snxR2RunTest();
+    }
+  };
+
+  /* Run the R2 connectivity test */
+  window.snxR2RunTest = async function() {
+    if (window._snxRole !== 'founder') return;
+
+    const btn       = document.getElementById('snxR2TestBtn');
+    const overall   = document.getElementById('snxR2OverallStatus');
+    const workerEl  = document.getElementById('snxR2StatusWorker');
+    const bucketEl  = document.getElementById('snxR2StatusBucket');
+    const authEl    = document.getElementById('snxR2StatusAuth');
+    const corsEl    = document.getElementById('snxR2StatusCors');
+    const lastEl    = document.getElementById('snxR2LastTest');
+    const rawEl     = document.getElementById('snxR2RawDetail');
+
+    if (!overall) return;
+
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Testing…'; }
+    overall.textContent = '⏳ Testing R2 connection…';
+    overall.style.color = '#ffbb44';
+
+    const _setStatus = (el, ok, label) => {
+      if (!el) return;
+      el.textContent  = ok ? ('🟢 ' + label) : ('🔴 ' + label);
+      el.style.color  = ok ? '#39FF14' : '#ff5566';
+    };
+
+    try {
+      const startMs = Date.now();
+
+      // 1. OPTIONS preflight — verifies CORS
+      let corsOk = false;
+      try {
+        const pre = await fetch(R2_WORKER, {
+          method: 'OPTIONS',
+          headers: { 'Origin': location.origin }
+        });
+        corsOk = pre.ok || pre.status === 204;
+      } catch (_) { corsOk = false; }
+      _setStatus(corsEl, corsOk, corsOk ? 'CORS OK' : 'CORS FAILED');
+
+      // 2. GET /upload-health — verifies worker reachability, R2 binding, auth config
+      const resp = await fetch(R2_WORKER + '/upload-health?_=' + Date.now(), {
+        method: 'GET',
+        headers: { 'Origin': location.origin }
+      });
+
+      const latencyMs = Date.now() - startMs;
+      const workerReachable = resp.ok || resp.status === 200;
+      _setStatus(workerEl, workerReachable, workerReachable ? 'REACHABLE (' + latencyMs + ' ms)' : 'UNREACHABLE (HTTP ' + resp.status + ')');
+
+      if (!workerReachable) {
+        _setStatus(bucketEl, false, 'UNKNOWN');
+        _setStatus(authEl,   false, 'UNKNOWN');
+        overall.textContent = '🔴 DISCONNECTED — Worker unreachable (HTTP ' + resp.status + ')';
+        overall.style.color = '#ff5566';
+        if (rawEl) { rawEl.style.display = 'block'; rawEl.textContent = 'HTTP ' + resp.status + '\n' + await resp.text().catch(() => ''); }
+        return;
+      }
+
+      let data = {};
+      try { data = await resp.json(); } catch (_) {}
+
+      const r2Ok   = !!data.r2;
+      const authOk = !!data.authConfigured;
+      _setStatus(bucketEl, r2Ok,   r2Ok   ? 'BOUND (legend)'        : 'NOT BOUND — check wrangler.jsonc');
+      _setStatus(authEl,   authOk, authOk ? 'FIREBASE_WEB_API_KEY set' : 'MISSING — set Worker secret FIREBASE_WEB_API_KEY');
+
+      const allOk = workerReachable && r2Ok && authOk && corsOk;
+      overall.textContent = allOk ? '🟢 CONNECTED' : '🔴 DISCONNECTED — see details above';
+      overall.style.color = allOk ? '#39FF14' : '#ff5566';
+
+      if (lastEl) lastEl.textContent = 'Last tested: ' + new Date().toLocaleTimeString() + ' · Latency: ' + latencyMs + ' ms · Origin: ' + location.origin;
+
+      if (rawEl) {
+        rawEl.style.display = 'block';
+        rawEl.textContent = JSON.stringify(data, null, 2);
+      }
+
+      if (!authOk) {
+        toastNotification && toastNotification('⚠️ R2 Worker is missing FIREBASE_WEB_API_KEY secret — uploads will fail with 503.');
+      } else if (allOk) {
+        toastNotification && toastNotification('✅ R2 Connection OK — Worker, bucket, auth, and CORS all good.');
+      }
+
+    } catch (e) {
+      overall.textContent = '🔴 DISCONNECTED — ' + e.message;
+      overall.style.color = '#ff5566';
+      _setStatus(workerEl, false, 'UNREACHABLE — ' + e.message);
+      _setStatus(bucketEl, false, 'UNKNOWN');
+      _setStatus(authEl,   false, 'UNKNOWN');
+      _setStatus(corsEl,   false, 'UNKNOWN');
+      if (rawEl) { rawEl.style.display = 'block'; rawEl.textContent = 'Error: ' + e.message; }
+      if (lastEl) lastEl.textContent = 'Last tested: ' + new Date().toLocaleTimeString() + ' · FAILED';
+      console.error('[SNX R2 Status] Connection test failed:', e);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🔌 TEST R2 CONNECTION'; }
+    }
+  };
 })();
 </script>
 
@@ -31965,16 +32173,16 @@ window.snxTCCRemoveSchedule = async function(schedId) {
   } catch (_) {}
 };
 
-/* Simple confirm modal using existing toastNotification pattern */
+/* Simple confirm modal — attached to #founder-modal-root so it stays inside
+   the Founder Panel and does NOT cover the public website. */
 function _tccConfirm(title, message) {
   return new Promise(resolve => {
-    // Use a lightweight inline confirm div
     const existing = document.getElementById('snxTCCConfirmModal');
     if (existing) existing.remove();
     const modal = document.createElement('div');
     modal.id = 'snxTCCConfirmModal';
     modal.style.cssText = `
-      position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;
+      position:fixed;inset:0;z-index:10500;display:flex;align-items:center;justify-content:center;
       background:rgba(0,0,0,0.75);padding:20px;`;
     modal.innerHTML = `
       <div style="background:rgba(5,10,25,0.97);border:1px solid rgba(0,174,239,0.35);border-radius:14px;
@@ -31982,13 +32190,16 @@ function _tccConfirm(title, message) {
         <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:12px;">${title}</div>
         <div style="font-size:13px;color:#9bbdd8;line-height:1.6;margin-bottom:20px;">${message}</div>
         <div style="display:flex;gap:10px;justify-content:flex-end;">
-          <button id="snxTCCConfirmCancel" style="padding:9px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#9bbdd8;font-size:13px;cursor:pointer;">Cancel</button>
-          <button id="snxTCCConfirmOK" style="padding:9px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#0044aa,#0077dd);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Confirm</button>
+          <button class="snxTCCConfirmCancel" style="padding:9px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#9bbdd8;font-size:13px;cursor:pointer;">Cancel</button>
+          <button class="snxTCCConfirmOK" style="padding:9px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#0044aa,#0077dd);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Confirm</button>
         </div>
       </div>`;
-    document.body.appendChild(modal);
-    document.getElementById('snxTCCConfirmOK').onclick     = () => { modal.remove(); resolve(true); };
-    document.getElementById('snxTCCConfirmCancel').onclick = () => { modal.remove(); resolve(false); };
+    // Attach to the Founder Panel modal root to avoid leaking over the public site.
+    // Falls back to #adminPage and then document.body as a last resort.
+    const _root = document.getElementById('founder-modal-root') || document.getElementById('adminPage') || document.body;
+    _root.appendChild(modal);
+    modal.querySelector('.snxTCCConfirmOK').onclick     = () => { modal.remove(); resolve(true); };
+    modal.querySelector('.snxTCCConfirmCancel').onclick = () => { modal.remove(); resolve(false); };
     modal.onclick = e => { if (e.target === modal) { modal.remove(); resolve(false); } };
   });
 }
