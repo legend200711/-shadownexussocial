@@ -1,0 +1,497 @@
+/*
+ * nexus-intro.css
+ * Shadow Nexus Social — Cinematic Welcome Experience
+ * Self-contained: all rules are namespaced to #snxIntro*
+ * NO flashing / strobe effects. Atmospheric only.
+ */
+
+/* ─── Overlay container ─────────────────────────────────────────────────── */
+#snxIntroOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    background: #000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* visibility toggled by JS class */
+    transition: opacity 1.8s ease;
+}
+#snxIntroOverlay.snxi-exit {
+    opacity: 0;
+    pointer-events: none;
+}
+#snxIntroOverlay.snxi-gone {
+    display: none !important;
+}
+
+/* ─── Stars / particles layer ───────────────────────────────────────────── */
+#snxIntroStars {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(1px 1px at 10% 15%, rgba(180,220,255,0.7) 0%, transparent 100%),
+        radial-gradient(1px 1px at 22% 42%, rgba(180,220,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 35% 8%,  rgba(200,240,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 48% 28%, rgba(180,220,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 55% 62%, rgba(180,220,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 63% 18%, rgba(200,240,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 72% 48%, rgba(180,220,255,0.7) 0%, transparent 100%),
+        radial-gradient(1px 1px at 80% 10%, rgba(200,240,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 88% 35%, rgba(180,220,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 92% 70%, rgba(180,220,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 5%  80%, rgba(200,240,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 17% 90%, rgba(180,220,255,0.5) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 42% 85%, rgba(200,240,255,0.8) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 78% 78%, rgba(180,220,255,0.7) 0%, transparent 100%),
+        radial-gradient(1px 1px at 94% 90%, rgba(200,240,255,0.5) 0%, transparent 100%);
+    opacity: 0;
+    animation: snxiStarsFade 4s 1s forwards ease-out;
+}
+
+/* ─── Distant lightning (slow, atmospheric, NOT strobe) ─────────────────── */
+#snxIntroLightning {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+.snxi-bolt {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    background: linear-gradient(180deg, rgba(80,160,255,0) 0%, rgba(80,160,255,0.45) 30%, rgba(80,160,255,0.15) 70%, rgba(80,160,255,0) 100%);
+    opacity: 0;
+    filter: blur(1.5px);
+    transform-origin: top center;
+}
+.snxi-bolt:nth-child(1) { left: 8%;  height: 45vh; animation: snxiBolt 12s 5s infinite ease-in-out; }
+.snxi-bolt:nth-child(2) { left: 15%; height: 38vh; animation: snxiBolt 18s 9s  infinite ease-in-out; }
+.snxi-bolt:nth-child(3) { left: 82%; height: 52vh; animation: snxiBolt 15s 3s  infinite ease-in-out; }
+.snxi-bolt:nth-child(4) { left: 90%; height: 42vh; animation: snxiBolt 20s 14s infinite ease-in-out; }
+
+/* ─── Fog layers ─────────────────────────────────────────────────────────── */
+#snxIntroFog {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+.snxi-fog-band {
+    position: absolute;
+    width: 220%;
+    left: -60%;
+    border-radius: 50%;
+    opacity: 0;
+    animation: snxiFogDrift var(--fog-dur, 60s) var(--fog-delay, 0s) linear infinite;
+    filter: blur(28px);
+}
+.snxi-fog-band:nth-child(1) {
+    height: 26vh;
+    bottom: -4vh;
+    background: radial-gradient(ellipse at 50% 60%, rgba(0,40,80,0.72) 0%, transparent 70%);
+    --fog-dur: 55s; --fog-delay: 0s;
+    animation: snxiFogIn 3s 0.5s both ease-out, snxiFogDrift 55s 3.5s linear infinite;
+}
+.snxi-fog-band:nth-child(2) {
+    height: 20vh;
+    bottom: 8vh;
+    background: radial-gradient(ellipse at 50% 60%, rgba(0,30,70,0.52) 0%, transparent 70%);
+    --fog-dur: 70s; --fog-delay: 1s;
+    animation: snxiFogIn 3.5s 1.2s both ease-out, snxiFogDrift 70s 4.7s linear infinite;
+}
+.snxi-fog-band:nth-child(3) {
+    height: 14vh;
+    top: 22vh;
+    background: radial-gradient(ellipse at 50% 50%, rgba(0,20,50,0.38) 0%, transparent 70%);
+    --fog-dur: 80s; --fog-delay: 2s;
+    animation: snxiFogIn 4s 2s both ease-out, snxiFogDrift 80s 6s linear infinite;
+}
+
+/* fog puffing outward on exit */
+.snxi-fog-band.snxi-fog-expand {
+    animation: snxiFogExpand 1.8s ease-out forwards !important;
+    transition: none;
+}
+
+/* ─── Blue flames ────────────────────────────────────────────────────────── */
+#snxIntroFlames {
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    height: 22vh;
+    pointer-events: none;
+    overflow: hidden;
+    opacity: 0;
+    animation: snxiFlamesIn 2.5s 2.2s both ease-out;
+}
+.snxi-flame {
+    position: absolute;
+    bottom: 0;
+    border-radius: 50% 50% 20% 20%;
+    transform-origin: bottom center;
+    animation: snxiFlame var(--fdur, 3.5s) var(--fdelay, 0s) ease-in-out infinite alternate;
+}
+/* Left cluster */
+.snxi-flame:nth-child(1)  { width:60px;  height:14vh; left:2%;   background:radial-gradient(ellipse at 50% 100%, rgba(0,80,255,0.85),rgba(0,30,120,0.2)); --fdur:3.2s; --fdelay:0s; }
+.snxi-flame:nth-child(2)  { width:45px;  height:10vh; left:5%;   background:radial-gradient(ellipse at 50% 100%, rgba(0,100,255,0.6), rgba(0,20,80,0.1));  --fdur:2.8s; --fdelay:0.4s; }
+.snxi-flame:nth-child(3)  { width:80px;  height:18vh; left:9%;   background:radial-gradient(ellipse at 50% 100%, rgba(0,60,220,0.8),  rgba(0,20,100,0.2)); --fdur:4s;   --fdelay:0.2s; }
+.snxi-flame:nth-child(4)  { width:50px;  height:12vh; left:14%;  background:radial-gradient(ellipse at 50% 100%, rgba(0,80,255,0.7),  rgba(0,20,80,0.15)); --fdur:3.6s; --fdelay:0.7s; }
+.snxi-flame:nth-child(5)  { width:40px;  height:9vh;  left:18%;  background:radial-gradient(ellipse at 50% 100%, rgba(20,120,255,0.55),rgba(0,20,70,0.1));  --fdur:2.5s; --fdelay:1s; }
+/* Center subtle glow */
+.snxi-flame:nth-child(6)  { width:110px; height:22vh; left:calc(50% - 55px); background:radial-gradient(ellipse at 50% 100%, rgba(0,60,200,0.5), rgba(0,10,60,0.1)); --fdur:5s; --fdelay:0.3s; filter:blur(6px); }
+/* Right cluster */
+.snxi-flame:nth-child(7)  { width:50px;  height:12vh; right:2%;  background:radial-gradient(ellipse at 50% 100%, rgba(0,80,255,0.85),rgba(0,30,120,0.2)); --fdur:3.4s; --fdelay:0.5s; }
+.snxi-flame:nth-child(8)  { width:70px;  height:16vh; right:5%;  background:radial-gradient(ellipse at 50% 100%, rgba(0,70,220,0.75),rgba(0,20,90,0.2));  --fdur:3.8s; --fdelay:0.1s; }
+.snxi-flame:nth-child(9)  { width:45px;  height:10vh; right:10%; background:radial-gradient(ellipse at 50% 100%, rgba(0,100,255,0.6), rgba(0,20,80,0.1));  --fdur:2.6s; --fdelay:0.8s; }
+.snxi-flame:nth-child(10) { width:60px;  height:14vh; right:15%; background:radial-gradient(ellipse at 50% 100%, rgba(0,80,255,0.7), rgba(0,20,80,0.15)); --fdur:3s;   --fdelay:1.1s; }
+
+/* ─── Shadow forest silhouette ───────────────────────────────────────────── */
+#snxIntroForest {
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    height: 28vh;
+    pointer-events: none;
+    opacity: 0;
+    animation: snxiForestIn 3s 1.8s both ease-out;
+}
+.snxi-tree {
+    position: absolute;
+    bottom: 0;
+    background: #000;
+}
+.snxi-tree::before { content:''; position:absolute; }
+/* jagged pine tree via clip-path */
+.snxi-tree:nth-child(1)  { width:60px; height:22vh; left:0%;    clip-path: polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(2)  { width:80px; height:28vh; left:3%;    clip-path: polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(3)  { width:50px; height:18vh; left:7%;    clip-path: polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(4)  { width:70px; height:24vh; left:11%;   clip-path: polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(5)  { width:55px; height:20vh; left:16%;   clip-path: polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(6)  { width:45px; height:15vh; left:20%;   clip-path: polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(7)  { width:65px; height:22vh; right:20%;  clip-path: polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(8)  { width:50px; height:17vh; right:15%;  clip-path: polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(9)  { width:80px; height:26vh; right:10%;  clip-path: polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(10) { width:55px; height:19vh; right:5%;   clip-path: polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(11) { width:70px; height:24vh; right:1%;   clip-path: polygon(50% 0%,100% 100%,0% 100%); }
+
+/* ─── Wolf silhouette ────────────────────────────────────────────────────── */
+#snxIntroWolf {
+    position: absolute;
+    bottom: 22vh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: clamp(60px, 12vw, 130px);
+    height: clamp(38px, 7.5vw, 80px);
+    opacity: 0;
+    animation: snxiWolfFade 4s 6s both ease-out;
+    filter: blur(2.5px) drop-shadow(0 0 14px rgba(0,100,255,0.35));
+}
+
+/* ─── Black cat ──────────────────────────────────────────────────────────── */
+#snxIntroCat {
+    position: absolute;
+    bottom: 26vh;
+    left: -120px;
+    width: 90px;
+    height: 55px;
+    opacity: 0;
+    animation: snxiCatWalk 8s 3.5s both linear;
+    filter: drop-shadow(0 0 8px rgba(0,80,255,0.3));
+}
+
+/* ─── Crows ──────────────────────────────────────────────────────────────── */
+#snxIntroCrows {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+.snxi-crow {
+    position: absolute;
+    top: var(--cy, 20%);
+    left: -80px;
+    width: 32px;
+    height: 16px;
+    opacity: 0;
+    animation: snxiCrowFly var(--cdur, 14s) var(--cdelay, 2s) both linear;
+    will-change: transform;
+}
+
+/* ─── Portal / energy ring ───────────────────────────────────────────────── */
+#snxIntroPortal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(70vw, 70vh);
+    height: min(70vw, 70vh);
+    border-radius: 50%;
+    opacity: 0;
+    animation: snxiPortalIn 3s 3.8s both ease-out;
+    pointer-events: none;
+}
+.snxi-portal-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    animation: snxiPortalSpin var(--pr-dur, 12s) linear infinite;
+}
+.snxi-portal-ring:nth-child(1) {
+    border-color: rgba(0,120,255,0.22);
+    box-shadow: 0 0 18px rgba(0,100,255,0.12) inset;
+    --pr-dur: 18s;
+}
+.snxi-portal-ring:nth-child(2) {
+    inset: 6%;
+    border-color: rgba(0,80,200,0.18);
+    border-width: 1.5px;
+    --pr-dur: 28s;
+    animation-direction: reverse;
+}
+.snxi-portal-ring:nth-child(3) {
+    inset: 14%;
+    border-color: rgba(0,200,100,0.1);
+    --pr-dur: 40s;
+}
+.snxi-portal-ring:nth-child(4) {
+    inset: 24%;
+    border-color: rgba(0,100,255,0.14);
+    --pr-dur: 22s;
+    animation-direction: reverse;
+}
+.snxi-portal-core {
+    position: absolute;
+    inset: 30%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,60,200,0.18) 0%, transparent 70%);
+    animation: snxiPortalPulse 5s ease-in-out infinite alternate;
+}
+/* Portal expand on exit */
+#snxIntroPortal.snxi-portal-expand {
+    animation: snxiPortalExpand 1.8s ease-in forwards !important;
+}
+
+/* ─── Title block ────────────────────────────────────────────────────────── */
+#snxIntroTitle {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    opacity: 0;
+    animation: snxiTitleIn 2s 5.5s both ease-out;
+    padding: 0 20px;
+    max-width: 100vw;
+    box-sizing: border-box;
+}
+#snxIntroTitle.snxi-title-exit {
+    animation: snxiTitleExit 1.4s ease-in forwards !important;
+}
+.snxi-welcome-to {
+    font-size: clamp(12px, 2.5vw, 20px);
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: rgba(160,200,255,0.75);
+    margin-bottom: 10px;
+    font-weight: 400;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+.snxi-main-title {
+    font-size: clamp(28px, 7.5vw, 88px);
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #fff;
+    line-height: 1.05;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    text-shadow:
+        0 0 40px rgba(0,120,255,0.8),
+        0 0 80px rgba(0,80,200,0.4),
+        0 0 120px rgba(0,60,180,0.25);
+    /* Neon blue energy shimmer */
+    animation: snxiTitleGlow 3s 7.5s ease-in-out infinite alternate;
+}
+.snxi-main-title span {
+    /* NEXUS word in slightly brighter accent */
+    color: #4db8ff;
+}
+.snxi-tagline {
+    font-size: clamp(10px, 2vw, 16px);
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: rgba(0,200,120,0.7);
+    margin-top: 14px;
+    font-weight: 500;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    opacity: 0;
+    animation: snxiTaglineIn 1.5s 7s both ease-out;
+}
+
+/* ─── Enter button ───────────────────────────────────────────────────────── */
+#snxIntroEnterBtn {
+    position: relative;
+    z-index: 10;
+    margin-top: clamp(28px, 5vh, 48px);
+    padding: clamp(12px, 2.5vw, 18px) clamp(28px, 6vw, 60px);
+    font-size: clamp(13px, 2.2vw, 18px);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-weight: 700;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    color: #c8e8ff;
+    background: rgba(0,30,90,0.6);
+    border: 1.5px solid rgba(0,140,255,0.6);
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow:
+        0 0 22px rgba(0,100,255,0.35),
+        0 0 6px rgba(0,200,120,0.12) inset;
+    opacity: 0;
+    animation: snxiEnterBtnIn 1.5s 8.2s both ease-out;
+    outline: none;
+    transition: box-shadow 0.25s ease, border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    white-space: nowrap;
+}
+#snxIntroEnterBtn:hover,
+#snxIntroEnterBtn:focus-visible {
+    color: #fff;
+    background: rgba(0,50,150,0.7);
+    border-color: rgba(0,180,255,0.9);
+    box-shadow:
+        0 0 38px rgba(0,140,255,0.55),
+        0 0 14px rgba(0,200,120,0.2) inset;
+}
+#snxIntroEnterBtn:active { transform: scale(0.97); }
+#snxIntroEnterBtn::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,200,120,0.2);
+    pointer-events: none;
+}
+
+/* ─── Skip button ────────────────────────────────────────────────────────── */
+#snxIntroSkipBtn {
+    position: absolute;
+    top: max(14px, env(safe-area-inset-top, 14px));
+    right: max(16px, env(safe-area-inset-right, 16px));
+    z-index: 20;
+    background: rgba(0,10,30,0.55);
+    border: 1px solid rgba(0,100,200,0.3);
+    border-radius: 20px;
+    color: rgba(160,200,255,0.65);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    padding: 7px 16px;
+    cursor: pointer;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    opacity: 0;
+    animation: snxiSkipIn 1s 1s both ease-out;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+    outline: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+#snxIntroSkipBtn:hover, #snxIntroSkipBtn:focus-visible {
+    color: #90c8ff;
+    border-color: rgba(0,150,255,0.6);
+    background: rgba(0,20,60,0.7);
+}
+
+/* ─── Sound toggle ───────────────────────────────────────────────────────── */
+#snxIntroSoundBtn {
+    position: absolute;
+    top: max(14px, env(safe-area-inset-top, 14px));
+    left: max(16px, env(safe-area-inset-left, 16px));
+    z-index: 20;
+    background: rgba(0,10,30,0.55);
+    border: 1px solid rgba(0,100,200,0.3);
+    border-radius: 20px;
+    color: rgba(160,200,255,0.65);
+    font-size: 12px;
+    padding: 7px 14px;
+    cursor: pointer;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    opacity: 0;
+    animation: snxiSkipIn 1s 1s both ease-out;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+    outline: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+#snxIntroSoundBtn:hover, #snxIntroSoundBtn:focus-visible {
+    color: #90c8ff;
+    border-color: rgba(0,150,255,0.6);
+    background: rgba(0,20,60,0.7);
+}
+
+/* ─── Keyframe animations ────────────────────────────────────────────────── */
+@keyframes snxiStarsFade   { to { opacity: 1; } }
+@keyframes snxiFogIn       { from { opacity:0; transform:translateX(0); } to { opacity:1; } }
+@keyframes snxiFogDrift    { 0%{transform:translateX(0)} 50%{transform:translateX(8%)} 100%{transform:translateX(0)} }
+@keyframes snxiFogExpand   { 0%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(2.5)} }
+@keyframes snxiFlamesIn    { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+@keyframes snxiFlame       { 0%{transform:scaleX(1) scaleY(1) translateY(0)} 100%{transform:scaleX(0.88) scaleY(1.12) translateY(-8px)} }
+@keyframes snxiForestIn    { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes snxiWolfFade    { 0%{opacity:0} 30%{opacity:0.55} 70%{opacity:0.7} 100%{opacity:0.65} }
+@keyframes snxiCatWalk     { 0%{opacity:0;transform:translateX(0)} 8%{opacity:0.85} 92%{opacity:0.85} 100%{opacity:0;transform:translateX(calc(100vw + 150px))} }
+@keyframes snxiCrowFly {
+    0%   { opacity:0;  transform:translateX(0)           scaleX(1); }
+    5%   { opacity:0.8; }
+    50%  { transform:translateX(calc(55vw + 40px))       scaleX(1); }
+    51%  { transform:translateX(calc(55vw + 40px))       scaleX(-1); }
+    95%  { opacity:0.8; }
+    100% { opacity:0;  transform:translateX(calc(100vw + 100px)) scaleX(-1); }
+}
+@keyframes snxiPortalIn    { from{opacity:0;transform:translate(-50%,-50%) scale(0.7)} to{opacity:1;transform:translate(-50%,-50%) scale(1)} }
+@keyframes snxiPortalSpin  { to { transform: rotate(360deg); } }
+@keyframes snxiPortalPulse { from{opacity:0.5} to{opacity:1} }
+@keyframes snxiPortalExpand{ 0%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(3.5)} }
+@keyframes snxiTitleIn     { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+@keyframes snxiTitleGlow   { from{text-shadow:0 0 30px rgba(0,120,255,0.7),0 0 60px rgba(0,80,200,0.35)} to{text-shadow:0 0 50px rgba(0,160,255,0.95),0 0 100px rgba(0,100,220,0.5),0 0 140px rgba(0,60,180,0.3)} }
+@keyframes snxiTitleExit   { to{opacity:0;transform:translateY(-20px)} }
+@keyframes snxiTaglineIn   { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes snxiEnterBtnIn  { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@keyframes snxiSkipIn      { from{opacity:0} to{opacity:1} }
+@keyframes snxiBolt        { 0%,100%{opacity:0} 45%{opacity:0} 50%{opacity:0.3} 55%{opacity:0} }
+
+/* ─── Reduced motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    #snxIntroOverlay,
+    #snxIntroStars,
+    #snxIntroFlames,
+    #snxIntroForest,
+    #snxIntroWolf,
+    #snxIntroCat,
+    #snxIntroTitle,
+    .snxi-welcome-to,
+    .snxi-main-title,
+    .snxi-tagline,
+    #snxIntroEnterBtn,
+    #snxIntroSkipBtn,
+    #snxIntroSoundBtn,
+    #snxIntroPortal,
+    .snxi-portal-ring,
+    .snxi-portal-core,
+    .snxi-fog-band,
+    .snxi-crow,
+    .snxi-flame,
+    .snxi-bolt {
+        animation-duration: 0.001ms !important;
+        animation-delay:    0ms    !important;
+        transition-duration: 0.001ms !important;
+    }
+    #snxIntroStars  { opacity: 0.6; }
+    #snxIntroForest { opacity: 0.8; }
+    #snxIntroFlames { opacity: 0.6; }
+    #snxIntroWolf   { opacity: 0.5; }
+    #snxIntroPortal { opacity: 0.7; }
+    #snxIntroTitle  { opacity: 1; }
+    .snxi-tagline   { opacity: 1; }
+    #snxIntroEnterBtn { opacity: 1; }
+    #snxIntroSkipBtn  { opacity: 1; }
+    #snxIntroSoundBtn { opacity: 1; }
+}

@@ -57,6 +57,8 @@
 <link rel="stylesheet" href="studio.css?v=SNS-2026-ALBUM-PRIVACY-001">
 <!-- ── Nexus Global Theme Engine ── -->
 <link rel="stylesheet" href="theme-engine.css?v=SNS-2026-ALBUM-PRIVACY-001">
+<!-- ── Shadow Nexus Cinematic Welcome Experience ── -->
+<link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-INTRO-001">
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Egyptian/Horror theme ── -->
 <link rel="stylesheet" href="nexus.css?v=SNS-2026-ALBUM-PRIVACY-001">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
@@ -8353,6 +8355,22 @@ body.arcade-fs-ios body::after { display:none !important; }
             <p style="font-size:12px;color:#6a90b8;margin:0 0 10px;line-height:1.5;">Posts you've saved are private — only you can see them.</p>
             <div id="savedPostsList"></div>
             <div id="savedPostsEmpty" style="display:none;font-size:13px;color:#3a5a7a;padding:8px 0;">No saved posts yet. Tap 🔖 on any post to save it.</div>
+        </div>
+
+        <div class="settings-section">
+            <h4>🎬 Nexus Experience</h4>
+            <div class="settings-row" style="border-bottom:none;">
+                <div class="settings-label">
+                    Cinematic Intro
+                    <small>Replay the Shadow Nexus welcome experience</small>
+                </div>
+                <button onclick="if(typeof replayNexusIntro==='function')replayNexusIntro()"
+                    style="padding:7px 18px;font-size:12px;border-radius:10px;
+                    background:rgba(0,40,120,0.3);border:1px solid rgba(0,140,255,0.45);
+                    color:#7ac8ff;cursor:pointer;font-weight:600;white-space:nowrap;">
+                    ▶ Replay Nexus Intro
+                </button>
+            </div>
         </div>
 
         <div class="settings-section">
@@ -33541,5 +33559,23 @@ window.snxFounderPanelCleanup = (function() {
 
 </script>
 
+<!-- ═══════════════════════════════════════════════════════════
+     SHADOW NEXUS CINEMATIC WELCOME EXPERIENCE
+     Loaded last so it never blocks main app init.
+     ═══════════════════════════════════════════════════════════ -->
+<script src="nexus-intro.js?v=SNS-2026-INTRO-001"></script>
+<script>
+  /* ── snxIntroCompleted: called by nexus-intro.js when the user clicks
+     "Enter the Nexus" or "Skip Intro".  By this point Firebase auth may
+     already have resolved (returning user) or may still be pending
+     (first-time / logged-out user).  We do nothing here — the existing
+     onAuthStateChanged handler in the main app already drives navTo('feed')
+     or show('login') at the right time.  The intro simply sits on top and
+     then removes itself, revealing whatever state the app is already in. */
+  window.snxIntroCompleted = function () {
+      // No-op: existing auth flow handles navigation.
+      // Kept as a named hook so future integrations can extend it.
+  };
+</script>
 </body>
 </html>
