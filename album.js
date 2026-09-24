@@ -550,13 +550,32 @@
             let photos = [];
             snap.forEach(d => photos.push({ id: d.id, ...d.data() }));
 
-            // Privacy filter for visitors
+            // Privacy filter for visitors — Firestore rules enforce this server-side
+            // (isFollowerOf / isFriendOf helpers in firestore.rules).  The client
+            // filter below mirrors that logic for defence-in-depth and so the grid
+            // never shows a photo the viewer should not see even on stale cached reads.
             const isSelf = _liveU && _liveU.uid === ownerUid;
             if (!isSelf) {
+                // Resolve viewer relationship with the album owner once, up-front.
+                let isFollower = false;
+                let isFriend   = false;
+                try {
+                    const ownerSnap = await getDoc(doc(db, 'users', ownerUid));
+                    const ownerData = ownerSnap.data() || {};
+                    const myUid = _liveU?.uid;
+                    if (myUid) {
+                        isFollower = Array.isArray(ownerData.followers) && ownerData.followers.includes(myUid);
+                        isFriend   = Array.isArray(ownerData.friends)   && ownerData.friends.includes(myUid);
+                    }
+                } catch (_) { /* best-effort — fall back to public-only */ }
+
                 photos = photos.filter(p => {
                     const priv = p.privacy || 'public';
-                    return priv !== 'private';
-                    // TODO: server-side followers/friends enforcement
+                    if (priv === 'public')    return true;
+                    if (priv === 'private')   return false;
+                    if (priv === 'followers') return isFollower || isFriend;
+                    if (priv === 'friends')   return isFriend;
+                    return true; // unknown privacy value — show
                 });
             }
             _allPhotos = photos;

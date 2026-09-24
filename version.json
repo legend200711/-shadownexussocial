@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-FOUNDER-FIX-004",
-  "swVersion": "v56",
+  "buildId": "SNS-2026-ALBUM-PRIVACY-001",
+  "swVersion": "v57",
   "deployedAt": "2026-10-05T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
   "nexusVersion": "1.0.1",
-  "note": "FOUNDER-FIX-004: Isolate Founder UI — remove cloud-stream.css from main app, fix studioPage links to route to nexusPage, add async render guard to renderAdminPanel (prevents stale callbacks from painting DOM after panel close), enhance snxFounderPanelCleanup with render abort, remove legacy cloud-stream files from SW precache. SW v56 cache bust."
+  "note": "ALBUM-PRIVACY-001: Enforce album followers/friends privacy server-side via Firestore rules (isFollowerOf/isFriendOf helpers). Mirror enforcement client-side in album.js. Remove orphaned files (firebase-live.js, r2-upload.js, shadow-nexus-features.js/css, webrtc.js). Clean Firebase hosting cache. SW v57 cache bust."
 }

@@ -64,6 +64,21 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowed);
     }
 
+    // Returns true if request.auth.uid is in the owner's followers array.
+    // Uses get() so this is enforced on the server regardless of client behaviour.
+    function isFollowerOf(ownerUid) {
+      return isSignedIn()
+        && request.auth.uid in
+             get(/databases/$(database)/documents/users/$(ownerUid)).data.followers;
+    }
+
+    // Returns true if request.auth.uid is in the owner's friends array.
+    function isFriendOf(ownerUid) {
+      return isSignedIn()
+        && request.auth.uid in
+             get(/databases/$(database)/documents/users/$(ownerUid)).data.friends;
+    }
+
     // Returns true if the update touches any profile-theme-owned fields.
     // These may only be written by the profile owner — never via delivery updates.
     function touchesThemeFields() {
@@ -413,10 +428,11 @@ service cloud.firestore {
     //
     // Privacy model:
     //   "public"    — any signed-in user can read
-    //   "followers" — any signed-in user can read (client enforces)
-    //   "friends"   — any signed-in user can read (client enforces)
-    //   "private"   — only the owner can read
+    //   "followers" — only the owner's followers (or the owner/Founder) can read
+    //   "friends"   — only mutual friends (or the owner/Founder) can read
+    //   "private"   — only the owner (or Founder) can read
     //
+    // Server-side enforcement via isFollowerOf() / isFriendOf() — no client bypass.
     // Only the owner may write (create / update / delete) their own photos.
 
     match /albumPhotos/{photoId} {
@@ -425,8 +441,12 @@ service cloud.firestore {
 
       allow read: if isSignedIn()
         && (resource.data.ownerUid == request.auth.uid
-            || resource.data.privacy != 'private'
-            || isFounder());
+            || isFounder()
+            || resource.data.privacy == 'public'
+            || (resource.data.privacy == 'followers'
+                && isFollowerOf(resource.data.ownerUid))
+            || (resource.data.privacy == 'friends'
+                && isFriendOf(resource.data.ownerUid)));
 
       // Owner / Founder can update anything.
       // Any signed-in user can update only the social reaction fields (like/comment counts).
