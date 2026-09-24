@@ -43,24 +43,24 @@
 <meta name="twitter:image"       content="https://shadownexussocial.online/icon-512.png">
 
 <!-- ── Shared stylesheet ── -->
-<link rel="stylesheet" href="style.css?v=SNS-2026-10-02-COSMIC-001">
-<link rel="stylesheet" href="album.css?v=SNS-2026-10-02-COSMIC-001">
-<link rel="stylesheet" href="profile-music.css?v=SNS-2026-10-02-COSMIC-001">
-<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-10-02-COSMIC-001">
+<link rel="stylesheet" href="style.css?v=SNS-2026-ETERNAL-STREAM-002">
+<link rel="stylesheet" href="album.css?v=SNS-2026-ETERNAL-STREAM-002">
+<link rel="stylesheet" href="profile-music.css?v=SNS-2026-ETERNAL-STREAM-002">
+<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-ETERNAL-STREAM-002">
 <!-- ── Shadow Nexus Social Realm — full immersive redesign ── -->
-<link rel="stylesheet" href="realm.css?v=SNS-2026-10-02-COSMIC-001">
+<link rel="stylesheet" href="realm.css?v=SNS-2026-ETERNAL-STREAM-002">
 <!-- ── Mobile responsive design layer ── -->
-<link rel="stylesheet" href="mobile.css?v=SNS-2026-10-02-COSMIC-001">
+<link rel="stylesheet" href="mobile.css?v=SNS-2026-ETERNAL-STREAM-002">
 <!-- ── Shadow Nexus Gifting & Monetization ── -->
-<link rel="stylesheet" href="snx-gifts.css?v=SNS-2026-10-02-COSMIC-001">
+<link rel="stylesheet" href="snx-gifts.css?v=SNS-2026-ETERNAL-STREAM-002">
 <!-- ── Shadow Nexus 24-Hour Studio (Cloud Stream) ── -->
-<link rel="stylesheet" href="cloud-stream.css?v=SNS-2026-10-02-COSMIC-001">
+<link rel="stylesheet" href="cloud-stream.css?v=SNS-2026-ETERNAL-STREAM-002">
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library / Upload / Playlists / Queue ── -->
-<link rel="stylesheet" href="studio.css?v=SNS-2026-10-02-COSMIC-001">
+<link rel="stylesheet" href="studio.css?v=SNS-2026-ETERNAL-STREAM-002">
 <!-- ── Nexus Global Theme Engine ── -->
-<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-10-02-COSMIC-001">
+<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-ETERNAL-STREAM-002">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-10-02-COSMIC-001">
+<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-ETERNAL-STREAM-002">
 
 <!-- ── Preconnect to Firebase + R2 CDN so first load is faster ── -->
 <link rel="preconnect" href="https://www.gstatic.com">
@@ -6636,6 +6636,11 @@ body.arcade-fs-ios body::after { display:none !important; }
             <span class="sc-item-icon">📡</span>
             <span class="sc-item-label">Go Live</span>
         </button>
+        <!-- Eternal Stream -->
+        <button class="sc-item" id="scNavEternalStream" onclick="window.location.href='cloud-stream.html'" aria-label="Eternal Stream" style="color:#c5a41d;">
+            <span class="sc-item-icon">𓂀</span>
+            <span class="sc-item-label">Eternal Stream</span>
+        </button>
         <!-- Arcade -->
         <button class="sc-item" id="scNavArcade" onclick="openArcadeHub()" aria-label="Arcade">
             <span class="sc-item-icon">🕹️</span>
@@ -6752,6 +6757,10 @@ body.arcade-fs-ios body::after { display:none !important; }
         <div class="ncm-item ncm-item-live" id="ncmGoLive" onclick="mobileNavTo('_golive')" style="display:none;">
             <div class="ncm-icon-wrap">📡</div>
             <div class="ncm-label">Go Live</div>
+        </div>
+        <div class="ncm-item" id="ncmEternalStream" onclick="window.location.href='cloud-stream.html'" style="color:#c5a41d;">
+            <div class="ncm-icon-wrap">𓂀</div>
+            <div class="ncm-label">Eternal Stream</div>
         </div>
         <div class="ncm-item" id="ncmArcade" onclick="mobileNavTo('_arcade')">
             <div class="ncm-icon-wrap">🕹️</div>
@@ -6889,6 +6898,9 @@ body.arcade-fs-ios body::after { display:none !important; }
         </button>
         <button class="nav-item nav-item-studio" id="navStudio" onclick="realmNavTo('studioPage')" style="color:#00d4ff;border-left:3px solid rgba(0,212,255,0.45);">
             <span class="nav-icon">🎬</span> 24-Hour Studio
+        </button>
+        <button class="nav-item" id="navEternalStream" onclick="window.location.href='cloud-stream.html'" style="color:#c5a41d;border-left:3px solid rgba(197,164,29,0.45);">
+            <span class="nav-icon">𓂀</span> Eternal Stream
         </button>
         <button class="nav-item" id="navArcade" onclick="openArcadeHub()">
             <span class="nav-icon">🕹️</span> Arcade
@@ -11189,7 +11201,8 @@ body.arcade-fs-ios body::after { display:none !important; }
 
 <!-- ══════════════════════════════════════════════════════════
      24-HOUR STUDIO PAGE
-     Powered by the 24-Hour Audio Cloud Stream (cloud-stream.js).
+     Music Library, Upload, Playlists, Queue, Now Playing.
+     The Eternal Stream (cloud-stream.html) is the dedicated Cloud Stream frontend.
      ══════════════════════════════════════════════════════════ -->
 <div class="page" id="studioPage">
 
@@ -11199,10 +11212,12 @@ body.arcade-fs-ios body::after { display:none !important; }
       <div class="csr-logo">&#9925;</div>
       <div>
         <div class="csr-title">24-HOUR STUDIO</div>
-        <div class="csr-subtitle">Music Library · Playlists · Cloud Stream</div>
+        <div class="csr-subtitle">Music Library · Playlists · Queue</div>
       </div>
     </div>
-    <div id="csrAuthBadge" class="csr-auth-badge">…</div>
+    <a href="cloud-stream.html" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(197,164,29,0.12);border:1px solid rgba(197,164,29,0.30);color:#c5a41d;font-size:11px;font-weight:700;text-decoration:none;letter-spacing:0.8px;white-space:nowrap;">
+      𓂀 Eternal Stream
+    </a>
   </header>
 
   <!-- ── Studio bottom tab bar ── -->
@@ -11217,7 +11232,7 @@ body.arcade-fs-ios body::after { display:none !important; }
     <button class="snx-studio-tab"         id="snxStudioTabBtn_playlists" onclick="snxStudioTabSwitch('playlists',this)" style="flex:1;min-width:56px;padding:10px 4px 8px;background:none;border:none;border-bottom:2px solid transparent;color:#5a80a8;font-size:10px;font-weight:700;text-align:center;cursor:pointer;white-space:nowrap;">&#128203;<br>Playlists</button>
     <button class="snx-studio-tab"         id="snxStudioTabBtn_queue"    onclick="snxStudioTabSwitch('queue',this)"    style="flex:1;min-width:56px;padding:10px 4px 8px;background:none;border:none;border-bottom:2px solid transparent;color:#5a80a8;font-size:10px;font-weight:700;text-align:center;cursor:pointer;white-space:nowrap;">&#127926;<br>Queue</button>
     <button class="snx-studio-tab"         id="snxStudioTabBtn_nowplaying" onclick="snxStudioTabSwitch('nowplaying',this)" style="flex:1;min-width:56px;padding:10px 4px 8px;background:none;border:none;border-bottom:2px solid transparent;color:#5a80a8;font-size:10px;font-weight:700;text-align:center;cursor:pointer;white-space:nowrap;">&#9654;&#65039;<br>Playing</button>
-    <button class="snx-studio-tab"         id="snxStudioTabBtn_stream"   onclick="snxStudioTabSwitch('stream',this)"   style="flex:1;min-width:56px;padding:10px 4px 8px;background:none;border:none;border-bottom:2px solid transparent;color:#5a80a8;font-size:10px;font-weight:700;text-align:center;cursor:pointer;white-space:nowrap;">&#128251;<br>Stream</button>
+    <button class="snx-studio-tab"         id="snxStudioTabBtn_stream"   onclick="window.open('cloud-stream.html','_self')" style="flex:1;min-width:56px;padding:10px 4px 8px;background:none;border:none;border-bottom:2px solid transparent;color:#c5a41d;font-size:10px;font-weight:700;text-align:center;cursor:pointer;white-space:nowrap;">𓂀<br>Stream</button>
   </nav>
 
   <!-- ══════════════════════════════════════════════════════
@@ -11389,222 +11404,26 @@ body.arcade-fs-ios body::after { display:none !important; }
   </div><!-- end Now Playing tab -->
 
   <!-- ══════════════════════════════════════════════════════
-       STREAM TAB — 24-Hour Audio Cloud Stream (cloud-stream.js)
+       STREAM TAB — redirects to The Eternal Stream
+       (The old embedded Cloud Stream UI has been retired.
+        All Cloud Stream traffic now goes to cloud-stream.html)
   ═══════════════════════════════════════════════════════ -->
-  <div id="snxStudioTab_stream" style="display:none;">
-
-  <!-- ── Auth gate (shown if not signed in) ── -->
-  <div id="csrAuthGate" class="csr-auth-gate" style="display:none;">
-    <div class="csr-card">
-      <div class="csr-card-icon">&#128274;</div>
-      <div class="csr-card-title">Sign In Required</div>
-      <p class="csr-card-desc">Please sign in to Shadow Nexus Social to manage or listen to Cloud Radio broadcasts.</p>
-      <button class="csr-btn csr-btn-primary" onclick="realmNavTo('login')">&#8592; Sign In</button>
-    </div>
-  </div>
-
-  <!-- ── Loading state (hidden after cloud-stream.js auth resolves) ── -->
-  <div id="csrLoading" class="csr-loading" style="display:none;">
-    <div class="csr-spinner"></div>
-    <div class="csr-loading-text">Loading Stream…</div>
-  </div>
-
-  <!-- ── Main app (shown after auth) ── -->
-  <div id="csrApp" style="display:none;">
-
-    <!-- Active return banner -->
-    <div id="csrActiveBanner" class="csr-active-banner" style="display:none;">
-      <span class="csr-live-dot-anim"></span>
-      <span id="csrActiveBannerText">Your cloud broadcast is LIVE</span>
-      <button class="csr-btn csr-btn-sm" onclick="csrScrollToStream()">Manage &#8595;</button>
-    </div>
-
-    <!-- Stream Status Panel (creator view when active) -->
-    <section id="csrStatusPanel" class="csr-section" style="display:none;">
-      <div class="csr-card csr-card-live">
-        <div class="csr-live-header">
-          <span id="csrStatusBadge" class="csr-status-badge csr-status-offline">OFFLINE</span>
-          <span id="csrStreamId" class="csr-stream-id-label"></span>
-        </div>
-        <div class="csr-info-grid" id="csrInfoGrid">
-          <div class="csr-info-row"><span class="csr-info-label">Title</span><span class="csr-info-val" id="csrInfoTitle">—</span></div>
-          <div class="csr-info-row"><span class="csr-info-label">Host</span><span class="csr-info-val" id="csrInfoHost">—</span></div>
-          <div class="csr-info-row"><span class="csr-info-label">Category</span><span class="csr-info-val" id="csrInfoCategory">—</span></div>
-          <div class="csr-info-row"><span class="csr-info-label">Started</span><span class="csr-info-val" id="csrInfoStarted">—</span></div>
-          <div class="csr-info-row"><span class="csr-info-label">Expires</span><span class="csr-info-val" id="csrInfoExpires">—</span></div>
-          <div class="csr-info-row"><span class="csr-info-label">Remaining</span><span class="csr-info-val csr-info-remaining" id="csrInfoRemaining">—</span></div>
-          <div class="csr-info-row"><span class="csr-info-label">Listeners</span><span class="csr-info-val" id="csrInfoListeners">0</span></div>
-          <div class="csr-info-row"><span class="csr-info-label">Worker</span><span class="csr-info-val" id="csrInfoWorker">—</span></div>
-        </div>
-        <div class="csr-now-playing-strip" id="csrNowPlayingStrip">
-          <div class="csr-np-label">&#9834; NOW PLAYING</div>
-          <div class="csr-np-title" id="csrNpTitle">—</div>
-          <div class="csr-np-artist" id="csrNpArtist"></div>
-          <div class="csr-np-next" id="csrNpNext"></div>
-        </div>
-        <div class="csr-controls-row">
-          <button class="csr-btn csr-btn-music" onclick="csrScrollToPlaylist()">&#127925; Manage Playlist</button>
-          <button class="csr-btn csr-btn-next" id="csrNextBtn" onclick="csrSkipTrack()">&#9197; Skip Track</button>
-          <button class="csr-btn csr-btn-danger" onclick="csrConfirmStop()" id="csrStopBtn">&#9940; END CLOUD BROADCAST</button>
-        </div>
+  <div id="snxStudioTab_stream" style="display:none;padding:32px 16px;text-align:center;">
+    <div style="background:rgba(197,164,29,0.07);border:1px solid rgba(197,164,29,0.25);border-radius:16px;padding:32px 20px;max-width:420px;margin:0 auto;">
+      <div style="font-size:32px;margin-bottom:12px;">𓂀</div>
+      <div style="font-size:15px;font-weight:800;color:#c5a41d;letter-spacing:1.5px;margin-bottom:6px;">THE ETERNAL STREAM</div>
+      <div style="font-size:12px;color:#8a7a5a;margin-bottom:20px;line-height:1.6;">
+        24-HOUR CLOUD TRANSMISSION · ALWAYS ON<br>
+        Egyptian · Horror · Cosmic
       </div>
-    </section>
-
-    <!-- Listener Player (non-creators / public) -->
-    <section id="csrListenerPanel" class="csr-section" style="display:none;">
-      <div class="csr-card csr-card-player">
-        <div class="csr-player-artwork" id="csrPlayerArtwork">&#9835;</div>
-        <div class="csr-player-info">
-          <div class="csr-player-live-badge"><span class="csr-live-dot-anim"></span> LIVE</div>
-          <div class="csr-player-broadcast-title" id="csrPlayerBroadcastTitle">Shadow Nexus Cloud Radio</div>
-          <div class="csr-player-host" id="csrPlayerHost"></div>
-        </div>
-        <div class="csr-player-track-info">
-          <div class="csr-player-track-title" id="csrPlayerTrackTitle">—</div>
-          <div class="csr-player-track-artist" id="csrPlayerTrackArtist"></div>
-        </div>
-        <div class="csr-player-progress-row">
-          <span class="csr-player-time" id="csrPlayerCurrentTime">0:00</span>
-          <div class="csr-player-progress-bar">
-            <div class="csr-player-progress-fill" id="csrPlayerProgressFill"></div>
-          </div>
-          <span class="csr-player-time" id="csrPlayerTotalTime">—</span>
-        </div>
-        <div class="csr-player-controls">
-          <button class="csr-player-btn csr-player-play" id="csrPlayerPlayBtn" onclick="csrTogglePlay()">&#9654;</button>
-          <div class="csr-player-vol-row">
-            <span>&#128264;</span>
-            <input type="range" min="0" max="100" value="80" id="csrVolSlider" oninput="csrSetVolume(this.value)" class="csr-vol-slider">
-            <span>&#128266;</span>
-          </div>
-        </div>
-        <div class="csr-player-next-row" id="csrPlayerNextRow"></div>
-        <div class="csr-player-stats">
-          <span id="csrPlayerListeners">0 listeners</span>
-          <span class="csr-player-stats-sep">·</span>
-          <span id="csrPlayerUptime"></span>
-        </div>
-        <div id="csrPlayerOffline" class="csr-player-offline" style="display:none;">
-          <div class="csr-player-offline-icon">&#128262;</div>
-          <div class="csr-player-offline-msg">This broadcast has ended or is not currently live.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Create Broadcast Form -->
-    <section id="csrCreatePanel" class="csr-section" style="display:none;">
-      <div class="csr-card">
-        <div class="csr-card-title">&#127925; CREATE 24-HOUR BROADCAST</div>
-        <div id="csrDuplicateWarn" class="csr-warn" style="display:none;">
-          &#9888; You already have an active or starting broadcast.
-          <button class="csr-btn csr-btn-sm" onclick="csrOpenExistingStream()" style="margin-left:8px;">View it &#8594;</button>
-        </div>
-        <div class="csr-form-group">
-          <label class="csr-label">&#127925; Playlist / Audio Queue</label>
-          <div id="csrPlaylistSelector" class="csr-playlist-selector">
-            <div class="csr-playlist-loading">Loading your playlists…</div>
-          </div>
-          <div id="csrPlaylistHint" class="csr-hint">
-            Select a playlist from your music library. Upload tracks via your profile or the 24-Hour Studio music upload.
-          </div>
-        </div>
-        <div id="csrQueuePreview" class="csr-queue-preview" style="display:none;"></div>
-        <div class="csr-form-row">
-          <div class="csr-form-group">
-            <label class="csr-label">Broadcast Title</label>
-            <input class="csr-input" id="csrFormTitle" placeholder="My Cloud Radio" maxlength="100">
-          </div>
-          <div class="csr-form-group">
-            <label class="csr-label">Category</label>
-            <select class="csr-input csr-select" id="csrFormCategory">
-              <option value="Music">&#127925; Music</option>
-              <option value="Talk">&#127897; Talk / Podcast</option>
-              <option value="Gaming">&#127918; Gaming</option>
-              <option value="Art">&#127912; Art</option>
-              <option value="News">&#128240; News</option>
-              <option value="Education">&#128218; Education</option>
-              <option value="Entertainment">&#127916; Entertainment</option>
-              <option value="General">&#127760; General</option>
-            </select>
-          </div>
-        </div>
-        <div class="csr-form-group">
-          <label class="csr-label">Description <span class="csr-optional">optional</span></label>
-          <input class="csr-input" id="csrFormDesc" placeholder="What are you broadcasting?" maxlength="300">
-        </div>
-        <div class="csr-form-row">
-          <div class="csr-form-group">
-            <label class="csr-label">Maximum Duration</label>
-            <select class="csr-input csr-select" id="csrFormDuration">
-              <option value="5">5 minutes (Test Mode)</option>
-              <option value="60">1 Hour</option>
-              <option value="360">6 Hours</option>
-              <option value="720">12 Hours</option>
-              <option value="1440" selected>24 Hours (max)</option>
-            </select>
-            <div class="csr-hint" id="csrTestModeHint" style="display:none;">&#9888; Test mode — 5 min broadcast (developer only)</div>
-          </div>
-          <div class="csr-form-group">
-            <label class="csr-label">Cover Artwork <span class="csr-optional">optional</span></label>
-            <div id="csrArtworkPreview" class="csr-artwork-preview" style="display:none;">
-              <img id="csrArtworkImg" src="" alt="Cover" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
-              <button class="csr-artwork-remove" onclick="csrRemoveArtwork()">&#10005;</button>
-            </div>
-            <button class="csr-btn csr-btn-outline" onclick="document.getElementById('csrArtworkInput').click()" id="csrArtworkBtn">&#128444; Choose Image</button>
-            <input type="file" id="csrArtworkInput" accept="image/*" onchange="csrLoadArtwork(event)" style="display:none;">
-          </div>
-        </div>
-        <div class="csr-form-group">
-          <label class="csr-label">Shuffle &amp; Repeat</label>
-          <div class="csr-toggle-row">
-            <label class="csr-toggle-label">
-              <input type="checkbox" id="csrFormShuffle"> Shuffle playlist
-            </label>
-            <label class="csr-toggle-label">
-              <input type="checkbox" id="csrFormRepeat" checked> Repeat (loop)
-            </label>
-          </div>
-        </div>
-        <div id="csrValidationError" class="csr-error" style="display:none;"></div>
-        <button class="csr-btn csr-btn-start" id="csrStartBtn" onclick="csrStartBroadcast()">
-          &#128308; GO LIVE FOR 24 HOURS
-        </button>
-        <div id="csrStartingProgress" style="display:none;">
-          <div class="csr-handoff-steps" id="csrHandoffSteps"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Broadcast History -->
-    <section id="csrHistoryPanel" class="csr-section" style="display:none;">
-      <div class="csr-card">
-        <div class="csr-card-title">&#128203; Broadcast History</div>
-        <div id="csrHistoryList" class="csr-history-list">
-          <div class="csr-loading-text">Loading history…</div>
-        </div>
-      </div>
-    </section>
-
-  </div><!-- end csrApp -->
-
-  <!-- Toast notification -->
-  <div id="csrToast" class="csr-toast" style="display:none;"></div>
-
-  <!-- Confirmation dialog -->
-  <div id="csrConfirmOverlay" class="csr-confirm-overlay" style="display:none;">
-    <div class="csr-confirm-dialog">
-      <div class="csr-confirm-title" id="csrConfirmTitle">Confirm</div>
-      <div class="csr-confirm-body" id="csrConfirmBody"></div>
-      <div class="csr-confirm-actions">
-        <button class="csr-btn csr-btn-outline" onclick="csrConfirmCancel()">Cancel</button>
-        <button class="csr-btn csr-btn-danger" id="csrConfirmOk" onclick="csrConfirmProceed()">Confirm</button>
+      <a href="cloud-stream.html" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#c5a41d,#7a6010);border-radius:10px;color:#000;font-weight:800;font-size:13px;text-decoration:none;letter-spacing:1px;">
+        𓂀 ENTER THE ETERNAL STREAM
+      </a>
+      <div style="margin-top:16px;font-size:11px;color:#4a3a1a;">
+        Pharaoh's Screen · Tomb of Sound · Hall of Visions<br>
+        Prophecy Queue · ❤️ Likes · 👁 Watching Now
       </div>
     </div>
-  </div>
-
-  <!-- ── 24-Hour Audio Cloud Stream module ── -->
-  <script type="module" src="cloud-stream.js"></script>
-
   </div><!-- end snxStudioTab_stream -->
 
 </div><!-- end studioPage -->
@@ -12073,9 +11892,9 @@ body.arcade-fs-ios body::after { display:none !important; }
       const isCloudStream    = room.type === '24hour_cloudstream';
       const isStudioLive     = room.type === '24hour_studio_live';
       // Studio Live routes through the existing live.html viewer (same proven system).
-      // Cloud Stream uses studio-viewer.html which handles the worker-based broadcast.
+      // Cloud Stream uses the new Eternal Stream (cloud-stream.html).
       const watchUrl = isCloudStream
-        ? 'studio-viewer.html#watch=' + roomId
+        ? 'cloud-stream.html?id=' + roomId
         : 'live.html#watch=' + roomId;
       const tsRaw    = room.createdAt ? (room.createdAt.toMillis ? room.createdAt.toMillis() : room.createdAt) : '';
       const livePill = isCloudStream ? '☁️ CLOUDSTREAM' : isStudioLive ? '🎬 STUDIO LIVE' : 'LIVE';
@@ -12333,11 +12152,11 @@ body.arcade-fs-ios body::after { display:none !important; }
         : `<div class="flc-thumb-initial">${initial}</div>`;
 
       // Studio Live routes through the existing live.html viewer (same proven system).
-      // Cloud Stream uses studio-viewer.html which handles the worker-based broadcast.
+      // Cloud Stream uses the new Eternal Stream (cloud-stream.html).
       const isCloudStream = room.type === '24hour_cloudstream';
       const isStudioLive  = room.type === '24hour_studio_live';
       const watchUrl      = isCloudStream
-        ? 'studio-viewer.html#watch=' + roomId
+        ? 'cloud-stream.html?id=' + roomId
         : 'live.html#watch=' + roomId;
 
       const card = document.createElement('a');
@@ -24410,12 +24229,12 @@ function _supportStopCanvas() {
      ═══════════════════════════════════════════════════════════ -->
 
 <!-- ── Global Background Internet Manager (must load before script.js) ── -->
-<script src="snx-net.js?v=SNS-2026-10-02-COSMIC-001"></script>
+<script src="snx-net.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
 
-<script src="script.js?v=SNS-2026-10-02-COSMIC-001"></script>
+<script src="script.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
 
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library, Upload, Playlists, Queue ── -->
-<script src="studio.js?v=SNS-2026-10-02-COSMIC-001"></script>
+<script src="studio.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════
@@ -29731,16 +29550,16 @@ window.switchAdminTab = function(tab) {
 </script>
 
 <!-- ── Profile Photo Album module (must load after the main IIFE) ── -->
-<script src="album.js?v=SNS-2026-10-02-COSMIC-001"></script>
+<script src="album.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
 
 <!-- ── Profile Music System (loads after Firebase is initialized) ── -->
-<script src="profile-music.js?v=SNS-2026-10-02-COSMIC-001"></script>
+<script src="profile-music.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
 
 <!-- ── Profile Theme System (loads after Firebase is initialized) ── -->
-<script src="profile-theme.js?v=SNS-2026-10-02-COSMIC-001"></script>
+<script src="profile-theme.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
 
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<script src="shadow-nexus-upgrade.js?v=SNS-2026-10-02-COSMIC-001"></script>
+<script src="shadow-nexus-upgrade.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
 
 <!-- ═══════════════════ GRIM AI ASSISTANT PANEL ═══════════════════ -->
 
@@ -31713,7 +31532,7 @@ document.addEventListener('click', function(e) {
 </script>
 
 <!-- ████ SHADOW NEXUS GIFTS — Gifting & Creator Monetization ████ -->
-<script type="module" src="snx-gifts.js?v=SNS-2026-10-02-COSMIC-001"></script>
+<script type="module" src="snx-gifts.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
 
 <!-- Coin balance sync across all nav displays -->
 <script>
@@ -31757,25 +31576,7 @@ document.addEventListener('click', function(e) {
 })();
 </script>
 
-<!-- ████ SHADOW NEXUS 24-HOUR STUDIO — SPA re-init hook ████ -->
-<script>
-(function() {
-  'use strict';
-  // When the user navigates to studioPage within the SPA, re-run the
-  // Cloud Stream creator-mode check so the UI reflects current state.
-  // cloud-stream.js already boots via onAuthStateChanged on first load;
-  // this hook ensures subsequent in-app navigations also refresh state.
-  var _origRNT = window.realmNavTo;
-  window.realmNavTo = function(pageId) {
-    if (_origRNT) _origRNT.apply(this, arguments);
-    if (pageId === 'studioPage') {
-      setTimeout(function() {
-        if (typeof window.csrSpaInit === 'function') window.csrSpaInit();
-      }, 120);
-    }
-  };
-})();
-</script>
+<!-- Cloud Stream SPA re-init hook removed — Eternal Stream is now a standalone page (cloud-stream.html). -->
 
 <!-- ════════════════════════════════════════════════════════
      SHADOW NEXUS BUILD VERSION, SW UPDATE-CHECK & DEBUG PANEL
@@ -31785,8 +31586,8 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = 'SNS-2026-10-02-COSMIC-001';
-  var SW_VER   = 'v53';
+  var BUILD_ID = 'SNS-2026-ETERNAL-STREAM-002';
+  var SW_VER   = 'v54';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
 
@@ -31938,9 +31739,9 @@ document.addEventListener('click', function(e) {
 (function() {
   'use strict';
 
-  var _SNX_BUILD    = 'SNS-2026-10-02-COSMIC-001';
-  var _SNX_SW_VER   = 'v53';
-  var _SNX_DEPLOY   = '2026-10-02T00:00:00Z';
+  var _SNX_BUILD    = 'SNS-2026-ETERNAL-STREAM-002';
+  var _SNX_SW_VER   = 'v54';
+  var _SNX_DEPLOY   = '2026-10-03T00:00:00Z';
   var _SNX_PROJECT  = 'horr-a08f4';
 
   function _dRow(label, val, ok) {

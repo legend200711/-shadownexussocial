@@ -1,9 +1,9 @@
 {
-  "buildId": "SNS-2026-10-02-COSMIC-001",
-  "swVersion": "v53",
-  "deployedAt": "2026-10-02T00:00:00Z",
+  "buildId": "SNS-2026-ETERNAL-STREAM-002",
+  "swVersion": "v54",
+  "deployedAt": "2026-10-03T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "2.2.0",
-  "cloudStreamVersion": "cosmic-1.0",
-  "note": "Global production sync: 24-Hour Cloud Stream cosmic redesign (RTDB presence viewer count, likes-only, two-column desktop layout, music artwork mode, starfield CSS), Firebase RTDB presence rules deployed, SW v53 forces cache bust on all PWA clients."
+  "cloudStreamVersion": "eternal-2.0",
+  "note": "Eternal Stream connected to index.html: old embedded Cloud Stream UI retired from studioPage, new Egyptian/Horror/Cosmic Eternal Stream (cloud-stream.html) is the only active Cloud Stream frontend. All nav routes (desktop sidebar, ShadowCore, Nexus Core mobile menu, Live Hub, Feed live cards) now point to cloud-stream.html. SW v54 forces cache bust."
 }

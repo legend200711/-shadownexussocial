@@ -5892,14 +5892,8 @@ window.snxStudioTabSwitch = function(tab, btn) {
     // (no extra init needed — file input triggers upload from any tab)
   }
   if (tab === 'stream') {
-    // Trigger csrSpaInit so the cloud-stream UI reflects current auth state
-    if (typeof window.csrSpaInit === 'function') {
-      setTimeout(function() { window.csrSpaInit(); }, 80);
-    }
-    // Also load playlists in Stream tab if needed (cloud-stream.js _loadPlaylists)
-    if (typeof window.csrRefreshPlaylists === 'function') {
-      setTimeout(function() { window.csrRefreshPlaylists(); }, 200);
-    }
+    // Stream tab now redirects to the Eternal Stream standalone page (cloud-stream.html).
+    // Navigation is handled by the tab button's onclick — no SPA init needed here.
   }
 };
 

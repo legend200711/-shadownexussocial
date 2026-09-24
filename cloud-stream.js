@@ -489,6 +489,159 @@ async function _initListenerForStream(streamId, streamData) {
   _startAudioWatchdog(streamId);
 }
 
+/* ═══════════════════════════════════════════════════════
+   MUSIC SCENE SYSTEM — 8 deterministic visual themes
+   Each track gets a stable scene based on hash of its ID.
+═══════════════════════════════════════════════════════ */
+const _SCENES = [
+  { id: 'anubis',    name: 'ANUBIS CHAMBER',     bg: ['#0a0602','#0d0804'],     accent: '#c5a41d', energy: '#1a6fcc', particle: '#c5a41d' },
+  { id: 'pyramid',   name: 'BLOOD PYRAMID',      bg: ['#0e0000','#0a0000'],     accent: '#8b0000', energy: '#c5a41d', particle: '#8b0000' },
+  { id: 'galaxy',    name: "PHARAOH'S GALAXY",   bg: ['#0d0820','#060215'],     accent: '#c5a41d', energy: '#5b2d8e', particle: '#c5a41d' },
+  { id: 'tomb',      name: 'CURSED TOMB',        bg: ['#1a1205','#0d0a04'],     accent: '#ff8c00', energy: '#00a86b', particle: '#ff8c00' },
+  { id: 'eye',       name: 'EYE OF THE NEXUS',   bg: ['#020e12','#010810'],     accent: '#00c8c8', energy: '#c5a41d', particle: '#00aeef' },
+  { id: 'desert',    name: 'DESERT AFTER MIDNIGHT', bg: ['#080604','#040302'],  accent: '#c5a41d', energy: '#1a6fcc', particle: '#c5a41d' },
+  { id: 'underworld',name: 'UNDERWORLD',         bg: ['#050000','#020000'],     accent: '#c5a41d', energy: '#8b0000', particle: '#cc1111' },
+  { id: 'celestial', name: 'CELESTIAL TEMPLE',   bg: ['#04080d','#02050a'],     accent: '#c5a41d', energy: '#00aeef', particle: '#e8c84a' },
+];
+
+/* Simple stable hash of a string → integer */
+function _hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = (Math.imul(31, h) + s.charCodeAt(i)) | 0; }
+  return Math.abs(h);
+}
+
+/* Get the scene for a track */
+function _getScene(trackId) {
+  if (!trackId) return _SCENES[0];
+  return _SCENES[_hashStr(String(trackId)) % _SCENES.length];
+}
+
+/* Current scene state */
+let _currentScene = _SCENES[0];
+let _sceneCanvas = null;
+let _sceneCtx    = null;
+let _sceneRaf    = null;
+let _sceneParticles = [];
+
+/* Apply a scene to the music mode stage */
+function _applyMusicScene(scene) {
+  if (_currentScene === scene && _sceneRaf) return; // already active, no change
+  _currentScene = scene;
+
+  // Update scene badge
+  const badge = _el('csrSceneBadge');
+  if (badge) badge.textContent = scene.name;
+
+  // Update blurred bg tint
+  const stageBg = _el('csrStageBg');
+  if (stageBg) {
+    stageBg.style.background = `radial-gradient(ellipse at center, ${scene.bg[0]} 0%, ${scene.bg[1]} 100%)`;
+    stageBg.style.backgroundImage = 'none'; // override artwork bg while in music mode
+  }
+
+  // Update orbit ring color via filter
+  const orbit1 = _el('csrOrbit1');
+  const orbit2 = _el('csrOrbit2');
+  // Visual tint handled by scene canvas below
+
+  // Start scene canvas animation
+  _startSceneCanvas(scene);
+}
+
+/* Scene canvas — lightweight particle field */
+function _startSceneCanvas(scene) {
+  _stopSceneCanvas();
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  _sceneCanvas = _el('csrSceneCanvas');
+  if (!_sceneCanvas) return;
+  _sceneCtx = _sceneCanvas.getContext('2d');
+  if (!_sceneCtx) return;
+
+  // Seed particles
+  _sceneParticles = [];
+  const N = 30;
+  for (let i = 0; i < N; i++) {
+    _sceneParticles.push({
+      x:   Math.random(),
+      y:   Math.random(),
+      vx:  (Math.random() - 0.5) * 0.0004,
+      vy: -(Math.random() * 0.0006 + 0.0001),
+      r:   Math.random() * 1.8 + 0.5,
+      a:   Math.random() * 0.6 + 0.2,
+      life: Math.random(),
+    });
+  }
+
+  let W = 0, H = 0;
+  function draw() {
+    _sceneRaf = requestAnimationFrame(draw);
+    const cW = _sceneCanvas.clientWidth;
+    const cH = _sceneCanvas.clientHeight;
+    if (cW !== W || cH !== H) {
+      _sceneCanvas.width  = cW;
+      _sceneCanvas.height = cH;
+      W = cW; H = cH;
+    }
+    if (!W || !H) return;
+
+    _sceneCtx.clearRect(0, 0, W, H);
+
+    // Scene-specific background tint overlay
+    _sceneCtx.fillStyle = scene.bg[0] + '18'; // subtle tint
+    _sceneCtx.fillRect(0, 0, W, H);
+
+    // Draw particles
+    for (const p of _sceneParticles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life += 0.004;
+      // Reset when off top
+      if (p.y < -0.02 || p.life > 1) {
+        p.x = Math.random();
+        p.y = 1 + Math.random() * 0.1;
+        p.life = 0;
+        p.vx = (Math.random() - 0.5) * 0.0004;
+        p.vy = -(Math.random() * 0.0006 + 0.0001);
+      }
+      const px = p.x * W;
+      const py = p.y * H;
+      const alpha = p.a * Math.sin(p.life * Math.PI);
+      _sceneCtx.beginPath();
+      _sceneCtx.arc(px, py, p.r, 0, Math.PI * 2);
+      _sceneCtx.fillStyle = scene.particle + _alphaHex(alpha * 0.5);
+      _sceneCtx.fill();
+    }
+
+    // Scene-specific energy crack effect (subtle lines at bottom)
+    _drawSceneEnergy(_sceneCtx, scene, W, H);
+  }
+  draw();
+}
+
+function _alphaHex(a) {
+  return Math.round(Math.min(1, Math.max(0, a)) * 255).toString(16).padStart(2, '0');
+}
+
+function _drawSceneEnergy(ctx, scene, W, H) {
+  // Draw faint horizontal energy line at bottom
+  ctx.save();
+  const grad = ctx.createLinearGradient(0, H, W, H);
+  grad.addColorStop(0, 'transparent');
+  grad.addColorStop(0.3, scene.energy + '30');
+  grad.addColorStop(0.5, scene.energy + '60');
+  grad.addColorStop(0.7, scene.energy + '30');
+  grad.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, H - 2, W, 2);
+  ctx.restore();
+}
+
+function _stopSceneCanvas() {
+  if (_sceneRaf) { cancelAnimationFrame(_sceneRaf); _sceneRaf = null; }
+}
+
 /* ── Sync viewer UI to a Now Playing document ── */
 function _syncToNowPlaying(d) {
   if (!d) return;
@@ -500,8 +653,9 @@ function _syncToNowPlaying(d) {
   const artwork   = d.artworkUrl      || d.coverArtUrl || '';
   const mediaType = d.mediaType       || 'music';
   const nextTitle = d.nextTitle       || '';
+  const trackId   = d.currentTrackId  || '';
 
-  // Update Now Playing panel
+  // Update Now Playing artifact plaque
   _setText('csrNpTitle',   title);
   _setText('csrNpArtist',  artist);
   _setText('csrTotalTime', _fmtDur(dur));
@@ -510,32 +664,49 @@ function _syncToNowPlaying(d) {
   _setText('csrMusicTitle',  title);
   _setText('csrMusicArtist', artist);
 
-  // Type badge
+  // Type badge (rune)
   const typeBadge = _el('csrNpTypeBadge');
   if (typeBadge) {
     typeBadge.textContent =
-      mediaType === 'video'   ? '🎬 Video'   :
-      mediaType === 'picture' ? '🖼 Picture'  :
-                                '🎵 Music';
+      mediaType === 'video'   ? '𓆙 Video'   :
+      mediaType === 'picture' ? '𓇳 Picture'  :
+                                '𓆣 Music';
   }
 
-  // Thumbnail in Now Playing panel
+  // Thumbnail in plaque
   _setNpThumb(artwork);
 
-  // Up Next
+  // Up Next → Prophecy Queue
   if (d.upNext && Array.isArray(d.upNext)) {
     _player._queue = d.upNext;
     _renderUpNext(d.upNext);
+    _renderTimeline(d.upNext);
   } else if (nextTitle) {
-    _renderUpNext([{ title: nextTitle, artist: d.nextArtist || '', mediaType: d.nextMediaType || 'music', artworkUrl: d.nextArtworkUrl || '' }]);
+    const items = [{ title: nextTitle, artist: d.nextArtist || '', mediaType: d.nextMediaType || 'music', artworkUrl: d.nextArtworkUrl || '' }];
+    _renderUpNext(items);
+    _renderTimeline(items);
   } else {
     _renderUpNext([]);
+    _renderTimeline([]);
+  }
+
+  // Assign music scene based on track ID
+  if (mediaType === 'music') {
+    const scene = _getScene(trackId || title);
+    // Only transition scene if track changed
+    if (scene !== _currentScene || !_sceneRaf) {
+      _applyMusicScene(scene);
+    }
+  } else {
+    _stopSceneCanvas();
+    const badge = _el('csrSceneBadge');
+    if (badge) badge.textContent = '';
   }
 
   // Load new media if URL changed
   if (url && url !== _player.trackUrl) {
     _player.trackUrl      = url;
-    _player.trackId       = d.currentTrackId || '';
+    _player.trackId       = trackId;
     _player.trackDur      = dur;
     _player.artworkUrl    = artwork;
     _player.mediaType     = mediaType;
@@ -560,29 +731,51 @@ function _setNpThumb(artworkUrl) {
   }
 }
 
-/* ── Render Up Next ── */
+/* ── Render Prophecy Queue (Up Next) ── */
 function _renderUpNext(items) {
   const list = _el('csrUpNextList');
   if (!list) return;
   if (!items || !items.length) {
-    list.innerHTML = '<div class="csr-up-next-empty">Nothing queued yet</div>';
+    list.innerHTML = '<div class="csr-prophecy-empty">THE QUEUE IS EMPTY</div>';
     return;
   }
   const shown = items.slice(0, 5);
   list.innerHTML = shown.map(item => {
-    const icon = item.mediaType === 'video' ? '🎬' : item.mediaType === 'picture' ? '🖼' : '🎵';
+    const icon = item.mediaType === 'video' ? '𓆙' : item.mediaType === 'picture' ? '𓇳' : '𓆣';
     const typeLabel = item.mediaType === 'video' ? 'Video' : item.mediaType === 'picture' ? 'Picture' : 'Music';
     const thumbHtml = item.artworkUrl
       ? `<img src="${_esc(item.artworkUrl)}" alt="" loading="lazy" onerror="this.style.display='none'">`
       : icon;
-    return `<div class="csr-up-next-item" role="listitem">
-      <div class="csr-up-next-thumb" aria-hidden="true">${thumbHtml}</div>
-      <div class="csr-up-next-info">
-        <div class="csr-up-next-title">${_esc(item.title || 'Untitled')}</div>
-        <div class="csr-up-next-type">${icon} ${_esc(typeLabel)}</div>
+    const durStr = item.duration ? `<span style="font-size:9px;color:var(--snx-text-dim);margin-left:auto">${_fmtDur(item.duration)}</span>` : '';
+    return `<div class="csr-prophecy-item" role="listitem">
+      <div class="csr-prophecy-thumb" aria-hidden="true">${thumbHtml}</div>
+      <div class="csr-prophecy-info">
+        <div class="csr-prophecy-title">${_esc(item.title || 'Untitled')}</div>
+        <div class="csr-prophecy-type">${icon} ${_esc(typeLabel)}</div>
       </div>
+      ${durStr}
     </div>`;
   }).join('');
+}
+
+/* ── Render Channel Timeline ── */
+function _renderTimeline(upNext) {
+  const track = _el('csrTimelineTrack');
+  if (!track) return;
+  if (!upNext || !upNext.length) {
+    track.innerHTML = '<div class="csr-timeline-line"></div>';
+    return;
+  }
+  const shown = upNext.slice(0, 3);
+  const positions = shown.map((_, i) => 25 + (i * 28));
+  const dots = shown.map((item, i) => {
+    const pos = positions[i];
+    return `<div class="csr-timeline-node" style="left:${pos}%">
+      <div class="csr-timeline-node-dot"></div>
+      <div class="csr-timeline-node-label">${_esc((item.title || '').slice(0, 12))}</div>
+    </div>`;
+  }).join('');
+  track.innerHTML = `<div class="csr-timeline-line"></div>${dots}`;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -637,14 +830,22 @@ function _setStageMode(mode) {
   _player.mediaType = mode;
 }
 
-/* ── MUSIC MODE ── */
+/* ── MUSIC MODE — TOMB OF SOUND ── */
 function _activateMusicMode(url, dur, artworkUrl) {
   _setStageMode('music');
   _stopPictureTimer();
 
-  // Update blurred background
+  // Let scene system control the bg; only set artwork bg if we have art
   const bg = _el('csrStageBg');
-  if (bg) bg.style.backgroundImage = artworkUrl ? `url('${_esc(artworkUrl)}')` : 'none';
+  if (bg) {
+    if (artworkUrl) {
+      bg.style.backgroundImage = `url('${_esc(artworkUrl)}')`;
+      bg.style.background = '';
+    } else {
+      bg.style.backgroundImage = 'none';
+      bg.style.background = `radial-gradient(ellipse at center, ${_currentScene.bg[0]} 0%, ${_currentScene.bg[1]} 100%)`;
+    }
+  }
 
   // Update artwork image
   const img = _el('csrMusicArtwork');
@@ -662,6 +863,9 @@ function _activateMusicMode(url, dur, artworkUrl) {
     }
   }
 
+  // Ensure scene canvas is running
+  if (!_sceneRaf) _startSceneCanvas(_currentScene);
+
   // Show music info div in stage
   const info = _el('csrMusicInfo');
   if (info) info.style.display = '';
@@ -669,15 +873,16 @@ function _activateMusicMode(url, dur, artworkUrl) {
   _loadAndPlayAudio(url, dur);
 }
 
-/* ── VIDEO MODE ── */
+/* ── VIDEO MODE — PHARAOH'S SCREEN ── */
 function _activateVideoMode(url, dur) {
   _setStageMode('video');
   _stopPictureTimer();
   _stopAudio();
+  _stopSceneCanvas();
 
   // Clear any blurred bg
   const bg = _el('csrStageBg');
-  if (bg) bg.style.backgroundImage = 'none';
+  if (bg) { bg.style.backgroundImage = 'none'; bg.style.background = '#000'; }
 
   const video = _el('csrVideoEl');
   if (!video) return;
@@ -714,19 +919,20 @@ function _activateVideoMode(url, dur) {
   _show('csrProgressFill', true);
 }
 
-/* ── PICTURE MODE ── */
+/* ── PICTURE MODE — HALL OF VISIONS ── */
 function _activatePictureMode(url, duration, title) {
   _setStageMode('picture');
   _stopPictureTimer();
   _stopAudio();
+  _stopSceneCanvas();
 
   const img = _el('csrPictureImg');
-  const bg  = _el('csrPictureBg');
-  if (img) { img.alt = _esc(title || 'Stream picture'); img.src = url; }
+  const bg  = _el('csrPictureBg'); // .csr-vision-bg in new HTML
+  if (img) { img.alt = _esc(title || 'Hall of Visions'); img.src = url; }
   if (bg)  { bg.style.backgroundImage = `url('${_esc(url)}')`; }
 
   const bgStage = _el('csrStageBg');
-  if (bgStage) bgStage.style.backgroundImage = `url('${_esc(url)}')`;
+  if (bgStage) { bgStage.style.backgroundImage = `url('${_esc(url)}')`; bgStage.style.background = ''; }
 
   // Auto-advance after duration (default 30s if not specified)
   const displayMs = ((duration || 30)) * 1000;
@@ -881,24 +1087,39 @@ function _vizStart() {
 
     ctx.clearRect(0, 0, W, H);
 
-    const barCount = Math.min(bufLen, 32);
-    const barW     = (W / barCount) * 0.7;
-    const gap      = (W / barCount) * 0.3;
+    const barCount = Math.min(bufLen, 40);
+    const barW     = (W / barCount) * 0.65;
+    const gap      = (W / barCount) * 0.35;
+    const scene    = _currentScene;
 
     for (let i = 0; i < barCount; i++) {
       const val    = data[i] / 255;
-      const barH   = val * H * 0.95;
+      const barH   = val * H * 0.92;
       const x      = i * (barW + gap) + gap / 2;
       const y      = H - barH;
 
-      // Colour: neon-blue to neon-green gradient based on height
-      const r = Math.round(0 + val * 57);
-      const g = Math.round(174 + val * 81);
-      const b = Math.round(239 - val * 100);
-      ctx.fillStyle = `rgba(${r},${g},${b},0.85)`;
+      // Egyptian gold at low energy, scene accent/energy at high
+      const t = val;
+      // Parse scene energy color (assumed hex #rrggbb)
+      const er = parseInt(scene.energy.slice(1,3),16);
+      const eg = parseInt(scene.energy.slice(3,5),16);
+      const eb = parseInt(scene.energy.slice(5,7),16);
+      // Gold base: r=197,g=164,b=29
+      const r = Math.round(197 + (er - 197) * t);
+      const g = Math.round(164 + (eg - 164) * t);
+      const b = Math.round(29  + (eb - 29) * t);
+      ctx.fillStyle = `rgba(${r},${g},${b},${0.6 + val * 0.4})`;
       ctx.beginPath();
-      ctx.roundRect ? ctx.roundRect(x, y, barW, barH, 2) : ctx.rect(x, y, barW, barH);
+      ctx.roundRect ? ctx.roundRect(x, y, barW, barH, 1) : ctx.rect(x, y, barW, barH);
       ctx.fill();
+
+      // Glow on tall bars
+      if (val > 0.6) {
+        ctx.fillStyle = `rgba(${r},${g},${b},0.15)`;
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(x - 1, y - 2, barW + 2, barH + 4, 2) : ctx.rect(x - 1, y - 2, barW + 2, barH + 4);
+        ctx.fill();
+      }
     }
   }
   draw();
@@ -923,13 +1144,13 @@ function _drawFlatBars() {
   canvas.width  = W;
   canvas.height = H;
   ctx.clearRect(0, 0, W, H);
-  const barCount = 32;
-  const barW     = (W / barCount) * 0.7;
-  const gap      = (W / barCount) * 0.3;
+  const barCount = 40;
+  const barW     = (W / barCount) * 0.65;
+  const gap      = (W / barCount) * 0.35;
   for (let i = 0; i < barCount; i++) {
     const x = i * (barW + gap) + gap / 2;
-    ctx.fillStyle = 'rgba(0,174,239,0.18)';
-    ctx.fillRect(x, H - 3, barW, 3);
+    ctx.fillStyle = 'rgba(197,164,29,0.18)';
+    ctx.fillRect(x, H - 2, barW, 2);
   }
 }
 
@@ -1167,10 +1388,11 @@ function _subscribeRtdbViewerCount(streamId) {
 function _updateViewerDisplay(count) {
   _player.listenerCount = count;
   const countStr = String(count);
-  _setText('csrViewerCount',       countStr); // Now Playing panel
-  _setText('csrWatchingCount',     countStr); // Channel brand row
+  _setText('csrViewerCount',       countStr); // Artifact plaque
   _setText('csrHeaderViewerCount', countStr); // Header pill
   _setText('csrInfoListeners',     countStr); // Admin panel
+  // Legacy element — may not exist in new layout, ignore gracefully
+  try { _setText('csrWatchingCount', countStr); } catch(_) {}
 }
 
 /* ═══════════════════════════════════════════════════════
