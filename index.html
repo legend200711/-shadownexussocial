@@ -58,7 +58,7 @@
 <!-- ── Nexus Global Theme Engine ── -->
 <link rel="stylesheet" href="theme-engine.css?v=SNS-2026-ALBUM-PRIVACY-001">
 <!-- ── Shadow Nexus Cinematic Welcome Experience ── -->
-<link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-INTRO-003">
+<link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-WMBUG-001">
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Egyptian/Horror theme ── -->
 <link rel="stylesheet" href="nexus.css?v=SNS-2026-ALBUM-PRIVACY-001">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
@@ -10181,64 +10181,70 @@ body.arcade-fs-ios body::after { display:none !important; }
 ══════════════════════════════════ -->
 <div class="admin-tab-content" id="adminTab-welcomemusic">
 
-  <div style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-    <div>
-      <h3 class="snxwm-title">🎵 Welcome Screen Music</h3>
-      <p class="snxwm-subtitle">Control the cinematic welcome experience music for all visitors.</p>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="snxwm-btn" onclick="snxwmPreviewFullIntro()">▶ Preview Full Intro</button>
-    </div>
+  <!-- Header -->
+  <div style="margin-bottom:18px;">
+    <h3 class="snxwm-title">🌌 Welcome Experience</h3>
+    <p class="snxwm-subtitle">Control the cinematic welcome screen and music for all visitors.</p>
   </div>
 
-  <!-- Status panel -->
+  <!-- Settings panel -->
   <div class="snxwm-panel">
     <h4 class="snxwm-section-title">⚙️ Settings</h4>
     <div class="snxwm-row">
       <span class="snxwm-label">Welcome Screen</span>
       <span class="snxwm-status-dot on" id="snxwmScreenDot"></span>
       <span class="snxwm-status-lbl" id="snxwmScreenLbl">Enabled</span>
-      <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmToggleScreen(true)">Enable</button>
-      <button class="snxwm-btn snxwm-btn-sm snxwm-btn-off" onclick="snxwmToggleScreen(false)">Disable</button>
+      <div class="snxwm-btns">
+        <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmToggleScreen(true)">Enable</button>
+        <button class="snxwm-btn snxwm-btn-sm snxwm-btn-off" onclick="snxwmToggleScreen(false)">Disable</button>
+      </div>
     </div>
     <div class="snxwm-row">
       <span class="snxwm-label">Welcome Music</span>
       <span class="snxwm-status-dot off" id="snxwmMusicDot"></span>
       <span class="snxwm-status-lbl" id="snxwmMusicLbl">Disabled</span>
-      <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmToggleMusic(true)">Enable</button>
-      <button class="snxwm-btn snxwm-btn-sm snxwm-btn-off" onclick="snxwmToggleMusic(false)">Disable</button>
+      <div class="snxwm-btns">
+        <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmToggleMusic(true)">Enable</button>
+        <button class="snxwm-btn snxwm-btn-sm snxwm-btn-off" onclick="snxwmToggleMusic(false)">Disable</button>
+      </div>
     </div>
     <div class="snxwm-row">
-      <span class="snxwm-label">Loop Song</span>
+      <span class="snxwm-label">Loop Music</span>
       <span class="snxwm-status-dot on" id="snxwmLoopDot"></span>
       <span class="snxwm-status-lbl" id="snxwmLoopLbl">On</span>
-      <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmToggleLoop(true)">On</button>
-      <button class="snxwm-btn snxwm-btn-sm snxwm-btn-off" onclick="snxwmToggleLoop(false)">Off</button>
+      <div class="snxwm-btns">
+        <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmToggleLoop(true)">On</button>
+        <button class="snxwm-btn snxwm-btn-sm snxwm-btn-off" onclick="snxwmToggleLoop(false)">Off</button>
+      </div>
     </div>
     <div class="snxwm-row">
       <span class="snxwm-label">Now Playing Strip</span>
       <span class="snxwm-status-dot on" id="snxwmNpDot"></span>
       <span class="snxwm-status-lbl" id="snxwmNpLbl">Showing</span>
-      <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmToggleNowPlaying(true)">Show</button>
-      <button class="snxwm-btn snxwm-btn-sm snxwm-btn-off" onclick="snxwmToggleNowPlaying(false)">Hide</button>
+      <div class="snxwm-btns">
+        <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmToggleNowPlaying(true)">Show</button>
+        <button class="snxwm-btn snxwm-btn-sm snxwm-btn-off" onclick="snxwmToggleNowPlaying(false)">Hide</button>
+      </div>
     </div>
   </div>
 
   <!-- Volume -->
-  <div class="snxwm-panel" style="margin-top:10px;">
-    <h4 class="snxwm-section-title">🔊 Volume</h4>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <input type="range" id="snxwmVolSlider" min="0" max="100" value="45" style="flex:1;min-width:120px;accent-color:#00d4ff;"
+  <div class="snxwm-panel">
+    <h4 class="snxwm-section-title">🔊 Default Volume</h4>
+    <div class="snxwm-volume-wrap">
+      <input type="range" id="snxwmVolSlider" min="0" max="100" value="45"
         oninput="document.getElementById('snxwmVolVal').textContent=this.value+'%'">
-      <span id="snxwmVolVal" style="font-size:13px;color:#d8eeff;min-width:38px;">45%</span>
-      <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmSaveVolume(document.getElementById('snxwmVolSlider').value)">💾 Save</button>
+      <span class="snxwm-vol-val" id="snxwmVolVal">45%</span>
+    </div>
+    <div style="margin-top:10px;">
+      <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmSaveVolume(document.getElementById('snxwmVolSlider').value)">💾 Save Settings</button>
     </div>
   </div>
 
   <!-- Current song -->
-  <div class="snxwm-panel" style="margin-top:10px;">
+  <div class="snxwm-panel">
     <h4 class="snxwm-section-title">🎵 Current Song</h4>
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
       <div class="snxwm-art" id="snxwmArtEl">♪</div>
       <div style="flex:1;min-width:0;">
         <div class="snxwm-song-title"  id="snxwmTitleEl">No song uploaded</div>
@@ -10246,36 +10252,44 @@ body.arcade-fs-ios body::after { display:none !important; }
         <div class="snxwm-song-meta"   id="snxwmMetaEl"></div>
       </div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
-      <button class="snxwm-btn" onclick="snxwmPreviewAudio()">▶ Preview Audio</button>
-      <button class="snxwm-btn snxwm-btn-off" onclick="snxwmPausePreview()">⏸ Pause</button>
+    <div class="snxwm-action-row">
+      <button class="snxwm-btn" id="snxwmPreviewBtn" onclick="snxwmPreviewAudio()">▶ Preview</button>
+      <button class="snxwm-btn snxwm-btn-off" id="snxwmPauseBtn" style="display:none;" onclick="snxwmPausePreview()">⏸ Pause</button>
       <button class="snxwm-btn snxwm-btn-off" onclick="snxwmRemoveSong()">🗑 Remove Song</button>
     </div>
   </div>
 
   <!-- Upload -->
-  <div class="snxwm-panel" style="margin-top:10px;">
-    <h4 class="snxwm-section-title">⬆️ Upload Song</h4>
-    <p style="font-size:12px;color:#4a7a9a;margin:0 0 10px;">Accepted: MP3, M4A, AAC, WAV, OGG, FLAC, OPUS (max 200 MB)</p>
+  <div class="snxwm-panel">
+    <h4 class="snxwm-section-title">⬆️ Upload New Song</h4>
+    <p style="font-size:12px;color:#4a7a9a;margin:0 0 12px;">Accepted: MP3, M4A, AAC, WAV, OGG, FLAC, OPUS &nbsp;·&nbsp; Max 200 MB</p>
     <input type="file" id="snxwmFileInput" accept="audio/*" style="display:none;" onchange="snxwmUploadSong(this,false)">
     <button class="snxwm-btn" onclick="document.getElementById('snxwmFileInput').click()">📁 Choose Audio File</button>
-    <div id="snxwmProgressWrap" style="display:none;margin-top:10px;">
-      <div style="font-size:12px;color:#4a9ade;margin-bottom:4px;">Uploading…</div>
-      <progress id="snxwmProgress" value="0" max="100" style="width:100%;accent-color:#00d4ff;"></progress>
+    <div id="snxwmProgressWrap" style="display:none;margin-top:12px;">
+      <div style="font-size:12px;color:#4a9ade;margin-bottom:6px;">Uploading…</div>
+      <div style="background:rgba(0,80,180,.2);border-radius:4px;height:6px;overflow:hidden;">
+        <div id="snxwmProgressBar" style="height:100%;background:linear-gradient(90deg,#0060ff,#00ccff);width:0%;transition:width .3s;border-radius:4px;"></div>
+      </div>
     </div>
   </div>
 
   <!-- Song metadata -->
-  <div class="snxwm-panel" style="margin-top:10px;">
+  <div class="snxwm-panel">
     <h4 class="snxwm-section-title">🏷️ Song Info (Optional)</h4>
-    <div style="display:flex;flex-direction:column;gap:8px;">
+    <div style="display:flex;flex-direction:column;gap:10px;">
       <input type="text" id="snxwmSongTitle"  placeholder="Song title"  class="snxwm-input">
       <input type="text" id="snxwmSongArtist" placeholder="Artist name" class="snxwm-input">
       <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmSaveMeta()" style="align-self:flex-start;">💾 Save Info</button>
     </div>
   </div>
 
-  <div id="snxwmStatus" style="font-size:12px;color:#4a9ade;margin-top:12px;min-height:18px;"></div>
+  <!-- Preview Full Intro -->
+  <div class="snxwm-panel" style="text-align:center;">
+    <button class="snxwm-btn" style="width:100%;max-width:320px;padding:12px 20px;font-size:13px;" onclick="snxwmPreviewFullIntro()">🌌 Preview Full Intro</button>
+    <p style="font-size:11px;color:#4a6a88;margin:8px 0 0;">Launches the cinematic welcome screen. Exit returns you here.</p>
+  </div>
+
+  <div id="snxwmStatus" style="font-size:12px;color:#4a9ade;margin-top:8px;min-height:18px;"></div>
 </div><!-- end adminTab-welcomemusic -->
 
 <!-- ══════════════════════════════════
@@ -33670,6 +33684,11 @@ window.snxFounderPanelCleanup = (function() {
     document.body.style.pointerEvents = '';
   }
 
+  // ── 6. Welcome Music panel cleanup (preview audio + preview overlay) ──
+  function _cleanupWelcomeMusic() {
+    if (typeof window.snxwmCleanup === 'function') window.snxwmCleanup();
+  }
+
   // ── Exported centralized cleanup ──
   return function snxFounderPanelCleanup() {
     try { _closeBodyOverlays();     } catch(e) { console.warn('[SNX Founder] closeBodyOverlays:', e.message); }
@@ -33677,6 +33696,7 @@ window.snxFounderPanelCleanup = (function() {
     try { _cancelPendingTimers();   } catch(e) { console.warn('[SNX Founder] cancelTimers:',       e.message); }
     try { _abortInFlightRenders();  } catch(e) { console.warn('[SNX Founder] abortRenders:',       e.message); }
     try { _restoreBodyState();      } catch(e) { console.warn('[SNX Founder] restoreBody:',        e.message); }
+    try { _cleanupWelcomeMusic();   } catch(e) { console.warn('[SNX Founder] welcomeMusic:',       e.message); }
   };
 })();
 
@@ -33686,7 +33706,7 @@ window.snxFounderPanelCleanup = (function() {
      SHADOW NEXUS CINEMATIC WELCOME EXPERIENCE
      Loaded last so it never blocks main app init.
      ═══════════════════════════════════════════════════════════ -->
-<script src="nexus-intro.js?v=SNS-2026-INTRO-001"></script>
+<script src="nexus-intro.js?v=SNS-2026-WMBUG-001"></script>
 <script>
   /* ── snxIntroCompleted: called by nexus-intro.js when the user clicks
      "Enter the Nexus" or "Skip Intro".  By this point Firebase auth may

@@ -898,14 +898,14 @@
     border: 1px solid rgba(0,100,200,.25);
     border-radius: 14px;
     padding: 20px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 .snxwm-title {
     font-size: 15px; font-weight: 700; color: #00d4ff;
-    margin: 0 0 6px; letter-spacing: 0.5px;
+    margin: 0 0 4px; letter-spacing: 0.5px;
 }
 .snxwm-subtitle {
-    font-size: 12px; color: #6a90b8; margin: 0 0 18px;
+    font-size: 12px; color: #6a90b8; margin: 0;
 }
 .snxwm-section-title {
     font-size: 11px; color: #4a8ab0; text-transform: uppercase;
@@ -921,6 +921,17 @@
 .snxwm-btn-off:hover {
     background: rgba(0,50,120,.45) !important;
     border-color: rgba(0,150,255,.45) !important;
+}
+/* Action row — buttons wrap on narrow viewports */
+.snxwm-action-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.snxwm-action-row .snxwm-btn {
+    flex: 1 1 auto;
+    min-width: 100px;
+    text-align: center;
 }
 .snxwm-art {
     width: 56px; height: 56px;
@@ -943,3 +954,16 @@
     font-family: -apple-system,"Segoe UI",system-ui,sans-serif;
 }
 .snxwm-input:focus { border-color: rgba(0,180,255,.6); outline: none; }
+/* Mobile: stack rows more comfortably on small screens */
+@media (max-width: 540px) {
+    .snxwm-row {
+        gap: 8px;
+    }
+    .snxwm-btns {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .snxwm-action-row .snxwm-btn {
+        flex: 1 1 calc(50% - 4px);
+    }
+}

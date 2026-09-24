@@ -585,8 +585,8 @@
 
     // Save song metadata (title/artist)
     window.snxwmSaveMeta = async function () {
-        var title  = (document.getElementById('snxwmInputTitle')  || {}).value || '';
-        var artist = (document.getElementById('snxwmInputArtist') || {}).value || '';
+        var title  = (document.getElementById('snxwmSongTitle')  || {}).value || '';
+        var artist = (document.getElementById('snxwmSongArtist') || {}).value || '';
         if (!title && !artist) return;
         try {
             await _saveConfig({ songTitle: title.trim(), songArtist: artist.trim() });
@@ -599,8 +599,6 @@
     window.snxwmUploadSong = async function (input, replacing) {
         var file = input && input.files && input.files[0];
         if (!file) return;
-        var bar  = 'snxwmProgressBar';
-        var wrap = 'snxwmProgress';
 
         // Validate audio type
         var audioExts = ['mp3','m4a','aac','wav','ogg','flac','opus'];
@@ -614,14 +612,14 @@
         }
 
         // Show progress
-        var progWrap = document.getElementById('snxwmProgress');
-        if (progWrap) { progWrap.style.display = 'block'; }
+        var progWrap = document.getElementById('snxwmProgressWrap');
         var progBar  = document.getElementById('snxwmProgressBar');
+        if (progWrap) { progWrap.style.display = 'block'; }
         if (progBar)  { progBar.style.width = '0%'; }
 
         try {
             if (typeof uploadToR2 !== 'function') throw new Error('Upload service not available.');
-            var url = await uploadToR2(file, bar, wrap, { mediaKind: 'music' });
+            var url = await uploadToR2(file, 'snxwmProgressBar', 'snxwmProgressWrap', { mediaKind: 'music' });
 
             // Verify the file is accessible before making it live
             await new Promise(function(resolve, reject){
@@ -659,8 +657,8 @@
             await _saveConfig(updates);
 
             // Populate metadata fields in UI
-            var titleInput  = document.getElementById('snxwmInputTitle');
-            var artistInput = document.getElementById('snxwmInputArtist');
+            var titleInput  = document.getElementById('snxwmSongTitle');
+            var artistInput = document.getElementById('snxwmSongArtist');
             if (titleInput  && !titleInput.value)  titleInput.value  = updates.songTitle  || '';
             if (artistInput && !artistInput.value) artistInput.value = updates.songArtist || '';
 
@@ -669,7 +667,8 @@
         } catch(e) {
             if (typeof toastNotification === 'function') toastNotification('❌ Upload failed: ' + e.message);
         } finally {
-            if (progWrap) progWrap.style.display = 'none';
+            var progWrapFin = document.getElementById('snxwmProgressWrap');
+            if (progWrapFin) progWrapFin.style.display = 'none';
             input.value = '';
         }
     };
@@ -701,7 +700,7 @@
             _previewAudio.play().catch(function(e){ if (typeof toastNotification === 'function') toastNotification('Preview blocked: ' + e.message); });
             var pbtn = document.getElementById('snxwmPreviewBtn');
             var ppbtn = document.getElementById('snxwmPauseBtn');
-            if (pbtn) pbtn.style.display = 'none';
+            if (pbtn)  pbtn.style.display  = 'none';
             if (ppbtn) ppbtn.style.display = '';
         } catch(e) { if (typeof toastNotification === 'function') toastNotification('❌ Preview error: ' + e.message); }
     };
@@ -709,31 +708,122 @@
         if (_previewAudio) { _previewAudio.pause(); _previewAudio = null; }
         var pbtn = document.getElementById('snxwmPreviewBtn');
         var ppbtn = document.getElementById('snxwmPauseBtn');
-        if (pbtn) pbtn.style.display = '';
+        if (pbtn)  pbtn.style.display  = '';
         if (ppbtn) ppbtn.style.display = 'none';
     };
 
-    // Founder full intro preview (launches the cinematic for the Founder without resetting session)
+    // Founder full intro preview — launches cinematic WITHOUT resetting session key.
+    // The preview overlay is injected at document.body (position:fixed) and removed
+    // when the Founder exits (Enter/Skip) OR when snxwmCleanup is called on navigation.
     window.snxwmPreviewFullIntro = function () {
-        // Temporarily replay without writing session key
+        // Stop any existing preview overlay or cinematic audio first
+        window.snxwmPausePreview();
         var old = document.getElementById('snxIntroOverlay');
         if (old) old.remove();
         _stopAudio();
         _exiting = false;
+
         var ov = _buildOverlay();
         document.body.insertBefore(ov, document.body.firstChild);
         _injectCrows(document.getElementById('snxIntroCrows'));
-        _wireButtons();
-        // Load music
+
+        // Wire buttons — override _exit so it:
+        //  1. Does NOT set the session key (not a real "done")
+        //  2. Returns the Founder to the Founder Control Center
+        var _previewExiting = false;
+        function _previewExit(fast) {
+            if (_previewExiting) return;
+            _previewExiting = true;
+            // Stop audio started by the preview
+            _stopAudio();
+            var ov2 = document.getElementById('snxIntroOverlay');
+            if (!ov2) {
+                // Navigate back to Founder Panel
+                if (typeof navTo === 'function') navTo('adminPage');
+                return;
+            }
+            if (fast) {
+                ov2.style.transition = 'opacity 0.3s';
+                ov2.style.opacity = '0';
+                setTimeout(function(){
+                    if (ov2.parentNode) ov2.parentNode.removeChild(ov2);
+                    if (typeof navTo === 'function') navTo('adminPage');
+                }, 320);
+            } else {
+                ov2.style.transition = 'opacity 0.8s';
+                ov2.style.opacity = '0';
+                setTimeout(function(){
+                    if (ov2.parentNode) ov2.parentNode.removeChild(ov2);
+                    if (typeof navTo === 'function') navTo('adminPage');
+                }, 850);
+            }
+        }
+
+        // Wire buttons manually (bypass _wireButtons which uses the global _exit)
+        var enterBtn = document.getElementById('snxIntroEnterBtn');
+        var skipBtn  = document.getElementById('snxIntroSkipBtn');
+        var soundBtn = document.getElementById('snxIntroSoundBtn');
+        var startBtn = document.getElementById('snxIntroStartMusicBtn');
+        if (enterBtn) enterBtn.addEventListener('click', function(){ _previewExit(false); });
+        if (skipBtn)  skipBtn.addEventListener('click',  function(){ _previewExit(true);  });
+        if (soundBtn) {
+            soundBtn.addEventListener('click', function(){
+                _muted = !_muted;
+                if (_audio) _audio.muted = _muted;
+                soundBtn.textContent = _muted ? '🔇 Sound' : '🔊 Sound';
+                soundBtn.setAttribute('aria-pressed', String(!_muted));
+            });
+        }
+        if (startBtn) {
+            startBtn.addEventListener('click', function(){
+                if (!_audio || _audio.paused) {
+                    _muted = false;
+                    _startAudio();
+                    startBtn.style.display = 'none';
+                }
+            });
+        }
+        // Escape key
+        document.addEventListener('keydown', function _escPreview(e){
+            if (e.key === 'Escape') { document.removeEventListener('keydown', _escPreview); _previewExit(true); }
+        });
+
+        // Load music config and start audio for the preview
         _loadConfig(function(cfg){
             _showNowPlaying(cfg);
             if (cfg && cfg.musicEnabled && cfg.audioUrl) {
                 _setupAudio(cfg.audioUrl, cfg.volume != null ? cfg.volume : DEFAULT_VOLUME, cfg.loop !== false);
             }
         });
-        // Override exit to NOT set session key
-        var origExit = window.snxIntroCompleted;
-        window.snxIntroCompleted = function(){ window.snxIntroCompleted = origExit; };
+    };
+
+    // ── Cleanup hook — called by snxFounderPanelCleanup on navigation away ──
+    window.snxwmCleanup = function () {
+        // Stop preview audio
+        if (_previewAudio) {
+            try { _previewAudio.pause(); _previewAudio.src = ''; } catch(_) {}
+            _previewAudio = null;
+        }
+        // Remove any Founder-triggered intro preview overlay from body
+        var previewOv = document.getElementById('snxIntroOverlay');
+        if (previewOv) {
+            // Only remove if it's an Founder-preview (the real cinematic was already
+            // dismissed before the app showed; this is a re-injection from snxwmPreviewFullIntro)
+            previewOv.style.display = 'none';
+            if (previewOv.parentNode) previewOv.parentNode.removeChild(previewOv);
+        }
+        // Stop cinematic audio (the preview-only audio instance)
+        _stopAudio();
+        // Reset preview button states
+        var pbtn  = document.getElementById('snxwmPreviewBtn');
+        var ppbtn = document.getElementById('snxwmPauseBtn');
+        if (pbtn)  pbtn.style.display  = '';
+        if (ppbtn) ppbtn.style.display = 'none';
+        // Hide progress bar
+        var progWrap = document.getElementById('snxwmProgressWrap');
+        if (progWrap) progWrap.style.display = 'none';
+        // Reset exiting flag so next preview works
+        _exiting = false;
     };
 
 })();
