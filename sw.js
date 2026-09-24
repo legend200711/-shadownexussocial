@@ -34,8 +34,6 @@ const SHELL_FILES = [
   'theme-engine.css',
   'script.js',
   'snx-net.js',
-  'snx-gifts.js',
-  'snx-gifts.css',
   'studio.css',
   'nexus.css',
   'nexus.js',

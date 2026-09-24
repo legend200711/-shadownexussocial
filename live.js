@@ -752,10 +752,6 @@ async function startLive() {
   _roomId = `${_safeUid}_${Date.now().toString(36)}`;
   _roomHostId = _user.uid;   // creator is always their own host
 
-  // Expose for gift integration
-  window._liveRoomId  = _roomId;
-  window._liveHostUid = _roomHostId;
-
   const creatorData = {
     roomId:       _roomId,
     hostId:       _user.uid,
@@ -887,12 +883,6 @@ async function startLive() {
     user: _user, userData: _userData,
     roomId: _roomId, isHost: true,
   }}));
-
-  // FIX 3: Start the live gift watcher for the HOST so incoming gifts show
-  // the notification/animation on the host screen in real time.
-  if (typeof window._snxgStartLiveGiftWatch === 'function') {
-    window._snxgStartLiveGiftWatch(_roomId);
-  }
 
   // ── Start optional systems (respects their individual ON/OFF state) ──
   _liveTimerOnLiveStart();
@@ -1555,7 +1545,6 @@ async function _startViewer() {
 
   _roomHostId = roomData.hostId || null;   // store real host uid for chat badge
 
-  // Expose host UID for gift integration
   window.dispatchEvent(new CustomEvent('snxLiveHostReady', { detail: { hostId: _roomHostId } }));
 
   _hideLoading();
@@ -1571,11 +1560,6 @@ async function _startViewer() {
     user: _user, userData: _userData,
     roomId: _roomId, isHost: false,
   }}));
-
-  // ── Start watching for live gifts (gift toasts) ──
-  if (typeof window._snxgStartLiveGiftWatch === 'function') {
-    window._snxgStartLiveGiftWatch(_roomId);
-  }
 
   /* ── Subscribe to live guest presence (shows guest boxes to viewers) ── */
   _startViewerGuestGrid();

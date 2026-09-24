@@ -182,7 +182,7 @@ When running standalone, update `/?snxPage=studioPage` to point to wherever the 
 
 ### What is NOT required from Shadow Nexus Social
 
-Feed, Profiles, Messages, Notifications, PayPal, Coins, Gifts, Wallet, Admin Panel, Moderation, old Live Studio (`studio.js`/`studio.css`/`live.js`/`webrtc.js`), or any other SNX-specific UI.
+Feed, Profiles, Messages, Notifications, Admin Panel, Moderation, old Live Studio (`studio.js`/`studio.css`/`live.js`/`webrtc.js`), or any other SNX-specific UI.
 
 ---
 

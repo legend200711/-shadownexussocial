@@ -26,15 +26,11 @@
       "generate_icons.py",
       "wrangler.jsonc",
       "wrangler.toml",
-      "wrangler-paypal.toml",
-      "wrangler-paypal.jsonc",
       "*.bak",
       "*.bak2",
       "*.bak3",
       "_snx_diff.txt",
-      "paypal-setup.md",
       "CNAME",
-      "test-free-coin-flow.js",
       "firestore.rules.backup*"
     ],
     "rewrites": [

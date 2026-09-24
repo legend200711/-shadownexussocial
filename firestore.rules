@@ -818,246 +818,22 @@ service cloud.firestore {
       }
     }
 
-    // ─── GIFTING & MONETIZATION — Shadow Nexus Social ──────────────────────────
-
-    // wallets/{uid}
-    // Owners can read their wallet. Writes are locked to owner via transactions
-    // enforcing: coins can never go negative; only valid integer values.
-    match /wallets/{uid} {
-      // Owner reads their own wallet; Founder reads any wallet for support.
-      // Any signed-in user may read a wallet inside a gift transaction (tx.get on
-      // recipient wallet to compute the new balance before crediting it).
-      allow read:   if isOwner(uid) || isFounder() || isSignedIn();
-      allow create: if
-        // Case 1: Owner creates their own wallet.
-        ( isOwner(uid)
-          && request.resource.data.shadowCoins is number
-          && request.resource.data.shadowCoins >= 0 )
-        ||
-        // Case 2: A gift sender creates the wallet for a new recipient (first gift ever).
-        // Strictly limited: uid field must match the document path, balance must be positive.
-        ( isSignedIn()
-          && request.resource.data.uid == uid
-          && request.resource.data.shadowCoins is number
-          && request.resource.data.shadowCoins > 0 );
-      // NOTE: the Firebase JS SDK writes all numbers as Firestore DoubleValue, not IntegerValue,
-      // so "is number" (matches both int and float) is required here for client-side transactions.
-      allow update: if
-        // Case 1: Owner updates their own wallet (deduction or any change).
-        ( isOwner(uid)
-          && request.resource.data.shadowCoins is number
-          && request.resource.data.shadowCoins >= 0 )
-        ||
-        // Case 2: Another signed-in user credits this wallet as part of a gift transaction.
-        // Strictly limited: only shadowCoins and lastGiftReceivedAt may change,
-        // the new balance must be strictly greater than the existing balance (never a deduction),
-        // and the new value must be a non-negative number.
-        ( isSignedIn()
-          && request.resource.data.diff(resource.data)
-               .affectedKeys().hasOnly(['shadowCoins', 'lastGiftReceivedAt'])
-          && request.resource.data.shadowCoins is number
-          && request.resource.data.shadowCoins > resource.data.shadowCoins );
-      allow delete: if isFounder();
-    }
-
-    // coinPurchases/{purchaseId}
-    // Users create purchase records; only founder/backend updates status.
-    match /coinPurchases/{purchaseId} {
-      allow create: if isSignedIn()
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.usdAmount is number
-        && request.resource.data.usdAmount >= 0.01
-        && request.resource.data.usdAmount <= 100
-        && request.resource.data.status == 'pending_payment';
-      allow read:   if isOwner(resource.data.uid) || isFounder();
-      allow update: if isFounder();  // only founder/backend webhook updates status
-      allow delete: if false;
-    }
-
-    // giftCatalog/{giftId}
-    // Public read; only founder writes.
-    match /giftCatalog/{giftId} {
-      allow read:   if isSignedIn();
-      allow write:  if isFounder();
-    }
-
-    // giftTransactions/{txId}
-    // Created by runTransaction (sender authenticated).
-    // NOBODY can edit or delete — immutable audit trail.
-    //
-    // Read access:
-    //  - The sender can read their own gift records (for gift history tab).
-    //  - The creator can read gifts they received (for creator studio earnings).
-    //  - Live gifts (isLive == true) are publicly visible to any signed-in user —
-    //    live stream viewers watch the giftTransactions collection to show gift toasts.
-    //  - Founders can read all records for moderation / support.
-    match /giftTransactions/{txId} {
-      allow create: if isSignedIn()
-        && request.resource.data.senderId == request.auth.uid
-        && request.resource.data.coinAmount is number
-        && request.resource.data.coinAmount > 0
-        && request.resource.data.creatorPct == 90
-        && request.resource.data.platformPct == 10;
-      allow read:   if isSignedIn()
-        && (
-          // Non-existent doc read (e.g. idempotency check in tx.get) — resource is null.
-          // Allow the sender to check if their txId doc exists before writing.
-          resource == null
-          || resource.data.senderId  == request.auth.uid
-          || resource.data.creatorId == request.auth.uid
-          || resource.data.isLive    == true   // live gift toasts visible to viewers
-          || isFounder()
-        );
-      allow update: if false;  // immutable
-      allow delete: if false;  // immutable
-    }
-
-    // creatorEarnings/{uid}
-    // Creator reads their own earnings.
-    // Any authenticated user can READ a creator's earnings — this is required so that
-    // the gift-send Firestore transaction (run by the sender) can tx.get() the doc to
-    // compute the correct incremented totals before writing.  Coin counts are not
-    // sensitive; write rules below still enforce all validation constraints.
-    // Any authenticated user can increment a creator's earnings (when sending a gift).
-    // The increment amounts are validated: must be positive numbers.
-    match /creatorEarnings/{uid} {
-      allow read:   if isSignedIn();
-      // Any authenticated sender may create the doc (first gift ever received by creator)
-      // NOTE: the Firebase JS SDK writes numbers as Firestore DoubleValue, not IntegerValue,
-      // so "is number" (matches both int and float) is required for client-side writes.
-      allow create: if isSignedIn()
-        && request.resource.data.uid            == uid
-        && request.resource.data.pendingCoins   is number
-        && request.resource.data.pendingCoins   >= 0
-        && request.resource.data.availableCoins is number
-        && request.resource.data.availableCoins >= 0
-        && request.resource.data.lifetimeCoins  is number
-        && request.resource.data.lifetimeCoins  >= 0;
-      // Any authenticated user may update (gift senders credit earnings).
-      // Validate non-negative values and that uid cannot be changed.
-      //
-      // platformCoins is backward-compatible: older docs that pre-date the field are
-      // allowed to omit it (treated as 0). The gift-send transaction always writes it;
-      // the earned-coin conversion only touches availableCoins + lastConversionAt so
-      // platformCoins may legitimately be absent in the merged result.
-      allow update: if isSignedIn()
-        && request.resource.data.uid             == resource.data.uid  // uid is immutable
-        && request.resource.data.pendingCoins    is number
-        && request.resource.data.pendingCoins    >= 0
-        && request.resource.data.availableCoins  is number
-        && request.resource.data.availableCoins  >= 0
-        && request.resource.data.lifetimeCoins   is number
-        && request.resource.data.lifetimeCoins   >= 0
-        && (!('platformCoins' in request.resource.data)
-            || (request.resource.data.platformCoins is number
-                && request.resource.data.platformCoins >= 0));
-      allow delete: if false;
-    }
-
-    // payouts/{payoutId} — legacy collection, kept for backwards compatibility
-    match /payouts/{payoutId} {
-      allow read:   if isSignedIn() && (resource.data.creatorId == request.auth.uid || isFounder());
-      allow create: if false;  // new payouts go to creatorPayouts via backend
-      allow update: if isFounder();
-      allow delete: if false;
-    }
-
-    // creatorPayouts/{payoutId} — PayPal-backed payout records (backend-written)
-    match /creatorPayouts/{payoutId} {
-      allow read:   if isSignedIn()
-        && (resource.data.creatorId == request.auth.uid || isFounder());
-      allow create: if false;  // backend only
-      allow update: if false;  // backend only
-      allow delete: if false;
-    }
-
-    // paypalAccounts/{uid} — creator PayPal onboarding status (backend-written)
-    match /paypalAccounts/{uid} {
-      allow read:   if isOwner(uid) || isFounder();
-      allow create: if false;  // backend only
-      allow update: if false;  // backend only
-      allow delete: if false;
-    }
-
-    // paypalWebhooks/{eventId} — immutable webhook event log (backend-written)
-    match /paypalWebhooks/{eventId} {
-      allow read:   if isFounder();
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    // financialAuditLog/{logId} — immutable audit records (backend-written)
-    match /financialAuditLog/{logId} {
-      allow read:   if isFounder();
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    // testCoinGrants/{txId} — test coin grant records (backend-written, Founder-readable)
-    // TEST GRANTS only — no real cash value, cannot trigger payouts
-    match /testCoinGrants/{txId} {
-      allow read:   if isFounder();
-      allow create: if false;  // backend only
-      allow update: if false;  // immutable
-      allow delete: if false;
-    }
-
-    // testCoinTransfers/{txId} — test coin transfer records (backend-written, Founder-readable)
-    // Records server-side coin moves between two users initiated by the Founder for testing.
-    // No real cash value; cannot trigger PayPal payouts.
-    match /testCoinTransfers/{txId} {
-      allow read:   if isFounder();
-      allow create: if false;  // backend only
-      allow update: if false;  // immutable
-      allow delete: if false;
-    }
-
     // ─── Shadow XP / Social Credit ─────────────────────────────────────────────
     //
     // /shadowXP/{uid}  — level, experience, title
-    //   Written by the owner (snxf_awardXP) and, for the experience field only,
-    //   by a gift sender crediting the recipient's social standing.
-    //
-    // Gift-credit rule: a signed-in user may create or update another user's
-    // shadowXP document provided:
-    //   - only the 'experience' and 'lastGiftXPAt' fields change
-    //   - new experience > existing experience (never a deduction)
-    //   - new experience is a number
+    //   Written by the owner (snxf_awardXP).
     //
     match /shadowXP/{uid} {
       // Owner reads/writes their own XP (snxf_awardXP, snxf_loadXPStrip).
-      // Any signed-in user may also read — required so that a gift-send transaction
-      // can tx.get() the recipient's XP doc to compute the incremented value before
-      // writing it (the Firestore transaction reads all docs before any writes).
-      allow read:   if isSignedIn();
+      allow read:   if isOwner(uid);
       allow create: if
-        // Case 1: Owner creates their own XP doc.
-        ( isOwner(uid)
+        isOwner(uid)
           && request.resource.data.experience is number
-          && request.resource.data.experience >= 0 )
-        ||
-        // Case 2: Gift sender creates XP doc for a recipient who has none yet.
-        // Strictly limited: uid field matches path, experience must be positive.
-        ( isSignedIn()
-          && request.resource.data.uid == uid
-          && request.resource.data.experience is number
-          && request.resource.data.experience > 0 );
+          && request.resource.data.experience >= 0;
       allow update: if
-        // Case 1: Owner updates their own XP (snxf_awardXP).
-        ( isOwner(uid)
+        isOwner(uid)
           && request.resource.data.experience is number
-          && request.resource.data.experience >= 0 )
-        ||
-        // Case 2: Gift sender credits recipient's Social Credit (XP).
-        // Strictly limited: only experience and lastGiftXPAt may change,
-        // new experience must be strictly greater than the existing value.
-        ( isSignedIn()
-          && request.resource.data.diff(resource.data)
-               .affectedKeys().hasOnly(['experience', 'lastGiftXPAt'])
-          && request.resource.data.experience is number
-          && request.resource.data.experience > resource.data.experience );
+          && request.resource.data.experience >= 0;
       allow delete: if isFounder();
     }
 
@@ -1404,7 +1180,7 @@ service cloud.firestore {
 
     match /studioLiveRooms/{uid} {
       // Public read — unauthenticated viewers can discover and watch Studio streams.
-      // Auth is still required for chat, likes, gifts, and all writes.
+      // Auth is still required for chat, likes, and all writes.
       allow read: if true;
 
       // Only a non-anonymous signed-in user may create/overwrite their own Studio room doc.

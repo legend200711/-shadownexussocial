@@ -154,21 +154,6 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
 }
 #snxvChatSend:hover{background:#0055dd}
 
-/* ── Gift panel ── */
-#snxvGiftRow{
-  padding:10px 14px;border-top:1px solid rgba(255,255,255,0.05);
-  display:flex;align-items:center;gap:8px;overflow-x:auto;
-  scrollbar-width:none;
-}
-#snxvGiftRow::-webkit-scrollbar{display:none}
-.snxv-gift-chip{
-  flex-shrink:0;padding:6px 12px;border-radius:20px;
-  background:rgba(255,153,0,0.12);border:1px solid rgba(255,153,0,0.25);
-  color:#ffaa00;font-size:12px;font-weight:600;
-  transition:background .15s;
-}
-.snxv-gift-chip:hover{background:rgba(255,153,0,0.25)}
-
 /* ── Offline / loading overlay ── */
 #snxvLoadingOverlay{
   position:fixed;inset:0;z-index:200;
@@ -333,13 +318,7 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
     <!-- Action buttons -->
     <div id="snxvActions">
       <button class="snxv-action-btn" id="snxvLikeBtn" onclick="snxvSendLike()">❤️ Like</button>
-      <button class="snxv-action-btn" id="snxvGiftBtn" onclick="snxvOpenGifts()">🎁 Gift</button>
       <button class="snxv-action-btn" id="snxvShareBtn" onclick="snxvShare()">📤 Share</button>
-    </div>
-
-    <!-- Gift bar (quick gifts) -->
-    <div id="snxvGiftRow" style="display:none">
-      <span style="font-size:12px;color:#5a8ab0;flex-shrink:0;">Quick Gift:</span>
     </div>
 
     <!-- Mobile: chat below stream -->
@@ -362,15 +341,6 @@ button{cursor:pointer;border:none;background:none;font:inherit;color:inherit}
 </div><!-- /main -->
 
 <div id="snxvToast"></div>
-
-<!-- ──────────────────────────────────────────────
-     SNX Gifts system — loaded before Firebase module so
-     the gift tray is available when auth resolves.
-     snx-gifts.js reads window._snxFirestore and
-     window._snxCurrentUser which are set below.
-────────────────────────────────────────────── -->
-<link rel="stylesheet" href="snx-gifts.css">
-<script src="snx-gifts.js"></script>
 
 <!-- ──────────────────────────────────────────────
      Firebase SDK — SAME app instance as Shadow Nexus Social.
@@ -473,11 +443,7 @@ function _toast(msg, ms = 2800) {
   setTimeout(() => t.classList.remove('show'), ms);
 }
 
-// ── Expose SNX identity globals for snx-gifts.js ─────────────────────────
-// snx-gifts.js reads window._snxFirestore and window._snxCurrentUser.
-// We set them here as soon as the Firebase module is ready, before auth
-// resolves, so that the gifting system can subscribe to the wallet
-// immediately once auth fires.
+// ── Expose SNX identity globals for other SNX scripts ────────────────────
 window._snxFirestore = {
   db, doc, getDoc, getDocs, updateDoc, addDoc,
   collection, query, where, orderBy, limit, onSnapshot,
@@ -488,7 +454,7 @@ window._snxFirestore = {
   getDocFromCache, getDocFromServer,
 };
 
-// Auth-ready queue — lets snx-gifts.js register callbacks before auth resolves
+// Auth-ready queue — lets SNX scripts register callbacks before auth resolves
 window._snxAuthReadyQueue = window._snxAuthReadyQueue || [];
 if (!window._snxOnAuthReady) {
   window._snxOnAuthReady = function(fn) {
@@ -501,11 +467,11 @@ if (!window._snxOnAuthReady) {
 // Firebase Auth automatically restores the SNX session from IndexedDB.
 // We do NOT sign in anonymously — the viewer page is read-accessible
 // via Firestore rules without authentication.  Auth-required actions
-// (like, gift, chat) are gated on a non-anonymous SNX session below.
+// (like, chat) are gated on a non-anonymous SNX session below.
 onAuthStateChanged(auth, async user => {
   if (!user || user.isAnonymous) {
     // User is signed out or was previously only anonymously authed.
-    // Clear identity globals so snx-gifts.js / action handlers know.
+    // Clear identity globals so action handlers know.
     _currentUser           = null;
     _userData              = null;
     window._snxCurrentUser = null;
@@ -532,12 +498,12 @@ onAuthStateChanged(auth, async user => {
     if (snap.exists()) _userData = snap.data();
   } catch {}
 
-  // Expose globals for snx-gifts.js and other SNX scripts
+  // Expose globals for SNX scripts
   window._snxCurrentUser = user;
   window._snxUserData    = _userData;
   window._snxAuthResolved = true;
 
-  // Flush auth-ready callbacks (snxgInit, wallet subscription, etc.)
+  // Flush auth-ready callbacks
   if (Array.isArray(window._snxAuthReadyQueue)) {
     window._snxAuthReadyQueue.forEach(fn => { try { fn(); } catch(e){} });
     window._snxAuthReadyQueue = [];
@@ -1027,28 +993,6 @@ window.snxvSendLike = async function() {
     _toast('❤️ Liked!');
   } catch (e) {
     _toast('Could not like: ' + e.message);
-  }
-};
-
-// ── Gift ─────────────────────────────────────────────────────────────────
-// Opens the SNX gift tray which is loaded via snx-gifts.js above.
-// The gift tray uses window._snxCurrentUser / window._snxFirestore set in
-// the auth handler, so coin balance and transactions use the SNX identity.
-window.snxvOpenGifts = function() {
-  if (!_currentUser) {
-    _toast('Sign in to Shadow Nexus Social to send gifts.');
-    return;
-  }
-  if (!_roomData) { _toast('Stream not ready yet.'); return; }
-
-  const creatorUid  = _roomData.hostId;
-  const creatorName = _roomData.hostName || _roomData.hostUsername || 'Creator';
-
-  // snxgOpenGiftTray is exported by snx-gifts.js
-  if (typeof window.snxgOpenGiftTray === 'function') {
-    window.snxgOpenGiftTray(null /* postId (null = live) */, creatorUid, true /* isLive */);
-  } else {
-    _toast('Gift system is loading, please try again.');
   }
 };
 

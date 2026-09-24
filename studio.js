@@ -4,7 +4,7 @@
  *
  * Architecture:
  *   - Uses window._snxFirestore (Firestore), window._snxAuthResolved, auth
- *   - Integrates with existing liveRooms, feed, gifting & notification systems
+ *   - Integrates with existing liveRooms, feed, & notification systems
  *   - CloudStream state is owned by the Cloudflare Worker (server-side)
  *   - No privileged credentials in this file — all sensitive ops go via worker
  *
@@ -105,7 +105,6 @@ var EVENT_SCENES = [
   { id: 'going-live',    name: 'Going Live',    icon: '🔴', desc: 'WE ARE LIVE animation', badge: 'live' },
   { id: 'welcome',       name: 'Welcome',       icon: '👋', desc: 'Welcome to the Shadow Nexus', badge: '' },
   { id: 'new-follow',    name: 'New Follow',    icon: '❤️', desc: 'Follower notification', badge: '' },
-  { id: 'gift-received', name: 'Gift Received', icon: '🎁', desc: 'Animated gift alert', badge: '' },
   { id: 'milestone',     name: 'Milestone',     icon: '🏆', desc: '100 viewers / 1K likes', badge: '' },
   { id: 'music-scene',   name: 'Music Scene',   icon: '🎵', desc: 'Visualizer + album art', badge: '' },
   { id: 'announcement',  name: 'Announcement',  icon: '📢', desc: 'Text overlay overlay', badge: '' },
@@ -1059,7 +1058,6 @@ function _snxLiveFrameMsg(e) {
 
    Data sources (all read from the SAME collections live.js writes):
      Chat    → Firestore liveRooms/{roomId}/liveMessages
-     Gifts   → snxgWatchLiveGifts(roomId)  [snx-gifts.js]
      Viewers → Firestore liveRooms/{uid}.viewers  (mirrored by live.js)
      Likes   → Firestore liveRooms/{uid}.likes
      Status  → Firestore liveRooms/{uid}
@@ -1078,10 +1076,8 @@ var _crState = {
   startedAt:     0,       // ms timestamp when live started
   viewerCount:   0,
   likeCount:     0,
-  giftCount:     0,
   streamTitle:   '',
   chatUnsub:     null,    // Firestore chat listener
-  giftUnsub:     null,    // Firestore gift listener
   roomUnsub:     null,    // Firestore room status listener
   timerInterval: null,    // duration ticker
   sendingChat:   false
@@ -1151,13 +1147,6 @@ function _crShowControlRoom(roomData) {
   // Subscribe to chat
   _crSubscribeChat();
 
-  // Subscribe to gifts (uses the existing snxgWatchLiveGifts from snx-gifts.js)
-  if (_crState.giftUnsub) { try { _crState.giftUnsub(); } catch(_) {} }
-  if (typeof window.snxgWatchLiveGifts === 'function' && _crState.roomId) {
-    // We hook into the gift system by also watching ourselves
-    _crState.giftUnsub = _crWatchGifts(_crState.roomId);
-  }
-
   // Sync cam/mic button states
   _crSyncControls();
 
@@ -1176,7 +1165,6 @@ function _crHideControlRoom() {
 function _crTeardown() {
   if (_crState.timerInterval) { clearInterval(_crState.timerInterval); _crState.timerInterval = null; }
   if (_crState.chatUnsub)     { try { _crState.chatUnsub(); } catch(_) {} _crState.chatUnsub = null; }
-  if (_crState.giftUnsub)     { try { _crState.giftUnsub(); } catch(_) {} _crState.giftUnsub = null; }
   // Note: _crState.roomUnsub is NOT torn down here — it continues watching so we
   // can detect when the user goes live again after ending a session.
 }
@@ -1278,232 +1266,6 @@ function _crBuildChatMsg(data) {
   }
   return el;
 }
-
-/* ── Gift watcher (separate from snxgWatchLiveGifts so we can update the panel) ── */
-function _crWatchGifts(roomId) {
-  if (!window._snxFirestore) return null;
-  var fs = window._snxFirestore;
-  var initialized = false;
-
-  var q = fs.query(
-    fs.collection(fs.db, 'giftTransactions'),
-    fs.where('postId', '==', roomId),
-    fs.where('isLive', '==', true),
-    fs.orderBy('createdAt', 'desc'),
-    fs.limit(30)
-  );
-
-  return fs.onSnapshot(q, function(snap) {
-    if (!initialized) {
-      // On first snapshot, render the existing gifts history (up to 30)
-      initialized = true;
-      var items = [];
-      snap.forEach(function(doc) { items.push(doc.data()); });
-      items.reverse(); // oldest first
-      items.forEach(function(g) { _crAddGiftToPanel(g, false); });
-      return;
-    }
-    // Subsequent changes — only new additions
-    snap.docChanges().forEach(function(ch) {
-      if (ch.type !== 'added') return;
-      var g = ch.doc.data();
-      _crAddGiftToPanel(g, true);
-      // Also trigger the existing gift animation overlay from snx-gifts.js
-      if (typeof window.snxgShowLiveGiftToast === 'function') {
-        window.snxgShowLiveGiftToast(g.senderName || 'Someone', g.giftId, g.giftName, g.giftArt);
-      }
-    });
-  }, function() {});
-}
-
-function _crAddGiftToPanel(giftData, isNew) {
-  var listEl = document.getElementById('snxCRGiftList');
-  if (!listEl) return;
-
-  // Remove empty placeholder
-  var empty = listEl.querySelector('.snx-cr-gift-empty');
-  if (empty) empty.remove();
-
-  // Increment count
-  _crState.giftCount++;
-  var totalEl = document.getElementById('snxCRGiftTotal');
-  if (totalEl) totalEl.textContent = _crState.giftCount;
-
-  // Build gift row
-  var item = document.createElement('div');
-  item.className = 'snx-cr-gift-item';
-  var art = giftData.giftArt || '&#127873;';
-  var name = _crEsc(giftData.giftName || giftData.giftId || 'Gift');
-  var sender = _crEsc(giftData.senderName || 'Someone');
-  var coins = giftData.coins ? ('+' + giftData.coins + ' &#9679;') : '';
-  item.innerHTML =
-    '<span class="snx-cr-gift-art">' + art + '</span>' +
-    '<div class="snx-cr-gift-info">' +
-      '<div class="snx-cr-gift-sender">' + sender + '</div>' +
-      '<div class="snx-cr-gift-name">' + name + '</div>' +
-    '</div>' +
-    '<span class="snx-cr-gift-coins">' + coins + '</span>';
-
-  if (isNew) {
-    // New gifts go to top
-    listEl.insertBefore(item, listEl.firstChild);
-  } else {
-    listEl.appendChild(item);
-  }
-
-  // Keep list to 30 items
-  while (listEl.children.length > 30) listEl.removeChild(listEl.lastChild);
-}
-
-/* ── Sync camera/mic button states in the control room ── */
-function _crSyncControls() {
-  var camBtn   = document.getElementById('snxCRCamToggle');
-  var micBtn   = document.getElementById('snxCRMicToggle');
-  var camLabel = document.getElementById('snxCRCamLabel');
-  var micLabel = document.getElementById('snxCRMicLabel');
-  var camOff   = document.getElementById('snxCRCamOff');
-
-  if (camBtn)   camBtn.classList.toggle('active', !_state.isCamOn);
-  if (micBtn)   micBtn.classList.toggle('active', !_state.isMicOn);
-  if (camLabel) camLabel.textContent = _state.isCamOn ? 'Cam On' : 'Cam Off';
-  if (micLabel) micLabel.textContent = _state.isMicOn ? 'Mic On' : 'Mic Off';
-  if (camOff)   camOff.style.display = _state.isCamOn ? 'none' : '';
-}
-
-/* ── Helper: send a message to the live engine iframe ── */
-function _crPostToFrame(msg) {
-  var frame = document.getElementById('snxLiveEngineFrame');
-  if (frame && frame.contentWindow) {
-    try { frame.contentWindow.postMessage(msg, window.location.origin); } catch(_) {}
-  }
-}
-
-/**
- * Post a Cloud Stream music command to the live engine iframe.
- * This causes live.js to route the command to the Web Audio mixer
- * so the mixed audio (mic + music) enters the outgoing WebRTC stream.
- */
-function _crPostMusicToFrame(msg) {
-  // Only post when the live engine iframe is active (Go Live was pressed)
-  var frame = document.getElementById('snxLiveEngineFrame');
-  if (!frame || !frame.contentWindow || !frame.src) return;
-  try { frame.contentWindow.postMessage(msg, window.location.origin); } catch(_) {}
-}
-
-/**
- * Send the full music queue to the live iframe so it can be loaded
- * into the mixer. Called once when the creator first selects a playlist
- * and whenever the queue changes while live.
- */
-function _csMusicSyncQueueToFrame(autoplay) {
-  _crPostMusicToFrame({
-    type:     'snx_music_set_queue',
-    queue:    _csMusic.queue.map(function(t) {
-      return { id: t.id || '', title: t.title || '', artist: t.artist || '', url: t.url || '', duration: t.duration || 0 };
-    }),
-    index:    _csMusic.queueIndex,
-    autoplay: !!autoplay
-  });
-}
-
-/* ── Control Room button handlers ── */
-window.snxCRToggleCam = function() {
-  // Signal the live engine iframe to toggle its camera track
-  _crPostToFrame({ type: 'snx_toggle_cam' });
-  // Also update the Studio-side camera state so the Control Room button reflects reality
-  if (_state.isCamOn) {
-    _stopCamera();
-  } else {
-    _startCamera();
-  }
-  setTimeout(function() {
-    var crVideo = document.getElementById('snxCRVideo');
-    if (crVideo && _state.cameraStream) {
-      crVideo.srcObject = _state.cameraStream;
-      crVideo.play().catch(function() {});
-    }
-    _crSyncControls();
-  }, 300);
-};
-
-window.snxCRToggleMic = function() {
-  // Signal the live engine iframe to toggle its mic track
-  _crPostToFrame({ type: 'snx_toggle_mic' });
-  // Also update the Studio-side mic state
-  window.snxStudioToggleMic();
-  setTimeout(_crSyncControls, 100);
-};
-
-window.snxCRFlipCamera = function() {
-  // Signal the live engine iframe to flip camera
-  _crPostToFrame({ type: 'snx_flip_cam' });
-  window.snxStudioFlipCamera();
-  setTimeout(function() {
-    var crVideo = document.getElementById('snxCRVideo');
-    if (crVideo && _state.cameraStream) {
-      crVideo.srcObject = _state.cameraStream;
-      crVideo.play().catch(function() {});
-    }
-  }, 600);
-};
-
-/* ── Send chat from the Control Room ── */
-window.snxCRSendChat = function() {
-  if (_crState.sendingChat) return;
-  var input = document.getElementById('snxCRChatInput');
-  var text = input ? input.value.trim() : '';
-  if (!text || !_crState.roomId || !_state.user || !window._snxFirestore) return;
-  if (text.length > 200) { _toast('Message too long (max 200 chars)'); return; }
-
-  _crState.sendingChat = true;
-  var fs = window._snxFirestore;
-  var userData = _state.userData || {};
-  fs.addDoc(
-    fs.collection(fs.db, 'liveRooms', _crState.roomId, 'liveMessages'),
-    {
-      userId:    _state.user.uid,
-      userName:  userData.displayName || userData.username || 'Creator',
-      userAvatar: userData.avatar || userData.profilePicture || '',
-      text:      text,
-      type:      'chat',
-      createdAt: fs.serverTimestamp()
-    }
-  ).then(function() {
-    if (input) input.value = '';
-    _crState.sendingChat = false;
-  }).catch(function(e) {
-    _toastError('Could not send message.');
-    _crState.sendingChat = false;
-  });
-};
-
-/* ── End Live from the Control Room ── */
-window.snxCREndLive = function() {
-  if (!confirm('End your live stream?\n\nThis will stop the broadcast for all viewers.')) return;
-
-  // Disable End Live button to prevent double-tap
-  var endBtn = document.getElementById('snxCREndLiveBtn');
-  if (endBtn) { endBtn.disabled = true; endBtn.textContent = '⏳ Ending…'; }
-
-  // Signal the live engine iframe to end the live session cleanly.
-  // The iframe's endLive() handles all RTDB / Firestore / WebRTC teardown,
-  // then posts snx_live_ended back to us (handled in _snxLiveFrameMsg).
-  _crPostToFrame({ type: 'snx_end_live' });
-
-  // Stop local camera tracks to release the device immediately on the Studio side
-  _stopCamera();
-  // Tear down control room subscriptions (chat, gifts, timer)
-  _crTeardown();
-
-  // Safety fallback: if the iframe doesn't respond within 4 s, reset UI anyway
-  setTimeout(function() {
-    _crHideControlRoom();
-    var frame = document.getElementById('snxLiveEngineFrame');
-    if (frame) { frame.src = ''; }
-    var goBtn = document.getElementById('snxGoLiveBtn');
-    if (goBtn) { goBtn.disabled = false; goBtn.innerHTML = '&#128308; GO LIVE'; }
-  }, 4000);
-};
 
 function _crEsc(str) {
   if (str == null) return '';

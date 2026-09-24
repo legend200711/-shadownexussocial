@@ -51,8 +51,6 @@
 <link rel="stylesheet" href="realm.css?v=SNS-2026-FOUNDER-FIX-004">
 <!-- ── Mobile responsive design layer ── -->
 <link rel="stylesheet" href="mobile.css?v=SNS-2026-FOUNDER-FIX-004">
-<!-- ── Shadow Nexus Gifting & Monetization ── -->
-<link rel="stylesheet" href="snx-gifts.css?v=SNS-2026-FOUNDER-FIX-004">
 <!-- cloud-stream.css belongs to the standalone cloud-stream.html page only;
      do NOT load it on the main app — it caused global style pollution. -->
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library / Upload / Playlists / Queue ── -->
@@ -6672,19 +6670,6 @@ body.arcade-fs-ios body::after { display:none !important; }
 
         <div class="sc-divider"></div>
 
-        <!-- Shadow Coins Wallet (desktop nav) -->
-        <button class="sc-item sc-coin-btn" onclick="snxgOpenBuyCoins()" aria-label="Shadow Coins — Buy Coins">
-            <span class="sc-item-icon">🪙</span>
-            <span class="sc-item-label">Coins: <span class="sc-coin-amt" id="scNavCoinAmt">0</span></span>
-        </button>
-        <!-- Creator Studio -->
-        <button class="sc-item" id="scNavCreatorStudio" onclick="snxgOpenCreatorStudio()" aria-label="Creator Studio">
-            <span class="sc-item-icon">💰</span>
-            <span class="sc-item-label">Creator Studio</span>
-        </button>
-
-        <div class="sc-divider"></div>
-
         <!-- Logout -->
         <button class="sc-item" id="scNavLogout" onclick="handleLogout()" aria-label="Log Out" style="color:#ff5566 !important;">
             <span class="sc-item-icon" style="filter:drop-shadow(0 0 4px rgba(255,60,80,0.5))">🚪</span>
@@ -6791,20 +6776,6 @@ body.arcade-fs-ios body::after { display:none !important; }
         <div class="ncm-item" id="ncmFounder" onclick="mobileNavTo('adminPage')" style="display:none;color:#00ffee;">
             <div class="ncm-icon-wrap">🛸</div>
             <div class="ncm-label">Founder Control</div>
-        </div>
-
-        <div class="ncm-divider"></div>
-
-        <!-- ── WALLET / CREATOR ── -->
-        <span class="ncm-section-label">Wallet</span>
-
-        <div class="ncm-item" onclick="snxgOpenBuyCoins();mobileNavTo('_close')">
-            <div class="ncm-icon-wrap">🪙</div>
-            <div class="ncm-label">Shadow Coins</div>
-        </div>
-        <div class="ncm-item" onclick="snxgOpenCreatorStudio();mobileNavTo('_close')">
-            <div class="ncm-icon-wrap">💰</div>
-            <div class="ncm-label">Creator Studio</div>
         </div>
 
         <div class="ncm-divider"></div>
@@ -6921,15 +6892,6 @@ body.arcade-fs-ios body::after { display:none !important; }
         </button>
         <button class="nav-item nav-item-founder-ctrl" id="navAdmin" onclick="realmNavTo('adminPage')" style="display:none;">
             <span class="nav-icon">🛸</span> Founder Control
-        </button>
-        <div class="sidebar-divider"></div>
-
-        <!-- ── WALLET / CREATOR ── -->
-        <button class="nav-item" onclick="snxgOpenBuyCoins()">
-            <span class="nav-icon">🪙</span> Shadow Coins
-        </button>
-        <button class="nav-item" onclick="snxgOpenCreatorStudio()">
-            <span class="nav-icon">💰</span> Creator Studio
         </button>
     </div>
 
@@ -8950,8 +8912,6 @@ body.arcade-fs-ios body::after { display:none !important; }
     <button class="admin-tab" onclick="switchAdminTab('shadowbot')">🤖 Shadow Bot</button>
     <button class="admin-tab" onclick="switchAdminTab('liverooms')">🔴 Live Rooms</button>
     <button class="admin-tab" onclick="switchAdminTab('pages')">👁 Pages &amp; Controls</button>
-    <button class="admin-tab" onclick="switchAdminTab('gifts');snxgAdminLoadGifts();snxgAdminLoadCoinStats()">🎁 Gifts &amp; Coins</button>
-    <button class="admin-tab" onclick="switchAdminTab('cointesting');snxgLoadCoinTestingTab()">🪙 Coin Testing</button>
     <button class="admin-tab" onclick="switchAdminTab('cloudstreams');snxAdminLoadCloudStreams()">☁️ CloudStreams</button>
     <button class="admin-tab" onclick="switchAdminTab('r2storage');snxR2StatusOpen()">🗄️ R2 Storage</button>
     <button class="admin-tab" onclick="switchAdminTab('themes');snxTCCOpen()">🎨 Theme Engine</button>
@@ -8994,10 +8954,6 @@ body.arcade-fs-ios body::after { display:none !important; }
         <div class="settings-row">
             <div class="settings-label">Posts<small>Allow new posts</small></div>
             <label class="notif-toggle-wrap"><input type="checkbox" id="togglePosts" class="notif-toggle-cb" checked onchange="adminToggleFeature('postsEnabled',this.checked)"><span class="notif-toggle-slider"></span></label>
-        </div>
-        <div class="settings-row">
-            <div class="settings-label">🎁 Gifting System<small>Allow users to send gifts to creators</small></div>
-            <label class="notif-toggle-wrap"><input type="checkbox" id="toggleGifting" class="notif-toggle-cb" checked onchange="adminToggleFeature('giftingEnabled',this.checked)"><span class="notif-toggle-slider"></span></label>
         </div>
         <div class="settings-row" style="border-bottom:none;">
             <div class="settings-label">Messages Tab<small>Legacy toggle — Inbox removed; no visible effect</small></div>
@@ -10000,10 +9956,6 @@ body.arcade-fs-ios body::after { display:none !important; }
             <label class="notif-toggle-wrap"><input type="checkbox" id="esFeed" class="notif-toggle-cb" checked onchange="emergencyToggle('postsEnabled',this.checked,'Feed')"><span class="notif-toggle-slider"></span></label>
         </div>
         <div class="settings-row">
-            <div class="settings-label">🎁 Gifting<small>Allow users to send gifts to creators</small></div>
-            <label class="notif-toggle-wrap"><input type="checkbox" id="esGifting" class="notif-toggle-cb" checked onchange="emergencyToggle('giftingEnabled',this.checked,'Gifting')"><span class="notif-toggle-slider"></span></label>
-        </div>
-        <div class="settings-row">
             <div class="settings-label">💬 Messaging<small>Legacy toggle — Inbox removed; DMs use Profile → Message</small></div>
             <label class="notif-toggle-wrap"><input type="checkbox" id="esMessages" class="notif-toggle-cb" checked onchange="snxSetMessagesTab(this.checked)"><span class="notif-toggle-slider"></span></label>
         </div>
@@ -10105,176 +10057,7 @@ body.arcade-fs-ios body::after { display:none !important; }
 
 </div>
 
-<!-- ══════════════════════════════════
-     TAB: GIFTS & COINS
-══════════════════════════════════ -->
-<div class="admin-tab-content" id="adminTab-gifts">
 
-  <!-- Platform revenue overview -->
-  <div class="ag-revenue-card">
-    <div class="rev-title">Platform Revenue (10% share)</div>
-    <div class="rev-value" id="agPlatformRevenue">$0.00</div>
-    <div class="rev-note">Total earned from 10% of all gift transactions · PayPal Sandbox mode active</div>
-  </div>
-
-  <div class="admin-stats-row" style="margin-bottom:14px;">
-    <div class="admin-stat-card">
-      <div class="admin-stat-num" id="agTotalCoinsPurchased">—</div>
-      <div class="admin-stat-label">Coins Purchased</div>
-    </div>
-    <div class="admin-stat-card">
-      <div class="admin-stat-num" id="agTotalGiftTx">—</div>
-      <div class="admin-stat-label">Gift Transactions</div>
-    </div>
-    <div class="admin-stat-card">
-      <div class="admin-stat-num" id="agTotalPayouts">—</div>
-      <div class="admin-stat-label">PayPal Payouts Sent</div>
-    </div>
-  </div>
-
-  <!-- Gift catalog management -->
-  <div class="adm-panel-card">
-    <h3 class="adm-section-title">🎁 Gift Catalog</h3>
-    <p style="font-size:12px;color:#6a90b8;margin:0 0 14px;line-height:1.6;">
-      Shadow Nexus branded gifts. Prices are enforced server-side via Firestore — client values are never trusted.
-      Use the <strong style="color:#00AEEF;">✏️ Edit Price</strong> button on any gift to update its Shadow Coin price.
-    </p>
-    <div id="agGiftList">
-      <div class="cs-empty"><div class="snxg-processing">Loading…</div></div>
-    </div>
-  </div>
-
-  <!-- PayPal Setup Status -->
-  <div class="adm-panel-card">
-    <h3 class="adm-section-title">🔌 PayPal Integration</h3>
-    <p style="font-size:12px;color:#6a90b8;margin:0 0 12px;line-height:1.6;">
-      The <code>paypal-worker.js</code> Cloudflare Worker handles all payment processing.<br>
-      No PayPal credentials are stored in the frontend.
-    </p>
-    <ul style="margin:0;padding-left:18px;font-size:12px;color:#6a90b8;line-height:2.4;">
-      <li>Environment: <code style="color:#ffcc44;">sandbox</code> — switch to <code>live</code> in <code>wrangler-paypal.toml</code></li>
-      <li>Coin purchases → <code>/paypal/create-order</code> → <code>/paypal/capture-order</code></li>
-      <li>Creator onboarding → <code>/paypal/onboard-creator</code> (requires PayPal Partner API approval)</li>
-      <li>Creator payouts → <code>/paypal/payout</code> (requires PayPal Payouts API approval)</li>
-      <li>Webhooks → <code>/paypal/webhook</code> with signature verification</li>
-      <li>See <code>paypal-setup.md</code> for full PayPal dashboard configuration guide</li>
-    </ul>
-    <div style="margin-top:12px;">
-      <button onclick="fetch('/health').then(r=>r.json()).then(d=>toastNotification('Worker: '+d.status+' · '+d.environment))"
-        style="padding:7px 16px;border-radius:8px;background:rgba(0,174,239,0.12);border:1px solid rgba(0,174,239,0.35);color:#00AEEF;font-size:12px;font-weight:700;cursor:pointer;">
-        🩺 Check Worker Health
-      </button>
-    </div>
-  </div>
-
-  <!-- Security notes -->
-  <div class="adm-panel-card">
-    <h3 class="adm-section-title">🔒 Security Architecture</h3>
-    <ul style="margin:0;padding-left:18px;font-size:12px;color:#6a90b8;line-height:2.2;">
-      <li>✅ Coins credited ONLY after PayPal capture verified by backend Worker</li>
-      <li>✅ Webhook signature verified via PayPal verify-webhook-signature API</li>
-      <li>✅ Duplicate webhook events rejected (paypalWebhooks collection)</li>
-      <li>✅ Creator earnings calculated server-side (90% / 10% split)</li>
-      <li>✅ Payout amounts locked atomically before PayPal API call</li>
-      <li>✅ 24-hour cooldown enforced server-side (backend checks Firestore timestamp)</li>
-      <li>✅ All financial records immutable in Firestore (backend writes only)</li>
-      <li>✅ Firebase ID tokens verified server-side via Google tokeninfo</li>
-      <li>✅ Negative balance protection in every transaction</li>
-      <li>✅ Complete audit trail in <code>financialAuditLog</code></li>
-    </ul>
-  </div>
-
-</div><!-- end adminTab-gifts -->
-
-<!-- ══════════════════════════════════
-     TAB: COIN TESTING (Founder only)
-══════════════════════════════════ -->
-<div class="admin-tab-content" id="adminTab-cointesting">
-
-  <div class="adm-panel-card" style="border-color:rgba(0,174,239,0.4);">
-    <h3 class="adm-section-title">🪙 Shadow Coin Testing</h3>
-    <p style="font-size:12px;color:#6a90b8;margin:0 0 14px;line-height:1.7;">
-      Grant up to <strong style="color:#00AEEF;">50,000 test Shadow Coins</strong> to a specific user for LIVE gifting tests.<br>
-      Test coins have <strong style="color:#ffcc44;">no real cash value</strong> and cannot be withdrawn or trigger PayPal.<br>
-      Earnings from test coins are marked <strong style="color:#ffcc44;">TEST EARNINGS — NO CASH VALUE</strong>.
-    </p>
-
-    <!-- Warning badge -->
-    <div style="background:rgba(255,204,68,0.1);border:1px solid rgba(255,204,68,0.4);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:11px;color:#ffcc44;line-height:1.6;">
-      ⚠️ <strong>Founder access only.</strong> The backend independently verifies your identity.<br>
-      Maximum grant: <strong>50,000 coins per grant</strong>. No cash value.
-    </div>
-
-    <!-- Enable / Disable toggle -->
-    <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,15,40,0.7);border:1px solid rgba(0,174,239,0.25);border-radius:10px;padding:12px 14px;margin-bottom:16px;">
-      <div>
-        <div style="font-size:12px;font-weight:700;color:#c8e8ff;margin-bottom:2px;">Test Coin Grants</div>
-        <div id="ctgEnabledStatus" style="font-size:11px;color:#4a7a9a;">Loading…</div>
-      </div>
-      <label class="notif-toggle-wrap" style="margin:0;">
-        <input type="checkbox" id="ctgEnabledToggle" class="notif-toggle-cb" onchange="snxgSetTestCoinGrantsEnabled(this.checked)">
-        <span class="notif-toggle-slider"></span>
-      </label>
-    </div>
-
-    <!-- User search -->
-    <div style="margin-bottom:14px;">
-      <label style="display:block;font-size:11px;color:#4a7a9a;margin-bottom:6px;letter-spacing:0.5px;">SEARCH USER BY NAME OR UID</label>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="ctgSearchInput" placeholder="Display name or Firebase UID…"
-          style="flex:1;background:rgba(0,15,40,0.8);border:1px solid rgba(0,174,239,0.3);border-radius:8px;
-                 padding:9px 12px;color:#c8e8ff;font-size:13px;outline:none;"
-          oninput="snxgCoinTestSearch(this.value)">
-        <button onclick="snxgCoinTestSearch(document.getElementById('ctgSearchInput').value)"
-          style="background:rgba(0,80,180,0.5);border:1px solid rgba(0,174,239,0.4);border-radius:8px;
-                 padding:9px 14px;color:#c8e8ff;font-size:12px;cursor:pointer;white-space:nowrap;">
-          🔍 Search
-        </button>
-      </div>
-    </div>
-
-    <!-- Search results -->
-    <div id="ctgUserResults" style="margin-bottom:16px;"></div>
-
-    <!-- Selected user + grant button -->
-    <div id="ctgGrantArea" style="display:none;background:rgba(0,174,239,0.07);border:1px solid rgba(0,174,239,0.3);
-         border-radius:12px;padding:14px;margin-bottom:14px;">
-      <div style="font-size:11px;color:#4a7a9a;margin-bottom:8px;letter-spacing:0.5px;">SELECTED RECIPIENT</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <img id="ctgUserAvatar" src="" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(0,174,239,0.4);">
-        <div>
-          <div id="ctgUserName" style="font-size:14px;font-weight:700;color:#c8e8ff;"></div>
-          <div id="ctgUserUid"  style="font-size:10px;color:#4a7a9a;font-family:monospace;"></div>
-          <div style="font-size:11px;color:#4a7a9a;margin-top:4px;">
-            Current balance: <span id="ctgUserBalance" style="color:#00AEEF;font-weight:700;">…</span> 🪙
-          </div>
-        </div>
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="display:block;font-size:11px;color:#4a7a9a;margin-bottom:6px;letter-spacing:0.5px;">GRANT AMOUNT (max 50,000)</label>
-        <input type="number" id="ctgCoinAmount" min="1" max="50000" value="500"
-          style="width:100%;box-sizing:border-box;background:rgba(0,15,40,0.8);border:1px solid rgba(0,174,239,0.3);
-                 border-radius:8px;padding:9px 12px;color:#00AEEF;font-size:15px;font-weight:800;outline:none;"
-          placeholder="1 – 50,000">
-        <div style="font-size:10px;color:#ffcc44;margin-top:4px;">no cash value · sandbox only</div>
-      </div>
-      <button id="ctgGrantBtn" onclick="snxgGrantTestCoins()"
-        style="width:100%;padding:12px;background:linear-gradient(135deg,#003d99,#0077dd);
-               border:1px solid rgba(0,180,255,0.5);border-radius:10px;color:#fff;
-               font-size:14px;font-weight:800;cursor:pointer;letter-spacing:0.5px;">
-        🪙 Grant Test Coins
-      </button>
-      <div id="ctgGrantStatus" style="display:none;margin-top:10px;font-size:12px;border-radius:8px;padding:8px 12px;"></div>
-    </div>
-
-    <!-- Recent grants log -->
-    <div id="ctgGrantLog" style="margin-top:4px;">
-      <div style="font-size:11px;color:#4a7a9a;margin-bottom:8px;letter-spacing:0.5px;">RECENT TEST GRANTS</div>
-      <div id="ctgGrantLogList" style="font-size:12px;color:#4a7a9a;">Loading…</div>
-    </div>
-  </div>
-
-</div><!-- end adminTab-cointesting -->
 
 <!-- ══════════════════════════════════
      TAB: CLOUDSTREAMS MONITOR
@@ -10698,196 +10481,6 @@ body.arcade-fs-ios body::after { display:none !important; }
 
 </div><!-- end adminPage -->
 
-<!-- ═══════════════════════════════════════════════════════════
-     CREATOR STUDIO — Wallet, Gift History, Payouts
-     ═══════════════════════════════════════════════════════════ -->
-<div class="page" id="creatorStudioPage">
-<h2 class="eclipse-title" style="font-size:20px;">💰 Creator Studio</h2>
-
-<div id="csEarningsLoading" style="text-align:center;padding:20px 0;color:#3a5a7a;display:none;">
-  <div class="snxg-processing">Loading earnings…</div>
-</div>
-
-<!-- ── Hero balance row ── -->
-<div class="cs-hero section-card">
-  <div class="cs-hero-icon">🌑</div>
-  <div class="cs-hero-info">
-    <div class="cs-hero-title">Creator Wallet</div>
-    <div class="cs-hero-sub">Earn from gifts sent by your fans</div>
-  </div>
-</div>
-
-<!-- ── Balance cards ── -->
-<div class="cs-balance-grid">
-  <div class="cs-bal-card available">
-    <div class="cs-bal-label">Available</div>
-    <div class="cs-bal-value" id="csAvailBal">$0.00</div>
-    <div class="cs-bal-unit" id="csAvailCoins">0 coins</div>
-  </div>
-  <div class="cs-bal-card pending">
-    <div class="cs-bal-label">Pending</div>
-    <div class="cs-bal-value" id="csPendingBal">$0.00</div>
-    <div class="cs-bal-unit">being processed</div>
-  </div>
-  <div class="cs-bal-card lifetime">
-    <div class="cs-bal-label">Lifetime Earned</div>
-    <div class="cs-bal-value" id="csLifetimeBal">$0.00</div>
-    <div class="cs-bal-unit">total earnings</div>
-  </div>
-</div>
-
-<!-- ── Revenue split ── -->
-<div class="cs-split-row">
-  <span class="split-you">90%</span>
-  <span>goes to you</span>
-  <span class="cs-split-divider"></span>
-  <span class="split-snx">10%</span>
-  <span>goes to Shadow Nexus Social</span>
-  <span style="flex:1;text-align:right;font-size:10px;" id="csPlatformShare" title="Platform share"></span>
-</div>
-
-<!-- ── Cash-out ── -->
-<!-- PayPal Connection Status -->
-<div class="section-card" style="margin-bottom:10px;">
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-    <div>
-      <div style="font-size:12px;color:#4a7a9a;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">PayPal Payout Account</div>
-      <div style="font-size:13px;font-weight:700;" id="csPayPalStatus">Checking…</div>
-    </div>
-    <button id="csPayPalConnectBtn" onclick="snxgConnectPayPal()"
-      style="padding:8px 18px;border-radius:20px;background:linear-gradient(135deg,#003087,#009cde);border:1px solid rgba(0,156,222,0.7);color:#fff;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">
-      🔗 Connect PayPal
-    </button>
-  </div>
-</div>
-
-<div class="cs-status-msg info" id="csCashOutNote" style="display:none;"></div>
-<button class="cs-cashout-btn" id="csCashOutBtn" onclick="snxgRequestCashOut()" disabled>
-  💰 Cash Out
-</button>
-<p style="font-size:11px;color:#3a5a7a;text-align:center;margin:0 0 14px;line-height:1.6;">
-  Cash-outs via PayPal · Once every 24 hours · Minimum $1.00 · No hidden fees.<br>
-  You earn <strong style="color:#33ff99;">90%</strong> of every gift. Shadow Nexus Social keeps <strong style="color:#00AEEF;">10%</strong>.
-</p>
-
-<!-- ── Tabs ── -->
-<div class="cs-tabs">
-  <button class="cs-tab active" data-tab="wallet" onclick="snxgSwitchCreatorTab('wallet')">💳 Wallet</button>
-  <button class="cs-tab" data-tab="history" onclick="snxgSwitchCreatorTab('history')">🎁 Gift History</button>
-  <button class="cs-tab" data-tab="exchange" onclick="snxgSwitchCreatorTab('exchange')">🔄 Convert</button>
-  <button class="cs-tab" data-tab="payouts" onclick="snxgSwitchCreatorTab('payouts')">💸 Payouts</button>
-</div>
-
-<!-- Wallet tab -->
-<div class="cs-tab-panel" id="csPanel_wallet">
-  <div class="section-card">
-    <h3 style="margin:0 0 10px;font-size:14px;color:#00AEEF;text-shadow:0 0 8px rgba(0,174,239,0.35);">💳 Shadow Coins</h3>
-    <button onclick="snxgOpenBuyCoins()"
-      style="width:100%;padding:10px;border-radius:10px;background:linear-gradient(135deg,#003087,#009cde);border-color:rgba(0,156,222,0.7);color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-      <img src="https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_200x51.png" alt="PayPal" style="height:16px;">
-      Buy Shadow Coins
-    </button>
-  </div>
-
-  <div class="section-card">
-    <h3 style="margin:0 0 6px;font-size:14px;color:#00AEEF;text-shadow:0 0 8px rgba(0,174,239,0.35);">📊 How It Works</h3>
-    <ul style="margin:0;padding-left:18px;font-size:12px;color:#6a90b8;line-height:2.2;">
-      <li>Fans send you gifts using Shadow Coins 🪙</li>
-      <li>You earn <strong style="color:#33ff99;">90%</strong> of every gift sent to you</li>
-      <li>Shadow Nexus Social keeps <strong style="color:#00AEEF;">10%</strong></li>
-      <li>Coins are sold at 100 coins = $1.00 USD</li>
-      <li>Connect your PayPal account to receive cash-outs</li>
-      <li>Request a cash-out once every 24 hours</li>
-      <li>Minimum cash-out: $1.00</li>
-      <li>PayPal processing fees (if any) are separate from the 90/10 split</li>
-    </ul>
-  </div>
-</div>
-
-<!-- Gift History tab -->
-<div class="cs-tab-panel" id="csPanel_history" style="display:none;">
-  <div class="section-card">
-    <h3 style="margin:0 0 10px;font-size:14px;color:#00AEEF;text-shadow:0 0 8px rgba(0,174,239,0.35);">🎁 Gifts Received</h3>
-    <div id="csGiftHistoryList">
-      <div class="cs-empty"><div class="cs-empty-icon">🎁</div>Loading gifts…</div>
-    </div>
-  </div>
-</div>
-
-<!-- Convert Earned Coins → Shadow Coins tab -->
-<div class="cs-tab-panel" id="csPanel_exchange" style="display:none;">
-  <div class="section-card">
-    <h3 style="margin:0 0 10px;font-size:14px;color:#00AEEF;text-shadow:0 0 8px rgba(0,174,239,0.35);">🔄 Convert Earned Coins → Shadow Coins</h3>
-    <p style="font-size:12px;color:#6a90b8;margin:0 0 14px;line-height:1.8;">
-      Convert your available earned coins into Shadow Coins.
-      Converted coins are added directly to your Shadow Coin balance and can be used
-      immediately to send gifts or coins to anyone on the platform.
-    </p>
-
-    <!-- Balances row -->
-    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:120px;background:rgba(0,174,239,0.07);border:1px solid rgba(0,174,239,0.22);border-radius:10px;padding:10px 12px;">
-        <div style="font-size:10px;color:#4a7a9a;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Earned (Available)</div>
-        <div style="font-size:18px;font-weight:800;color:#33ff99;" id="csExchangeEarnedBal">—</div>
-        <div style="font-size:10px;color:#4a7a9a;">coins ready to convert</div>
-      </div>
-      <div style="flex:1;min-width:120px;background:rgba(124,92,216,0.07);border:1px solid rgba(124,92,216,0.22);border-radius:10px;padding:10px 12px;">
-        <div style="font-size:10px;color:#4a7a9a;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Shadow Coins</div>
-        <div style="font-size:18px;font-weight:800;color:#7c5cd8;" id="csExchangeShadowBal">—</div>
-        <div style="font-size:10px;color:#4a7a9a;">current spendable balance</div>
-      </div>
-    </div>
-
-    <!-- Rate info -->
-    <div style="background:rgba(0,30,60,0.5);border:1px solid rgba(0,174,239,0.15);border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:11px;color:#6a90b8;line-height:1.7;">
-      Conversion rate: <strong style="color:#c8e8ff;">1 Earned Coin = 1 Shadow Coin</strong>
-      &nbsp;·&nbsp; 100 coins = $1.00 USD value
-    </div>
-
-    <!-- Amount input -->
-    <div style="margin-bottom:12px;">
-      <label style="display:block;font-size:12px;color:#6a90b8;margin-bottom:6px;">Amount to convert (coins):</label>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input type="number" id="csExchangeAmount" min="1" step="1"
-          placeholder="e.g. 100"
-          style="flex:1;padding:9px 12px;border-radius:8px;background:rgba(0,20,50,0.7);border:1px solid rgba(0,174,239,0.3);color:#c8e8ff;font-size:14px;font-weight:600;outline:none;"/>
-        <button onclick="snxgExchangeSetMax()"
-          style="padding:9px 14px;border-radius:8px;background:rgba(0,174,239,0.12);border:1px solid rgba(0,174,239,0.35);color:#00AEEF;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
-          Max
-        </button>
-      </div>
-    </div>
-
-    <!-- Status message -->
-    <div id="csExchangeNote" class="cs-status-msg info" style="display:none;margin-bottom:10px;"></div>
-
-    <!-- Convert button -->
-    <button id="csExchangeBtn" onclick="snxgConvertEarnedCoins()"
-      style="width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,#1a0050,#4a1a99);border:1px solid rgba(124,92,216,0.6);color:#fff;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:0.5px;">
-      🔄 Convert to Shadow Coins
-    </button>
-
-    <p style="font-size:10px;color:#3a5a7a;text-align:center;margin:10px 0 0;line-height:1.6;">
-      Atomic transaction — both balances update together or neither does.<br>
-      Converted Shadow Coins can be used to send gifts and coins immediately.
-    </p>
-  </div>
-</div>
-
-<!-- Payouts tab -->
-<div class="cs-tab-panel" id="csPanel_payouts" style="display:none;">
-  <div class="section-card">
-    <h3 style="margin:0 0 10px;font-size:14px;color:#00AEEF;text-shadow:0 0 8px rgba(0,174,239,0.35);">💸 Payout History</h3>
-    <p style="font-size:11px;color:#4a7a9a;margin:0 0 12px;line-height:1.6;">
-      Payouts are sent to your connected PayPal account. Status updates are reflected in real-time.
-    </p>
-    <div id="csPayoutHistoryList">
-      <div class="cs-empty"><div class="cs-empty-icon">💸</div>Loading payouts…</div>
-    </div>
-  </div>
-</div>
-
-</div><!-- end creatorStudioPage -->
 
 <!-- ═══════════════════════════════════════════════════════════
      MODERATOR PANEL PAGE
@@ -13384,14 +12977,6 @@ body.arcade-fs-ios body::after { display:none !important; }
           localStorage.setItem('founderFeatureControls', JSON.stringify(_fc));
       } catch(_) {}
 
-      // ── Gifting feature flag — live sync ──
-      // Defaults true when absent. Sync admin panel toggles if panel is open.
-      const _giftOn = cfg.giftingEnabled !== false;
-      window._snxGiftingEnabled = _giftOn;
-      const _cbGift  = document.getElementById('toggleGifting');
-      const _cbGift2 = document.getElementById('esGifting');
-      if (_cbGift)  _cbGift.checked  = _giftOn;
-      if (_cbGift2) _cbGift2.checked = _giftOn;
   });
 
   /* ── Firebase connection loss detection + auto-reconnect ──────────────
@@ -14132,7 +13717,7 @@ body.arcade-fs-ios body::after { display:none !important; }
                         <button class="react-btn" id="comm-toggle-${pDoc.id}" onclick="toggleCommentBox('${pDoc.id}')">💬 <span id="comm-count-${pDoc.id}">${(post.comments || []).length}</span></button>
                         ${!post.isRepost ? `<button class="react-btn" id="repost-btn-${pDoc.id}" onclick="processPostReaction('${pDoc.id}','repost',this)">🔄 <span class="repost-count">${post.repostCount || 0}</span></button>` : ''}
                         <button class="react-btn" onclick="sharePostItem('${pDoc.id}')">🔗 Share</button>
-                        ${!isOwner && !isBotPost ? `<button class="react-btn gift-btn" title="Send a gift to this creator" onclick="snxgOpenGiftTray('${pDoc.id}','${authorUid}',false)">🎁</button>` : ''}
+                        
                         <button class="react-btn save-post-btn" id="save-btn-${pDoc.id}" title="${snxIsSaved(pDoc.id)?'Unsave post':'Save post'}" onclick="snxToggleSavePost('${pDoc.id}',this)" style="${snxIsSaved(pDoc.id)?'color:#ffcc44;border-color:rgba(255,200,50,0.55);':''}">🔖</button>
                         ${isOwner && !isBotPost ? `<button class="react-btn btn-del-post" onclick="window.deleteTimelinePost('${pDoc.id}')">🗑️ Delete</button>` : ''}
                         ${isOwner && !isBotPost ? `<button class="react-btn" style="border-color:rgba(0,174,239,0.35);color:#66ccff;font-size:12px;" onclick="snxEditPost('${pDoc.id}',this)">✏️ Edit</button>` : ''}
@@ -19990,7 +19575,6 @@ body.arcade-fs-ios body::after { display:none !important; }
           const _cb=(id,k)=>{const el=document.getElementById(id);if(el)el.checked=cfg[k]!==false;};
           _cb('toggleRegistration','registrationEnabled'); _cb('toggleMaintenance','maintenanceMode');
           _cb('toggleStormRooms','stormRoomsEnabled'); _cb('togglePosts','postsEnabled');
-          _cb('toggleGifting','giftingEnabled');
           const n=document.getElementById('siteSettingAppName'); if(n&&cfg.appName)n.value=cfg.appName;
           const r=document.getElementById('siteSettingRulesUrl'); if(r&&cfg.rulesUrl)r.value=cfg.rulesUrl;
           // Sync AI moderation toggle state
@@ -20247,7 +19831,6 @@ body.arcade-fs-ios body::after { display:none !important; }
               { label: 'Maintenance',   on: cfg.maintenanceMode === true,    onColor: '#ff5566', offColor: '#39FF14', onIcon: '🔴', offIcon: '🟢' },
               { label: 'Registration',  on: cfg.registrationEnabled !== false, onColor: '#39FF14', offColor: '#ff9966', onIcon: '✅', offIcon: '⛔' },
               { label: 'Posts',         on: cfg.postsEnabled !== false,        onColor: '#39FF14', offColor: '#ff9966', onIcon: '✅', offIcon: '⛔' },
-              { label: '🎁 Gifting',    on: cfg.giftingEnabled  !== false,     onColor: '#39FF14', offColor: '#ff9966', onIcon: '✅', offIcon: '⛔' },
               { label: 'Storm Rooms',   on: cfg.stormRoomsEnabled !== false,   onColor: '#39FF14', offColor: '#ff9966', onIcon: '✅', offIcon: '⛔' },
               { label: 'Arcade',        on: cfg.arcadeEnabled !== false,       onColor: '#39FF14', offColor: '#ff9966', onIcon: '✅', offIcon: '⛔' },
               { label: 'AI Moderation', on: cfg.aiModerationEnabled !== false, onColor: '#39FF14', offColor: '#ff9966', onIcon: '✅', offIcon: '⛔' },
@@ -20267,8 +19850,6 @@ body.arcade-fs-ios body::after { display:none !important; }
           _set('esStorm',        cfg.stormRoomsEnabled !== false);
           _set('esArcade',       cfg.arcadeEnabled !== false);
           _set('esRegistration', cfg.registrationEnabled !== false);
-          _set('toggleGifting',  cfg.giftingEnabled !== false);
-          _set('esGifting',      cfg.giftingEnabled !== false);
            _set('esAI',           cfg.aiModerationEnabled !== false);
            _set('esBot',          cfg.shadowBotEnabled !== false);
            _set('esWelcomePopup', cfg.welcomePopupEnabled !== false);
@@ -32091,51 +31672,6 @@ document.addEventListener('click', function(e) {
 })(); // end IIFE
 </script>
 
-<!-- ████ SHADOW NEXUS GIFTS — Gifting & Creator Monetization ████ -->
-<script type="module" src="snx-gifts.js?v=SNS-2026-FOUNDER-FIX-004"></script>
-
-<!-- Coin balance sync across all nav displays -->
-<script>
-(function() {
-  'use strict';
-  // After auth resolves, keep coin badge elements in all nav synced.
-  // No equality guard here — always write to DOM so any page re-render
-  // that resets elements to "0" is corrected on the next sync call.
-  function _updateAllCoinDisplays(bal) {
-    var n   = (typeof bal === 'number' && !isNaN(bal)) ? bal : 0;
-    var fmt = n.toLocaleString ? n.toLocaleString() : String(n);
-    var scAmt     = document.getElementById('scNavCoinAmt');
-    var modalBal  = document.getElementById('snxCoinModalBal');
-    if (scAmt)    scAmt.textContent    = fmt;
-    if (modalBal) modalBal.textContent = fmt;
-  }
-
-  // Poll _snxgCoinBalance (set by snx-gifts.js) every second
-  setInterval(function() {
-    if (typeof window._snxgCoinBalance !== 'undefined') {
-      _updateAllCoinDisplays(window._snxgCoinBalance);
-    }
-  }, 1000);
-
-  // Also expose for snx-gifts.js to call directly
-  window._snxgSyncNavCoins = _updateAllCoinDisplays;
-
-  // Patch realmNavTo to handle creatorStudioPage
-  var _origRealmNavTo = window.realmNavTo;
-  window.realmNavTo = function(pageId) {
-    if (pageId === 'creatorStudioPage') {
-      if (_origRealmNavTo) _origRealmNavTo.call(this, pageId);
-      setTimeout(function() {
-        if (typeof snxgLoadCreatorStudio === 'function') snxgLoadCreatorStudio();
-        if (typeof snxgSwitchCreatorTab === 'function') snxgSwitchCreatorTab('wallet');
-      }, 120);
-      return;
-    }
-    if (_origRealmNavTo) _origRealmNavTo.apply(this, arguments);
-  };
-})();
-</script>
-
 <!-- Cloud Stream SPA re-init hook removed — Eternal Stream is now a standalone page (cloud-stream.html). -->
 
 <!-- ════════════════════════════════════════════════════════
@@ -33792,7 +33328,7 @@ if (window._snxAuthReadyQueue) {
 
    IMPORTANT: This function only cleans up MANAGEMENT UI.
    It does NOT:
-     - delete test grants, change coin balances, or touch Firestore data
+     - touch Firestore data
      - deactivate the published global theme
      - stop Cloud Stream, Live, Radio, or any backend feature
    ═══════════════════════════════════════════════════════════════════════ */
@@ -33801,20 +33337,6 @@ window.snxFounderPanelCleanup = (function() {
 
   // ── 1. Close any body-level overlays that may have been opened from the Founder Panel ──
   function _closeBodyOverlays() {
-    // Coin purchase modal (appended to body by snxgOpenBuyCoins in snx-gifts.js)
-    const coinModal = document.getElementById('snxCoinModal');
-    if (coinModal && coinModal.classList.contains('open')) {
-      coinModal.classList.remove('open');
-    }
-
-    // Gift tray (appended to body by snxgOpenGiftTray in snx-gifts.js)
-    const giftTray = document.getElementById('snxGiftTray');
-    if (giftTray && giftTray.classList.contains('open')) {
-      giftTray.classList.remove('open');
-      const sendBtn = document.getElementById('giftConfirmSend');
-      if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send 🎁'; }
-    }
-
     // Theme Engine preview bar (appended to body by theme-engine.js)
     // Only exit preview if it was opened FROM the Founder Panel.
     const previewBar = document.getElementById('snx-preview-bar');
@@ -33843,7 +33365,7 @@ window.snxFounderPanelCleanup = (function() {
   }
 
   // ── 2. Reset the active admin tab back to "dashboard" ──
-  //    Prevents a stale tab (e.g. "Coin Testing", "Themes") from being
+  //    Prevents a stale tab (e.g. "Themes") from being
   //    the visible tab the NEXT time the Founder Panel is opened.
   function _resetActiveTab() {
     document.querySelectorAll('#adminTabBar .admin-tab').forEach(function(b) {
@@ -33860,11 +33382,6 @@ window.snxFounderPanelCleanup = (function() {
 
   // ── 3. Cancel any pending background timers from Founder tools ──
   function _cancelPendingTimers() {
-    // Coin-test search debounce (snx-gifts.js module-scoped; exposed for cleanup)
-    if (typeof window._ctgSearchTimer !== 'undefined' && window._ctgSearchTimer) {
-      clearTimeout(window._ctgSearchTimer);
-      window._ctgSearchTimer = null;
-    }
     // Admin user-search debounce
     if (typeof window._adminSearchTimer !== 'undefined' && window._adminSearchTimer) {
       clearTimeout(window._adminSearchTimer);

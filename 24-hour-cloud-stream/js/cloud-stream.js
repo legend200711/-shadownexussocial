@@ -10,7 +10,7 @@
  *   - Viewer presence + heartbeat
  *   - Up Next queue (next 3-5 items)
  *   - Fullscreen support
- *   - No gifting in this section
+ *   - No monetization in this section
  *
  * Channel owner features (any authenticated user who owns the stream):
  *   - Start / stop / skip broadcast
