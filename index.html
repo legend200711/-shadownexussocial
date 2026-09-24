@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="snx-commit" content="local">
 <title>Shadow Nexus Social — Stay Legendary 🌑🔥</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 
@@ -42,22 +43,22 @@
 <meta name="twitter:image"       content="https://shadownexussocial.online/icon-512.png">
 
 <!-- ── Shared stylesheet ── -->
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="album.css">
-<link rel="stylesheet" href="profile-music.css">
-<link rel="stylesheet" href="profile-theme.css">
+<link rel="stylesheet" href="style.css?v=SNS-2026-09-25-001">
+<link rel="stylesheet" href="album.css?v=SNS-2026-09-25-001">
+<link rel="stylesheet" href="profile-music.css?v=SNS-2026-09-25-001">
+<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-09-25-001">
 <!-- ── Shadow Nexus Social Realm — full immersive redesign ── -->
-<link rel="stylesheet" href="realm.css">
+<link rel="stylesheet" href="realm.css?v=SNS-2026-09-25-001">
 <!-- ── Mobile responsive design layer ── -->
-<link rel="stylesheet" href="mobile.css">
+<link rel="stylesheet" href="mobile.css?v=SNS-2026-09-25-001">
 <!-- ── Shadow Nexus Gifting & Monetization ── -->
-<link rel="stylesheet" href="snx-gifts.css">
+<link rel="stylesheet" href="snx-gifts.css?v=SNS-2026-09-25-001">
 <!-- ── Shadow Nexus 24-Hour Studio (Cloud Stream) ── -->
-<link rel="stylesheet" href="cloud-stream.css">
+<link rel="stylesheet" href="cloud-stream.css?v=SNS-2026-09-25-001">
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library / Upload / Playlists / Queue ── -->
-<link rel="stylesheet" href="studio.css">
+<link rel="stylesheet" href="studio.css?v=SNS-2026-09-25-001">
 <!-- ── Nexus Global Theme Engine ── -->
-<link rel="stylesheet" href="theme-engine.css">
+<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-09-25-001">
 
 <!-- ── Preconnect to Firebase + R2 CDN so first load is faster ── -->
 <link rel="preconnect" href="https://www.gstatic.com">
@@ -8806,6 +8807,7 @@ body.arcade-fs-ios body::after { display:none !important; }
     <button class="admin-tab" onclick="switchAdminTab('cloudstreams');snxAdminLoadCloudStreams()">☁️ CloudStreams</button>
     <button class="admin-tab" onclick="switchAdminTab('r2storage');snxR2StatusOpen()">🗄️ R2 Storage</button>
     <button class="admin-tab" onclick="switchAdminTab('themes');snxTCCOpen()">🎨 Theme Engine</button>
+    <button class="admin-tab" onclick="switchAdminTab('system');snxLoadBuildDiagnostics()">🖥️ System</button>
 </div>
 
 <!-- ══════════════════════════════════
@@ -8958,6 +8960,22 @@ body.arcade-fs-ios body::after { display:none !important; }
 <!-- ══════════════════════════════════
      TAB: SETTINGS
 ══════════════════════════════════ -->
+<!-- ══════════════════════════════════
+     TAB: SYSTEM DIAGNOSTICS (Founder only)
+══════════════════════════════════ -->
+<div class="admin-tab-content" id="adminTab-system">
+    <div class="section-card" style="margin-bottom:16px;border-color:rgba(0,212,255,0.35);background:linear-gradient(135deg,rgba(0,20,40,0.6),rgba(11,31,58,0.95));">
+        <h3 style="margin:0 0 14px;font-size:13px;color:#00d4ff;text-transform:uppercase;letter-spacing:0.8px;">🖥️ Shadow Nexus Build Diagnostics</h3>
+        <div id="snxBuildDiagPanel" style="font-family:monospace;font-size:12px;line-height:2;">
+            <div style="color:#6a90b8;">Loading diagnostics…</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+            <button onclick="snxLoadBuildDiagnostics()" style="font-size:12px;padding:6px 14px;border-radius:8px;">🔄 Refresh</button>
+            <button onclick="snxClearSwCache()" style="font-size:12px;padding:6px 14px;border-radius:8px;border-color:rgba(255,80,80,0.4);color:#ff7777;">🗑️ Clear SW Cache</button>
+        </div>
+    </div>
+</div>
+
 <div class="admin-tab-content" id="adminTab-settings">
     <div class="section-card" style="margin-bottom:16px;">
         <h3 style="margin:0 0 12px;font-size:13px;color:#00d4ff;text-transform:uppercase;letter-spacing:0.8px;">🎨 Theme & Appearance</h3>
@@ -24024,12 +24042,12 @@ function _supportStopCanvas() {
      ═══════════════════════════════════════════════════════════ -->
 
 <!-- ── Global Background Internet Manager (must load before script.js) ── -->
-<script src="snx-net.js"></script>
+<script src="snx-net.js?v=SNS-2026-09-25-001"></script>
 
-<script src="script.js"></script>
+<script src="script.js?v=SNS-2026-09-25-001"></script>
 
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library, Upload, Playlists, Queue ── -->
-<script src="studio.js"></script>
+<script src="studio.js?v=SNS-2026-09-25-001"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════
@@ -29345,13 +29363,13 @@ window.switchAdminTab = function(tab) {
 </script>
 
 <!-- ── Profile Photo Album module (must load after the main IIFE) ── -->
-<script src="album.js"></script>
+<script src="album.js?v=SNS-2026-09-25-001"></script>
 
 <!-- ── Profile Music System (loads after Firebase is initialized) ── -->
-<script src="profile-music.js"></script>
+<script src="profile-music.js?v=SNS-2026-09-25-001"></script>
 
 <!-- ── Profile Theme System (loads after Firebase is initialized) ── -->
-<script src="profile-theme.js"></script>
+<script src="profile-theme.js?v=SNS-2026-09-25-001"></script>
 
 <!-- ═══════════════════ GRIM AI ASSISTANT PANEL ═══════════════════ -->
 
@@ -31324,7 +31342,7 @@ document.addEventListener('click', function(e) {
 </script>
 
 <!-- ████ SHADOW NEXUS GIFTS — Gifting & Creator Monetization ████ -->
-<script type="module" src="snx-gifts.js"></script>
+<script type="module" src="snx-gifts.js?v=SNS-2026-09-25-001"></script>
 
 <!-- Coin balance sync across all nav displays -->
 <script>
@@ -31396,36 +31414,43 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = '2026-09-24-STABILIZATION-FOUNDERFIX';
-  var SW_VER   = 'v49';
+  var BUILD_ID = 'SNS-2026-09-25-001';
+  var SW_VER   = 'v51';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
 
   /* ══════════════════════════════════════════════════════
-     SERVICE WORKER UPDATE-CHECK
-     ── Runs on every page load (no ?snxdebug required) ──
-     NOTE: Auto-activation and auto-reload have been removed
-     to prevent SW-triggered reload loops. The SW activates
-     naturally when all tabs are closed/reopened, or when
-     the user manually refreshes (see script.js). ──
+     SERVICE WORKER REGISTRATION & UPDATE HANDLING
+     ── Runs on every page load ──
+     The SW uses skipWaiting()+clients.claim() so it
+     activates immediately on install. The controllerchange
+     event reloads the page ONCE (guarded by sessionStorage)
+     to ensure the new SW serves fresh assets.
      ══════════════════════════════════════════════════════ */
   if ('serviceWorker' in navigator) {
 
-    /* ── Check for an update now (passive — does not activate) ── */
-    navigator.serviceWorker.ready.then(function(reg) {
-      reg.update().catch(function() {});
-    }).catch(function() {});
+    /* ── Register the app service worker ── */
+    navigator.serviceWorker.register('/sw.js?v=' + BUILD_ID)
+      .then(function(reg) {
+        /* Trigger an update check immediately and every 10 minutes */
+        reg.update().catch(function() {});
+        setInterval(function() { reg.update().catch(function() {}); }, 10 * 60 * 1000);
+      })
+      .catch(function() {});
 
-    /* ── Periodic update check every 10 minutes ── */
-    setInterval(function() {
-      navigator.serviceWorker.getRegistration().then(function(reg) {
-        if (reg) reg.update().catch(function() {});
-      }).catch(function() {});
-    }, 10 * 60 * 1000);
+    /* ── On controllerchange, reload ONCE to get fresh assets ──
+         Guard with sessionStorage so a loop can never form. */
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      var key = 'snx_sw_reload_' + BUILD_ID;
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        window.location.reload();
+      }
+    });
 
     /* ── Version cross-check via /version.json ──
          Fetches the deployed manifest once per session (network-only, no-cache).
-         Used as a diagnostic signal for the debug panel. */
+         Used as a diagnostic signal for the Founder panel. */
     var _remoteBuildId = null;
     fetch('/version.json?_=' + Date.now(), { cache: 'no-store' })
       .then(function(r) { return r.json(); })
@@ -31534,6 +31559,92 @@ document.addEventListener('click', function(e) {
 
   _updatePanel();
   setInterval(_updatePanel, 3000);
+})();
+</script>
+
+<!-- ████ SHADOW NEXUS BUILD DIAGNOSTICS — Founder Panel ████ -->
+<script>
+(function() {
+  'use strict';
+
+  var _SNX_BUILD    = 'SNS-2026-09-25-001';
+  var _SNX_SW_VER   = 'v51';
+  var _SNX_DEPLOY   = '2026-09-25T06:00:00Z';
+  var _SNX_PROJECT  = 'horr-a08f4';
+
+  function _dRow(label, val, ok) {
+    var color = ok === true ? '#39FF14' : ok === false ? '#ff5566' : ok === 'warn' ? '#ffbb44' : '#a0cfef';
+    return '<div style="display:flex;gap:8px;margin-bottom:2px;">' +
+      '<span style="color:#4a8aaa;min-width:200px;flex-shrink:0;">' + label + '</span>' +
+      '<span style="color:' + color + ';">' + (val == null ? '—' : String(val)) + '</span></div>';
+  }
+
+  window.snxLoadBuildDiagnostics = function() {
+    if (window._snxRole !== 'founder') return;
+    var panel = document.getElementById('snxBuildDiagPanel');
+    if (!panel) return;
+
+    var swState = !('serviceWorker' in navigator) ? 'not supported'
+                : navigator.serviceWorker.controller ? 'ACTIVE' : 'none';
+    var swOk    = swState === 'ACTIVE';
+
+    var pwaMode = window.matchMedia('(display-mode: standalone)').matches ||
+                  (window.navigator.standalone === true) ? 'YES' : 'NO';
+
+    var remote  = window._snxRemoteBuildId || 'checking…';
+    var match   = window._snxRemoteBuildId
+                    ? (window._snxRemoteBuildId === _SNX_BUILD)
+                    : null;
+    var matchLabel = match === null ? 'checking…' :
+                     match ? 'MATCH ✓' : 'MISMATCH ✗ — old build cached';
+
+    var html = '';
+    html += '<div style="color:#00d4ff;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">📦 Build</div>';
+    html += _dRow('SHADOW NEXUS BUILD', _SNX_BUILD, true);
+    html += _dRow('Application Version', _SNX_BUILD, true);
+    html += _dRow('SW Cache Version', _SNX_SW_VER, true);
+    html += _dRow('Deployed At', _SNX_DEPLOY);
+    html += _dRow('Firebase Project', _SNX_PROJECT);
+    html += '<div style="color:#00d4ff;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:10px 0 8px;">🌐 Runtime</div>';
+    html += _dRow('Current Hostname', location.hostname);
+    html += _dRow('PWA Mode', pwaMode, pwaMode === 'YES');
+    html += _dRow('SW State', swState, swOk);
+    html += '<div style="color:#00d4ff;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:10px 0 8px;">🔄 Deployment Check</div>';
+    html += _dRow('Remote Build (version.json)', remote, match);
+    html += _dRow('Build Match', matchLabel, match === null ? 'warn' : match);
+
+    /* Ask the active SW for its version */
+    html += _dRow('Active SW Build', window._snxSwReportedBuildId || 'querying…');
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' });
+      var _msgHandler = function(e) {
+        if (e.data && e.data.type === 'SW_VERSION') {
+          window._snxSwReportedBuildId = e.data.version + ' (' + (e.data.buildId || '?') + ')';
+          navigator.serviceWorker.removeEventListener('message', _msgHandler);
+          window.snxLoadBuildDiagnostics(); // refresh panel with SW version
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', _msgHandler);
+    }
+
+    /* Git commit SHA from meta tag (injected at deploy time if available) */
+    var commitEl = document.querySelector('meta[name="snx-commit"]');
+    var commit   = commitEl ? commitEl.getAttribute('content') : 'N/A';
+    html += _dRow('Git Commit SHA', commit);
+
+    panel.innerHTML = html;
+  };
+
+  window.snxClearSwCache = async function() {
+    if (window._snxRole !== 'founder') return;
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' });
+    }
+    // Also clear all shadow-nexus caches directly
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(k => k.startsWith('shadow-nexus')).map(k => caches.delete(k)));
+    if (typeof toastNotification === 'function') toastNotification('✓ SW cache cleared.');
+  };
 })();
 </script>
 

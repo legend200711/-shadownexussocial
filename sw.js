@@ -10,8 +10,8 @@
  * shadownexussocial.online (/) and any local dev server (/).
  */
 
-const CACHE_VERSION = 'v50';
-const BUILD_ID      = '2026-09-25-SOCIAL-SYSTEMS-REPAIR';
+const CACHE_VERSION = 'v51';
+const BUILD_ID      = 'SNS-2026-09-25-001';
 const CACHE_NAME    = `shadow-nexus-${CACHE_VERSION}`;
 const MEDIA_CACHE   = `shadow-nexus-media-${CACHE_VERSION}`;
 
@@ -81,14 +81,12 @@ const NETWORK_ONLY_HOSTS = [
 
 /* ─────────────────────────────────────────────
    INSTALL — pre-cache the app shell
-   Do NOT call skipWaiting() here. Automatically
-   taking over an active page mid-session causes
-   a controllerchange → reload loop. The new SW
-   waits until all tabs are closed or the user
-   manually refreshes, at which point it activates
-   naturally. The SKIP_WAITING postMessage path
-   (sent by script.js when the user is idle) is
-   the only intentional early-activation route.
+   skipWaiting() is called so the new SW takes
+   over as soon as it is installed, rather than
+   waiting for all tabs to close. The page-side
+   controllerchange handler (index.html) will
+   reload once, guarded by sessionStorage so it
+   cannot loop.
    ───────────────────────────────────────────── */
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -102,18 +100,16 @@ self.addEventListener('install', (event) => {
           )
         )
       )
-    // NO skipWaiting() — wait for all clients to close
+      .then(() => self.skipWaiting())
   );
 });
 
 /* ─────────────────────────────────────────────
-   ACTIVATE — clean up old caches
-   Do NOT call clients.claim() here. Claiming
-   existing clients immediately after activation
-   fires controllerchange on every open tab,
-   triggering the reload path in script.js.
-   Pages that were loaded before this SW activated
-   will use it on their next navigation anyway.
+   ACTIVATE — clean up old caches, claim clients
+   clients.claim() is safe here because the
+   install handler already called skipWaiting().
+   The page-side reload guard (sessionStorage)
+   prevents the claim from causing a loop.
    ───────────────────────────────────────────── */
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -128,7 +124,7 @@ self.addEventListener('activate', (event) => {
             })
         )
       )
-    // NO clients.claim() — avoids firing controllerchange on live pages
+      .then(() => self.clients.claim())
   );
 });
 
@@ -265,10 +261,8 @@ let _snxOffline     = false;
 
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') {
-    // SKIP_WAITING is intentionally ignored.
-    // Auto-activating mid-session fires controllerchange on all open tabs
-    // which triggers reload loops. Updates activate on next natural navigation.
-    console.log('[SW] SKIP_WAITING received but ignored — safe update policy.');
+    // Honour explicit skip-waiting requests from the page (e.g. update prompt)
+    self.skipWaiting();
   }
   if (event.data?.type === 'CLEAR_CACHE') {
     caches.delete(CACHE_NAME).then(() => {

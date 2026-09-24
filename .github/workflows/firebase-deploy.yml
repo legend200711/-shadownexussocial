@@ -1,0 +1,49 @@
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  deploy:
+    name: Firebase Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Verify version.json is present
+        run: |
+          if [ ! -f version.json ]; then
+            echo "ERROR: version.json is missing — aborting deploy"
+            exit 1
+          fi
+          echo "version.json contents:"
+          cat version.json
+
+      - name: Inject git commit SHA into index.html meta tag
+        run: |
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          sed -i "s|<meta name=\"snx-commit\" content=\"[^\"]*\">|<meta name=\"snx-commit\" content=\"${COMMIT_SHA}\">|g" index.html || true
+          # Add the meta tag if it doesn't exist yet
+          if ! grep -q 'name="snx-commit"' index.html; then
+            sed -i "s|</head>|<meta name=\"snx-commit\" content=\"${COMMIT_SHA}\">\n</head>|" index.html
+          fi
+          echo "Injected commit SHA: ${COMMIT_SHA}"
+
+      - name: Deploy to Firebase Hosting
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          firebase deploy --only hosting --token "$FIREBASE_TOKEN" --non-interactive
+
+      - name: Verify deployment
+        run: |
+          echo "Deployment complete. Fetching live version.json..."
+          sleep 5
+          curl -sf "https://horr-a08f4.web.app/version.json" | python3 -c "import json,sys; d=json.load(sys.stdin); print('Live buildId:', d.get('buildId')); print('Live swVersion:', d.get('swVersion'))"

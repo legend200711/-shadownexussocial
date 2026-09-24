@@ -1,8 +1,8 @@
 {
-  "buildId": "2026-09-25-SOCIAL-SYSTEMS-REPAIR",
-  "swVersion": "v50",
-  "deployedAt": "2026-09-25T00:00:00Z",
+  "buildId": "SNS-2026-09-25-001",
+  "swVersion": "v51",
+  "deployedAt": "2026-09-25T06:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "2.1.0",
-  "note": "Shadow Nexus Social social systems and messaging repair: notification routing, report modal, admin report center, block/unblock, save posts, post/comment delete confirmations, message unsend, typing indicator cleanup, Android back-button modal intercept, delete post/bot-post via snxConfirm."
+  "note": "Production sync: force master→main, new build marker, SW v51, Founder diagnostics, cache busting. Features: TCC containment, notification routing, message delete/unsend, blocking, Report Center, Cloud Stream likes."
 }
