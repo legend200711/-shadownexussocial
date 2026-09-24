@@ -10,8 +10,8 @@
  * shadownexussocial.online (/) and any local dev server (/).
  */
 
-const CACHE_VERSION = 'v60';
-const BUILD_ID      = 'SNS-2026-WMBUG-002';
+const CACHE_VERSION = 'v61';
+const BUILD_ID      = 'SNS-2026-FOUNDER-CLEANUP-001';
 const CACHE_NAME    = `shadow-nexus-${CACHE_VERSION}`;
 const MEDIA_CACHE   = `shadow-nexus-media-${CACHE_VERSION}`;
 
@@ -49,6 +49,8 @@ const SHELL_FILES = [
   'version.json',
   'shadow-nexus-upgrade.js',
   'shadow-nexus-upgrade.css',
+  'nexus-intro.js',
+  'nexus-intro.css',
   // live.html / live.js / live.css intentionally excluded — always network-fresh
 ];
 

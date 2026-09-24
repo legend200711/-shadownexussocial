@@ -1092,17 +1092,15 @@
      (extend existing cleanup to include new systems)
      ═══════════════════════════════════════════════════════════ */
 
-  // Hook into existing snxFounderPanelCleanup
-  const _origCleanup = window.snxFounderPanelCleanup;
-  window.snxFounderPanelCleanup = function () {
-    if (typeof _origCleanup === 'function') {
-      try { _origCleanup(); } catch(e) { console.warn('[SNX Upgrade] origCleanup:', e.message); }
-    }
-    // Stop announcement listener (if any)
-    if (_annUnsub) { try { _annUnsub(); } catch(_) {} _annUnsub = null; }
-    // Clear any status timers
-    if (window._snxStatusCheckTimer) { clearTimeout(window._snxStatusCheckTimer); window._snxStatusCheckTimer = null; }
-  };
+  // Expose _annUnsub on window so the main snxFounderPanelCleanup IIFE
+  // (defined later in index.html) can call it.  The main IIFE runs AFTER
+  // this module and captures the function references it needs at call time,
+  // not at define time, so this window assignment is the correct hook point.
+  Object.defineProperty(window, '_snxAnnUnsub', {
+    get: function() { return _annUnsub; },
+    set: function(v) { _annUnsub = v; },
+    configurable: true,
+  });
 
   /* ═══════════════════════════════════════════════════════════
      INIT — wire up on navTo callbacks

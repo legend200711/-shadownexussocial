@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-ALBUM-PRIVACY-001",
-  "swVersion": "v57",
-  "deployedAt": "2026-10-05T00:00:00Z",
+  "buildId": "SNS-2026-FOUNDER-CLEANUP-001",
+  "swVersion": "v61",
+  "deployedAt": "2025-07-17T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
   "nexusVersion": "1.0.1",
-  "note": "ALBUM-PRIVACY-001: Enforce album followers/friends privacy server-side via Firestore rules (isFollowerOf/isFriendOf helpers). Mirror enforcement client-side in album.js. Remove orphaned files (firebase-live.js, r2-upload.js, shadow-nexus-features.js/css, webrtc.js). Clean Firebase hosting cache. SW v57 cache bust."
+  "note": "FOUNDER-CLEANUP-001: Fix Founder panel SPA cleanup and route isolation. Fix broken cleanup chain (shadow-nexus-upgrade.js hook lost by IIFE override). Fix Escape-key listener leak in nexus-intro.js full-intro preview. Add _isAdminPageActive guard to adminLoadSettings. Add failsafe route guard in navTo() to force-remove active class from #adminPage on non-admin navigation. Add SW precache entries for nexus-intro.js/css."
 }

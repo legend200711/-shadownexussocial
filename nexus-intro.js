@@ -731,18 +731,35 @@
 
         // Wire buttons — override _exit so it:
         //  1. Does NOT set the session key (not a real "done")
-        //  2. Returns the Founder to the Founder Control Center
+        //  2. Returns the Founder to the Founder Control Center ONLY if we're
+        //     still on the adminPage (prevents spurious back-navigation after cleanup)
         var _previewExiting = false;
+
+        // Escape key listener reference kept so snxwmCleanup can remove it
+        var _escPreviewHandler = null;
+
         function _previewExit(fast) {
             if (_previewExiting) return;
             _previewExiting = true;
             _founderPreviewActive = false; // preview is ending
+            // Remove the Escape key listener so it cannot fire after navigation
+            if (_escPreviewHandler) {
+                document.removeEventListener('keydown', _escPreviewHandler);
+                _escPreviewHandler = null;
+            }
             // Stop audio started by the preview
             _stopAudio();
             var ov2 = document.getElementById('snxIntroOverlay');
+            // Only navigate back to adminPage if it is currently the active page.
+            // This prevents _previewExit (triggered by keyboard/cleanup) from
+            // navigating the Founder back to adminPage after they have already
+            // moved to another page.
+            var _adminIsActive = (function() {
+                var ap = document.getElementById('adminPage');
+                return !!(ap && ap.classList.contains('active'));
+            })();
             if (!ov2) {
-                // Navigate back to Founder Panel
-                if (typeof navTo === 'function') navTo('adminPage');
+                if (_adminIsActive && typeof navTo === 'function') navTo('adminPage');
                 return;
             }
             if (fast) {
@@ -750,14 +767,14 @@
                 ov2.style.opacity = '0';
                 setTimeout(function(){
                     if (ov2.parentNode) ov2.parentNode.removeChild(ov2);
-                    if (typeof navTo === 'function') navTo('adminPage');
+                    if (_adminIsActive && typeof navTo === 'function') navTo('adminPage');
                 }, 320);
             } else {
                 ov2.style.transition = 'opacity 0.8s';
                 ov2.style.opacity = '0';
                 setTimeout(function(){
                     if (ov2.parentNode) ov2.parentNode.removeChild(ov2);
-                    if (typeof navTo === 'function') navTo('adminPage');
+                    if (_adminIsActive && typeof navTo === 'function') navTo('adminPage');
                 }, 850);
             }
         }
@@ -786,10 +803,19 @@
                 }
             });
         }
-        // Escape key
-        document.addEventListener('keydown', function _escPreview(e){
-            if (e.key === 'Escape') { document.removeEventListener('keydown', _escPreview); _previewExit(true); }
-        });
+        // Escape key — store reference so snxwmCleanup can remove it on navigation
+        _escPreviewHandler = function(e){
+            if (e.key === 'Escape') { _previewExit(true); }
+        };
+        document.addEventListener('keydown', _escPreviewHandler);
+
+        // Expose handler removal to snxwmCleanup (assigned below)
+        window._snxwmCancelEscapeListener = function() {
+            if (_escPreviewHandler) {
+                document.removeEventListener('keydown', _escPreviewHandler);
+                _escPreviewHandler = null;
+            }
+        };
 
         // Load music config and start audio for the preview
         _loadConfig(function(cfg){
@@ -802,6 +828,13 @@
 
     // ── Cleanup hook — called by snxFounderPanelCleanup on navigation away ──
     window.snxwmCleanup = function () {
+        // Cancel any live Escape-key listener from a running full-intro preview.
+        // This prevents _previewExit from firing (and calling navTo('adminPage'))
+        // after the Founder has already navigated to another page.
+        if (typeof window._snxwmCancelEscapeListener === 'function') {
+            try { window._snxwmCancelEscapeListener(); } catch(_) {}
+            window._snxwmCancelEscapeListener = null;
+        }
         // Stop preview audio (short clip played from the Current Song panel)
         if (_previewAudio) {
             try { _previewAudio.pause(); _previewAudio.src = ''; } catch(_) {}

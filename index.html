@@ -58,7 +58,7 @@
 <!-- ── Nexus Global Theme Engine ── -->
 <link rel="stylesheet" href="theme-engine.css?v=SNS-2026-ALBUM-PRIVACY-001">
 <!-- ── Shadow Nexus Cinematic Welcome Experience ── -->
-<link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-WMBUG-002">
+<link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-FOUNDER-CLEANUP-001">
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Egyptian/Horror theme ── -->
 <link rel="stylesheet" href="nexus.css?v=SNS-2026-ALBUM-PRIVACY-001">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
@@ -19863,6 +19863,9 @@ body.arcade-fs-ios body::after { display:none !important; }
   window.adminLoadSettings = async function() {
       try {
           const snap=await getDoc(doc(db,'siteSettings','config')); if(!snap.exists())return;
+          // Guard: abort if the admin page was closed while getDoc was in-flight.
+          // This prevents stale async callbacks from writing to hidden Founder UI.
+          if (!_isAdminPageActive()) return;
           const cfg=snap.data();
           const _cb=(id,k)=>{const el=document.getElementById(id);if(el)el.checked=cfg[k]!==false;};
           _cb('toggleRegistration','registrationEnabled'); _cb('toggleMaintenance','maintenanceMode');
@@ -21004,6 +21007,16 @@ function navTo(pageId) {
     // Founder UI leaks onto the normal social pages.
     if (pageId !== 'adminPage' && typeof window.snxFounderPanelCleanup === 'function') {
         window.snxFounderPanelCleanup();
+    }
+
+    // Failsafe route guard — if we are navigating to any non-admin page,
+    // ensure #adminPage never remains visible regardless of any async race.
+    // This runs BEFORE show() so the active class is removed cleanly.
+    if (pageId !== 'adminPage') {
+        const _apGuard = document.getElementById('adminPage');
+        if (_apGuard && _apGuard.classList.contains('active')) {
+            _apGuard.classList.remove('active');
+        }
     }
 
     // Stop profile music whenever navigating away from the profile page
@@ -29991,7 +30004,7 @@ window.switchAdminTab = function(tab) {
 <script src="profile-theme.js?v=SNS-2026-ALBUM-PRIVACY-001"></script>
 
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<script src="shadow-nexus-upgrade.js?v=SNS-2026-ALBUM-PRIVACY-001"></script>
+<script src="shadow-nexus-upgrade.js?v=SNS-2026-FOUNDER-CLEANUP-001"></script>
 
 <!-- ═══════════════════ GRIM AI ASSISTANT PANEL ═══════════════════ -->
 
@@ -31961,8 +31974,8 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = 'SNS-2026-ALBUM-PRIVACY-001';
-  var SW_VER   = 'v55';
+  var BUILD_ID = 'SNS-2026-FOUNDER-CLEANUP-001';
+  var SW_VER   = 'v61';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
 
@@ -33641,6 +33654,15 @@ window.snxFounderPanelCleanup = (function() {
       confirmModal.style.display = 'none';
       document.body.style.overflow = '';
     }
+
+    // Any inline TCC confirm modal appended to document.body as a fallback
+    // (has no stable ID but always uses class 'snxTCCConfirmCancel' for its
+    //  Cancel button — remove the ancestor overlay if it is still present)
+    document.querySelectorAll('body > div').forEach(function(el) {
+      if (el.querySelector && el.querySelector('.snxTCCConfirmCancel')) {
+        el.remove();
+      }
+    });
   }
 
   // ── 2. Reset the active admin tab back to "dashboard" ──
@@ -33666,6 +33688,11 @@ window.snxFounderPanelCleanup = (function() {
       clearTimeout(window._adminSearchTimer);
       window._adminSearchTimer = null;
     }
+    // SNX upgrade module status check timer
+    if (window._snxStatusCheckTimer) {
+      clearTimeout(window._snxStatusCheckTimer);
+      window._snxStatusCheckTimer = null;
+    }
   }
 
   // ── 4. Abort any in-flight async admin renders ──
@@ -33689,14 +33716,42 @@ window.snxFounderPanelCleanup = (function() {
     if (typeof window.snxwmCleanup === 'function') window.snxwmCleanup();
   }
 
+  // ── 7. Stop any Firestore listeners started by upgrade module Founder tools ──
+  //    shadow-nexus-upgrade.js patches snxFounderPanelCleanup at load time but
+  //    the IIFE below overwrites that patch.  We replicate the upgrade cleanup
+  //    here to ensure _annUnsub (announcement list listener) is always stopped.
+  function _cleanupUpgradeListeners() {
+    // Announcement list listener (snxLoadAnnouncements → onSnapshot)
+    if (window._snxAnnUnsub) {
+      try { window._snxAnnUnsub(); } catch(_) {}
+      window._snxAnnUnsub = null;
+    }
+  }
+
+  // ── 8. Failsafe — ensure #adminPage is NOT visible on non-admin routes ──
+  //    This is a secondary safety net.  The primary fix is the cleanup above;
+  //    this catches any edge case where #adminPage retains display:block
+  //    due to a race condition or missed cleanup call.
+  function _enforceAdminPageHidden() {
+    const ap = document.getElementById('adminPage');
+    if (ap && ap.classList.contains('active')) {
+      // adminPage should NOT be active during cleanup (called only when
+      // navigating AWAY).  Remove it defensively.
+      ap.classList.remove('active');
+      console.warn('[SNX Founder] Failsafe: removed stale active class from #adminPage');
+    }
+  }
+
   // ── Exported centralized cleanup ──
   return function snxFounderPanelCleanup() {
-    try { _closeBodyOverlays();     } catch(e) { console.warn('[SNX Founder] closeBodyOverlays:', e.message); }
-    try { _resetActiveTab();        } catch(e) { console.warn('[SNX Founder] resetActiveTab:',    e.message); }
-    try { _cancelPendingTimers();   } catch(e) { console.warn('[SNX Founder] cancelTimers:',       e.message); }
-    try { _abortInFlightRenders();  } catch(e) { console.warn('[SNX Founder] abortRenders:',       e.message); }
-    try { _restoreBodyState();      } catch(e) { console.warn('[SNX Founder] restoreBody:',        e.message); }
-    try { _cleanupWelcomeMusic();   } catch(e) { console.warn('[SNX Founder] welcomeMusic:',       e.message); }
+    try { _closeBodyOverlays();          } catch(e) { console.warn('[SNX Founder] closeBodyOverlays:', e.message); }
+    try { _resetActiveTab();             } catch(e) { console.warn('[SNX Founder] resetActiveTab:',    e.message); }
+    try { _cancelPendingTimers();        } catch(e) { console.warn('[SNX Founder] cancelTimers:',       e.message); }
+    try { _abortInFlightRenders();       } catch(e) { console.warn('[SNX Founder] abortRenders:',       e.message); }
+    try { _restoreBodyState();           } catch(e) { console.warn('[SNX Founder] restoreBody:',        e.message); }
+    try { _cleanupWelcomeMusic();        } catch(e) { console.warn('[SNX Founder] welcomeMusic:',       e.message); }
+    try { _cleanupUpgradeListeners();    } catch(e) { console.warn('[SNX Founder] upgradeListeners:',   e.message); }
+    try { _enforceAdminPageHidden();     } catch(e) { console.warn('[SNX Founder] enforceHidden:',      e.message); }
   };
 })();
 
@@ -33706,7 +33761,7 @@ window.snxFounderPanelCleanup = (function() {
      SHADOW NEXUS CINEMATIC WELCOME EXPERIENCE
      Loaded last so it never blocks main app init.
      ═══════════════════════════════════════════════════════════ -->
-<script src="nexus-intro.js?v=SNS-2026-WMBUG-002"></script>
+<script src="nexus-intro.js?v=SNS-2026-FOUNDER-CLEANUP-001"></script>
 <script>
   /* ── snxIntroCompleted: called by nexus-intro.js when the user clicks
      "Enter the Nexus" or "Skip Intro".  By this point Firebase auth may
