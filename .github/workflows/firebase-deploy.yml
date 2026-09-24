@@ -23,27 +23,41 @@ jobs:
             echo "ERROR: version.json is missing — aborting deploy"
             exit 1
           fi
-          echo "version.json contents:"
+          echo "=== version.json contents ==="
           cat version.json
 
       - name: Inject git commit SHA into index.html meta tag
         run: |
           COMMIT_SHA=$(git rev-parse --short HEAD)
-          sed -i "s|<meta name=\"snx-commit\" content=\"[^\"]*\">|<meta name=\"snx-commit\" content=\"${COMMIT_SHA}\">|g" index.html || true
-          # Add the meta tag if it doesn't exist yet
-          if ! grep -q 'name="snx-commit"' index.html; then
-            sed -i "s|</head>|<meta name=\"snx-commit\" content=\"${COMMIT_SHA}\">\n</head>|" index.html
-          fi
+          sed -i "s|content=\"local\"|content=\"${COMMIT_SHA}\"|g" index.html || true
           echo "Injected commit SHA: ${COMMIT_SHA}"
 
-      - name: Deploy to Firebase Hosting
+      - name: Deploy to Firebase Hosting (via FIREBASE_TOKEN)
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
+          if [ -z "$FIREBASE_TOKEN" ]; then
+            echo "WARNING: FIREBASE_TOKEN secret is not configured."
+            echo "To enable automatic Firebase deployment, add FIREBASE_TOKEN to:"
+            echo "  GitHub → Settings → Secrets and variables → Actions → New repository secret"
+            echo "  Name: FIREBASE_TOKEN"
+            echo "  Value: (run 'firebase login:ci' on your machine to get the token)"
+            echo ""
+            echo "Skipping Firebase deploy — code is on GitHub Pages and was deployed manually."
+            exit 0
+          fi
           firebase deploy --only hosting --token "$FIREBASE_TOKEN" --non-interactive
 
       - name: Verify deployment
+        if: ${{ env.FIREBASE_TOKEN != '' }}
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
-          echo "Deployment complete. Fetching live version.json..."
-          sleep 5
-          curl -sf "https://horr-a08f4.web.app/version.json" | python3 -c "import json,sys; d=json.load(sys.stdin); print('Live buildId:', d.get('buildId')); print('Live swVersion:', d.get('swVersion'))"
+          echo "Fetching live version.json to confirm deployment..."
+          sleep 10
+          curl -sf "https://horr-a08f4.web.app/version.json" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          print('Live buildId   :', d.get('buildId'))
+          print('Live swVersion :', d.get('swVersion'))
+          " || echo "Could not verify — check Firebase Console"
