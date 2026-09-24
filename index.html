@@ -7581,7 +7581,7 @@ body.arcade-fs-ios body::after { display:none !important; }
     <div class="msg-ctx-item" id="msgCtxEdit"    onclick="msgCtxEdit()" style="display:none;">✏️ Edit</div>
     <div class="msg-ctx-divider"></div>
     <div class="msg-ctx-item danger" id="msgCtxDeleteMe"  onclick="msgCtxDeleteMe()">🗑 Delete for Me</div>
-    <div class="msg-ctx-item danger" id="msgCtxDeleteAll" onclick="msgCtxDeleteAll()">🚫 Unsend for Everyone</div>
+    <div class="msg-ctx-item danger" id="msgCtxDeleteAll" onclick="msgCtxDeleteAll()">🗑 Delete for Everyone</div>
     <div class="msg-ctx-item danger" id="msgCtxReport"    onclick="msgCtxReportMsg()" style="display:none;">🚨 Report Message</div>
 </div>
 
@@ -15341,9 +15341,9 @@ body.arcade-fs-ios body::after { display:none !important; }
           return;
       }
       box.innerHTML = '';
-      // Reverse to show newest first; origIdx tracks position in the original list for read/delete
+      // Reverse to show newest first; use stable notification ID (n.id) for all destructive ops
       [...filtered].reverse().forEach((n) => {
-          const origIdx = list.indexOf(n); // real index in the full list
+          const nid = n.id || ''; // stable ID for delete/read — never use array index for mutations
           const item = document.createElement('div');
           const isMsg = n.type === 'message';
           item.className = 'notif-item' + (n.read ? '' : ' unread') + (isMsg ? ' notif-message-type' : '');
@@ -15354,8 +15354,8 @@ body.arcade-fs-ios body::after { display:none !important; }
               icon = '🦋';
               text = `<b>${escFeed(n.fromName)}</b> sent you a friend request.`;
               actHtml = `<div class="notif-actions">
-                  <button class="btn-accept" onclick="event.stopPropagation();acceptFriendRequest('${n.fromUid}');markNotifRead(${origIdx})">✓ Accept</button>
-                  <button class="btn-decline" onclick="event.stopPropagation();declineFriendRequest('${n.fromUid}');markNotifRead(${origIdx})">✕ Decline</button>
+                  <button class="btn-accept" onclick="event.stopPropagation();acceptFriendRequest('${n.fromUid}');markNotifById('${nid}')">✓ Accept</button>
+                  <button class="btn-decline" onclick="event.stopPropagation();declineFriendRequest('${n.fromUid}');markNotifById('${nid}')">✕ Decline</button>
               </div>`;
               navFn = `viewProfile('${n.fromUid}')`;
           } else if (n.type === 'friendAccepted') {
@@ -15367,9 +15367,9 @@ body.arcade-fs-ios body::after { display:none !important; }
               text = `<b>${escFeed(n.fromName)}</b> sent you a Family request.`;
               const msgLine = n.message ? `<div style="font-size:11px;color:#8ab0cc;margin:3px 0 2px;font-style:italic;">"${escFeed(n.message)}"</div>` : '';
               actHtml = `${msgLine}<div class="notif-actions">
-                  <button class="btn-accept" onclick="event.stopPropagation();approveFamilyRequest('${n.fromUid}');markNotifRead(${origIdx})">❤️ Accept</button>
-                  <button class="btn-decline" onclick="event.stopPropagation();declineFamilyRequest('${n.fromUid}');markNotifRead(${origIdx})">❌ Decline</button>
-                  <button class="btn-decline" style="font-size:10px;" onclick="event.stopPropagation();blockFamilyInviter('${n.fromUid}');markNotifRead(${origIdx})">🚫 Block</button>
+                  <button class="btn-accept" onclick="event.stopPropagation();approveFamilyRequest('${n.fromUid}');markNotifById('${nid}')">❤️ Accept</button>
+                  <button class="btn-decline" onclick="event.stopPropagation();declineFamilyRequest('${n.fromUid}');markNotifById('${nid}')">❌ Decline</button>
+                  <button class="btn-decline" style="font-size:10px;" onclick="event.stopPropagation();blockFamilyInviter('${n.fromUid}');markNotifById('${nid}')">🚫 Block</button>
               </div>`;
               navFn = `navTo('friendsPage');switchFriendsTab('family')`;
           } else if (n.type === 'familyAccepted') {
@@ -15399,16 +15399,20 @@ body.arcade-fs-ios body::after { display:none !important; }
           } else if (n.type === 'message') {
               icon = '💬';
               text = `<b>${escFeed(n.fromName)}</b> sent you a message`;
-              if (n.preview) {
-                  actHtml = `<div class="notif-msg-preview">"${escFeed(n.preview)}"</div>`;
+              const _previewText = n.preview || '';
+              const _isDeleted   = _previewText === 'Message deleted';
+              if (_previewText && !_isDeleted) {
+                  actHtml = `<div class="notif-msg-preview">"${escFeed(_previewText)}"</div>`;
+              } else if (_isDeleted) {
+                  actHtml = `<div class="notif-msg-preview" style="font-style:italic;color:#6a8faa;">(Message deleted)</div>`;
               }
               actHtml += `<div class="notif-actions" style="margin-top:6px;">
-                  <button class="btn-accept" style="font-size:11px;" onclick="event.stopPropagation();snxMsgNotifOpen('${n.fromUid}','${escFeed(n.fromName)}','${n.fromAvatar||''}','${escFeed(n.preview||'')}',${origIdx})">💬 Reply</button>
-                  <button class="notif-mark-all" style="font-size:11px;" onclick="event.stopPropagation();markNotifRead(${origIdx})">✓ Read</button>
-                  <button class="btn-decline" style="font-size:11px;" onclick="event.stopPropagation();deleteNotifByIdx(${origIdx})">🗑</button>
+                  <button class="btn-accept" style="font-size:11px;" onclick="event.stopPropagation();snxMsgNotifOpen('${n.fromUid}','${escFeed(n.fromName)}','${n.fromAvatar||''}','${escFeed(_previewText)}','${nid}')">💬 Reply</button>
+                  <button class="notif-mark-all" style="font-size:11px;" onclick="event.stopPropagation();markNotifById('${nid}')">✓ Read</button>
+                  <button class="btn-decline" style="font-size:11px;" onclick="event.stopPropagation();deleteNotifById('${nid}')">🗑</button>
               </div>`;
               // Tap the item row itself → open message detail modal
-              navFn = `snxMsgNotifOpen('${n.fromUid}','${escFeed(n.fromName)}','${n.fromAvatar||''}','${escFeed(n.preview||'')}',${origIdx})`;
+              navFn = `snxMsgNotifOpen('${n.fromUid}','${escFeed(n.fromName)}','${n.fromAvatar||''}','${escFeed(_previewText)}','${nid}')`;
           } else if (n.type === 'wallPost') {
               icon = '📝';
               text = `<b>${escFeed(n.fromName)}</b> posted on your wall.`;
@@ -15421,22 +15425,22 @@ body.arcade-fs-ios body::after { display:none !important; }
               icon = '🏷️';
               text = `<b>${escFeed(n.fromName)}</b> tagged you in a post.`;
               actHtml = `<div class="notif-actions">
-                  <button class="btn-decline" style="font-size:11px;" onclick="event.stopPropagation();if(confirm('Remove yourself from this tag?'))window.snxRemoveTag('${n.postId||''}','${n.fromUid||''}');markNotifRead(${origIdx})">✕ Remove Tag</button>
+                  <button class="btn-decline" style="font-size:11px;" onclick="event.stopPropagation();if(confirm('Remove yourself from this tag?'))window.snxRemoveTag('${n.postId||''}','${n.fromUid||''}');markNotifById('${nid}')">✕ Remove Tag</button>
               </div>`;
               navFn = `navTo('feed')`;
           } else if (n.type === 'game_challenge') {
-              icon = '🕹️';
-              text = `<b>${escFeed(n.fromName)}</b> challenged you to <b>${escFeed(n.game||'a game')}</b>!`;
-              actHtml = `<div class="notif-actions">
-                  <button class="btn-accept" onclick="event.stopPropagation();openArcadeHub();switchArcadeTab('invites',document.getElementById('ahTab-invites'));markNotifRead(${origIdx})">🎮 View Challenge</button>
-              </div>`;
-              navFn = `openArcadeHub();switchArcadeTab('invites',document.getElementById('ahTab-invites'))`;
+               icon = '🕹️';
+               text = `<b>${escFeed(n.fromName)}</b> challenged you to <b>${escFeed(n.game||'a game')}</b>!`;
+               actHtml = `<div class="notif-actions">
+                   <button class="btn-accept" onclick="event.stopPropagation();openArcadeHub();switchArcadeTab('invites',document.getElementById('ahTab-invites'));markNotifById('${nid}')">🎮 View Challenge</button>
+               </div>`;
+               navFn = `openArcadeHub();switchArcadeTab('invites',document.getElementById('ahTab-invites'))`;
           } else if (n.type === 'live') {
               icon = '🔴';
               text = `<b>${escFeed(n.fromName)}</b> is live${n.roomTitle ? `: <i>"${escFeed(n.roomTitle)}"</i>` : ''}`;
               actHtml = `<div class="notif-actions" style="margin-top:6px;">
                   <button class="btn-accept" style="font-size:11px;" onclick="event.stopPropagation();window.open('live.html#watch=${escFeed(n.roomId||'')}','_blank')">🔴 Watch Live</button>
-                  <button class="notif-mark-all" style="font-size:11px;" onclick="event.stopPropagation();markNotifRead(${origIdx})">✓ Dismiss</button>
+                  <button class="notif-mark-all" style="font-size:11px;" onclick="event.stopPropagation();markNotifById('${nid}')">✓ Dismiss</button>
               </div>`;
               navFn = n.roomId ? `window.open('live.html#watch=${escFeed(n.roomId)}','_blank')` : `goLiveOrWatch()`;
           } else if (n.type === 'announcement') {
@@ -15481,38 +15485,95 @@ body.arcade-fs-ios body::after { display:none !important; }
                   </div>`;
           }
           item.addEventListener('click', () => {
-              markNotifRead(origIdx);
+              markNotifById(nid);
               if (navFn) { try { eval(navFn); } catch(_) {} }
           });
           box.appendChild(item);
       });
   }
 
+  /* ── Notification helpers — always use stable ID, never array index ── */
+
+  /* Mark a notification read by its stable ID */
+  window.markNotifById = async function(nid) {
+      if (!nid || !currentUser) return;
+      const snap = await getDoc(doc(db,"users",currentUser.uid));
+      const notifs = snap.data().notifications||[];
+      let changed = false;
+      const updated = notifs.map(n => {
+          if (n.id === nid && !n.read) { changed = true; return {...n, read:true}; }
+          return n;
+      });
+      if (changed) await updateDoc(doc(db,"users",currentUser.uid),{notifications:updated});
+  };
+
+  /* Legacy index-based helper kept for any remaining internal callers */
   window.markNotifRead = async function(idx) {
       const snap = await getDoc(doc(db,"users",currentUser.uid));
       const notifs = snap.data().notifications||[];
-      if(notifs[idx]){notifs[idx].read=true;await updateDoc(doc(db,"users",currentUser.uid),{notifications:notifs});}
+      if(notifs[idx] && !notifs[idx].read){
+          notifs[idx].read=true;
+          await updateDoc(doc(db,"users",currentUser.uid),{notifications:notifs});
+      }
   };
 
-  /* Delete a single notification by its index in the array */
+  /* Delete a single notification by its stable Firestore ID */
+  window.deleteNotifById = async function(nid) {
+      if (!nid || !currentUser) return;
+      const snap = await getDoc(doc(db,"users",currentUser.uid));
+      const notifs = snap.data().notifications||[];
+      const updated = notifs.filter(n => n.id !== nid);
+      if (updated.length === notifs.length) return; // not found — nothing to do
+      await updateDoc(doc(db,"users",currentUser.uid),{notifications:updated});
+      // Immediately refresh badge counts from the updated list
+      _snxRefreshNotifBadges(updated);
+  };
+
+  /* Legacy index-based delete kept for any callers that may still pass an index */
   window.deleteNotifByIdx = async function(idx) {
       const snap = await getDoc(doc(db,"users",currentUser.uid));
       const notifs = snap.data().notifications||[];
+      if (idx < 0 || idx >= notifs.length) return;
       notifs.splice(idx, 1);
       await updateDoc(doc(db,"users",currentUser.uid),{notifications:notifs});
+      _snxRefreshNotifBadges(notifs);
   };
+
+  /* Refresh sidebar/mobile notification badges from the current list (no Firestore read) */
+  function _snxRefreshNotifBadges(notifs) {
+      const _unread = (notifs||[]).filter(n => !n.read).length;
+      const _nb = document.getElementById('sidebarNotifBadge');
+      if (_nb) {
+          if (_unread > 0) { _nb.textContent = _unread > 99 ? '99+' : _unread; _nb.classList.add('visible'); }
+          else _nb.classList.remove('visible');
+      }
+      const _hb = document.getElementById('menuBtnNotifBadge');
+      if (_hb) {
+          if (_unread > 0) { _hb.textContent = _unread > 99 ? '99+' : _unread; _hb.style.display = 'inline-flex'; }
+          else _hb.style.display = 'none';
+      }
+      // Update in-page filter badges
+      const _bAll = document.getElementById('notifBadgeAll');
+      if (_bAll) { if (_unread > 0) { _bAll.textContent = _unread > 99 ? '99+' : _unread; _bAll.style.display = 'inline-flex'; } else _bAll.style.display = 'none'; }
+      const _unreadMsg = (notifs||[]).filter(n => n.type === 'message' && !n.read).length;
+      const _bMsg = document.getElementById('notifBadgeMsg');
+      if (_bMsg) { if (_unreadMsg > 0) { _bMsg.textContent = _unreadMsg > 99 ? '99+' : _unreadMsg; _bMsg.style.display = 'inline-flex'; } else _bMsg.style.display = 'none'; }
+  }
 
   window.markAllNotifsRead = async function() {
       const snap = await getDoc(doc(db,"users",currentUser.uid));
       const notifs = (snap.data().notifications||[]).map(n => ({...n, read:true}));
       await updateDoc(doc(db,"users",currentUser.uid),{notifications:notifs});
+      _snxRefreshNotifBadges(notifs);
       toastNotification("All notifications marked as read.");
   };
 
   window.clearAllNotifs = async function() {
-      const ok = await snxConfirm({ title: 'Clear All Notifications', body: 'This will remove all your notifications. This cannot be undone.', confirmText: 'Clear All', danger: true });
+      const ok = await snxConfirm({ title: 'Clear All Notifications', body: 'Clear all notifications? This cannot be undone.', confirmText: 'Clear All', danger: true });
       if (!ok) return;
       await updateDoc(doc(db,"users",currentUser.uid),{notifications:[]});
+      _snxRefreshNotifBadges([]);
+      if (window._lastNotifList) { window._lastNotifList = []; renderNotifications([]); }
       toastNotification("✓ Notifications cleared.");
   };
 
@@ -15534,14 +15595,14 @@ body.arcade-fs-ios body::after { display:none !important; }
      Lets them: read preview, reply (opens ipcModal pre-filled),
      open full chat, mark as read, or delete the notification.
      ═══════════════════════════════════════════════════════════ */
-  let _mnNotifIdx  = -1;   // index of the notification in the user's array
-  let _mnFromUid   = '';   // sender UID
-  let _mnFromName  = '';   // sender display name
+  let _mnNotifId   = '';   // stable notification ID
+   let _mnFromUid   = '';   // sender UID
+   let _mnFromName  = '';   // sender display name
 
-  window.snxMsgNotifOpen = function(fromUid, fromName, fromAvatar, preview, notifIdx) {
-      _mnFromUid  = fromUid;
-      _mnFromName = fromName;
-      _mnNotifIdx = notifIdx;
+   window.snxMsgNotifOpen = function(fromUid, fromName, fromAvatar, preview, notifId) {
+       _mnFromUid  = fromUid;
+       _mnFromName = fromName;
+       _mnNotifId  = notifId || '';
 
       // Populate header avatar
       const avEl = document.getElementById('snxMnAvatar');
@@ -15595,19 +15656,19 @@ body.arcade-fs-ios body::after { display:none !important; }
               }, 350);
           }).catch(() => {});
       }
-      // Mark the source notification as read
-      if (_mnNotifIdx >= 0) markNotifRead(_mnNotifIdx);
+      // Mark the source notification as read using stable ID
+      if (_mnNotifId) markNotifById(_mnNotifId);
   };
 
   /* Mark the linked notification as read */
   window.snxMsgNotifMarkRead = async function() {
-      if (_mnNotifIdx >= 0) await markNotifRead(_mnNotifIdx);
+      if (_mnNotifId) await markNotifById(_mnNotifId);
       snxMsgNotifClose();
   };
 
   /* Delete the linked notification */
   window.snxMsgNotifDelete = async function() {
-      if (_mnNotifIdx >= 0) await deleteNotifByIdx(_mnNotifIdx);
+      if (_mnNotifId) await deleteNotifById(_mnNotifId);
       snxMsgNotifClose();
   };
 
@@ -16860,6 +16921,7 @@ body.arcade-fs-ios body::after { display:none !important; }
                 const pinned   = !!(data[`pinned_${currentUser.uid}`]);
                 const muted    = !!(data[`muted_${currentUser.uid}`]);
                 const archived = !!(data[`archived_${currentUser.uid}`]);
+                const deleted  = !!(data[`deleted_${currentUser.uid}`]);
                 const otherTyping = !!(data[`typing_${othUid}`]);
                 totalUnread += (muted ? 0 : unread); // muted convs don't count to badge
                 return {
@@ -16868,9 +16930,9 @@ body.arcade-fs-ios body::after { display:none !important; }
                     otherAvatar: uInfo.avatar || '',
                     otherStatus: uInfo.status || 'offline',
                     otherTyping, lastText, lastTs: data.lastMsgTs || 0,
-                    unread, pinned, muted, archived
+                    unread, pinned, muted, archived, deleted
                 };
-            }).filter(c => c.otherUid && !c.archived);
+            }).filter(c => c.otherUid && !c.archived && !c.deleted);
 
             _ibAllConvs = convRows;
             _ibUpdateBadge(totalUnread);
@@ -17254,6 +17316,10 @@ body.arcade-fs-ios body::after { display:none !important; }
             const ref = doc(db, 'chats', capturedChId);
             const upd = { messages: arrayUnion(msg), readReceipt: false, lastMsgTs: msg.timestamp, [`typing_${currentUser.uid}`]: false };
             upd[`unread_${capturedTgtUid}`] = increment(1);
+            // If the recipient had previously deleted this conversation, a new incoming
+            // message should make it reappear in their inbox.
+            upd[`deleted_${capturedTgtUid}`]  = false;
+            upd[`archived_${capturedTgtUid}`] = false;
 
             await setDoc(ref, upd, { merge: true });
 
@@ -17722,9 +17788,9 @@ body.arcade-fs-ios body::after { display:none !important; }
             if (!msgs[msgIndex]) { console.warn('[SNX] deleteMessage: message index out of range'); return; }
 
             if (forEveryone) {
-                // Hard unsend — only allowed if the caller is the sender
+                // Delete for everyone — only allowed if the caller is the sender
                 if (msgs[msgIndex].sender !== currentUser.uid) {
-                    toastNotification('⛔ You can only unsend your own messages.');
+                    toastNotification('⛔ You can only delete your own messages for everyone.');
                     return;
                 }
                 msgs[msgIndex] = {
@@ -17734,12 +17800,33 @@ body.arcade-fs-ios body::after { display:none !important; }
                     timestamp: msgs[msgIndex].timestamp,
                     deleted:   true
                 };
+                await updateDoc(ref, { messages: msgs });
+                // Update linked message notifications on recipient side
+                try {
+                    const chatData = snap.data();
+                    const senderUid = currentUser.uid;
+                    const otherUid = (chatData.participants || []).find(p => p !== senderUid);
+                    if (otherUid) {
+                        const otherSnap = await getDoc(doc(db, 'users', otherUid));
+                        if (otherSnap.exists()) {
+                            const otherNotifs = otherSnap.data().notifications || [];
+                            let changed = false;
+                            const updatedNotifs = otherNotifs.map(n => {
+                                if (n.type === 'message' && n.fromUid === senderUid && n.preview && n.preview !== 'Message deleted') {
+                                    changed = true;
+                                    return { ...n, preview: 'Message deleted' };
+                                }
+                                return n;
+                            });
+                            if (changed) await updateDoc(doc(db, 'users', otherUid), { notifications: updatedNotifs });
+                        }
+                    }
+                } catch(_) {}
             } else {
                 // Soft delete — hide for this user only
                 msgs[msgIndex] = { ...msgs[msgIndex], [`deletedFor_${currentUser.uid}`]: true };
+                await updateDoc(ref, { messages: msgs });
             }
-
-            await updateDoc(ref, { messages: msgs });
         } catch (err) {
             toastNotification('❌ Delete failed: ' + err.message);
             console.error('[SNX] deleteMessage:', err);
@@ -17801,10 +17888,15 @@ body.arcade-fs-ios body::after { display:none !important; }
             const recent = isMine && msg.type === 'text' && !msg.deleted && (Date.now() - (msg.timestamp||0)) < 600000;
             editEl.style.display = recent ? 'flex' : 'none';
         }
-        // Unsend — only for sender, not too old
+        // Hide "Delete for Me" when message is already fully deleted for everyone
+        const deleteMeEl = document.getElementById('msgCtxDeleteMe');
+        if (deleteMeEl) {
+            deleteMeEl.style.display = msg.deleted ? 'none' : 'flex';
+        }
+        // Delete for Everyone — only for sender, only when message is not already deleted
         const unsendEl = document.getElementById('msgCtxDeleteAll');
         if (unsendEl) {
-            unsendEl.style.display = (isMine && !msg.deleted && (Date.now() - (msg.timestamp||0)) < 3600000) ? 'flex' : 'none';
+            unsendEl.style.display = (isMine && !msg.deleted) ? 'flex' : 'none';
         }
         // Report — only for received messages, not deleted
         const reportEl = document.getElementById('msgCtxReport');
@@ -17945,19 +18037,45 @@ body.arcade-fs-ios body::after { display:none !important; }
     window.msgCtxDeleteAll = async function() {
         _ctxHide();
         if (!_ctxMine || _ctxChId === null || _ctxIdx === null) return;
-        const ok = await snxConfirm({ title: '↩️ Unsend for Everyone', body: 'This message will be removed for both you and the recipient. This cannot be undone.', confirmText: 'Unsend', danger: true });
+        const ok = await snxConfirm({ title: '🗑 Delete for Everyone', body: 'This message will be removed for both you and the recipient. This cannot be undone.', confirmText: 'Delete for Everyone', danger: true });
         if (!ok) return;
         try {
             const snap = await getDoc(doc(db, 'chats', _ctxChId));
             if (!snap.exists()) return;
             const msgs = [...(snap.data().messages || [])];
             if (!msgs[_ctxIdx]) return;
-            // Security: verify the current user is the original sender before unsending
-            if (msgs[_ctxIdx].sender !== currentUser.uid) { toastNotification('⛔ You can only unsend your own messages.'); return; }
-            msgs[_ctxIdx] = { sender: msgs[_ctxIdx].sender, type: 'text', text: '', timestamp: msgs[_ctxIdx].timestamp, deleted: true };
+            // Security: verify the current user is the original sender before deleting for everyone
+            if (msgs[_ctxIdx].sender !== currentUser.uid) { toastNotification('⛔ You can only delete your own messages for everyone.'); return; }
+            const deletedMsg = { sender: msgs[_ctxIdx].sender, type: 'text', text: '', timestamp: msgs[_ctxIdx].timestamp, deleted: true };
+            msgs[_ctxIdx] = deletedMsg;
             await updateDoc(doc(db, 'chats', _ctxChId), { messages: msgs });
-            toastNotification('✓ Message unsent.');
-        } catch(e) { toastNotification('Unsend failed: ' + e.message); }
+            // Update any linked message notifications to show "Message deleted" preview
+            // so the Notification Center does not expose the original content
+            try {
+                const senderUid = currentUser.uid;
+                // Determine the other participant (recipient)
+                const chatData = snap.data();
+                const otherUid = (chatData.participants || []).find(p => p !== senderUid);
+                if (otherUid) {
+                    const otherSnap = await getDoc(doc(db, 'users', otherUid));
+                    if (otherSnap.exists()) {
+                        const otherNotifs = otherSnap.data().notifications || [];
+                        let changed = false;
+                        const updatedNotifs = otherNotifs.map(n => {
+                            if (n.type === 'message' && n.fromUid === senderUid && n.preview && n.preview !== 'Message deleted') {
+                                changed = true;
+                                return { ...n, preview: 'Message deleted' };
+                            }
+                            return n;
+                        });
+                        if (changed) {
+                            await updateDoc(doc(db, 'users', otherUid), { notifications: updatedNotifs });
+                        }
+                    }
+                }
+            } catch(_) {} // best-effort — don't block the main deletion
+            toastNotification('✓ Message deleted for everyone.');
+        } catch(e) { toastNotification('Delete failed: ' + e.message); }
     };
 
     window.msgCtxReportMsg = function() {
@@ -18028,6 +18146,9 @@ body.arcade-fs-ios body::after { display:none !important; }
       } else {
           let lastDate = '';
           list.forEach((m, idx) => {
+              // Skip messages soft-deleted for this user only
+              if (m[`deletedFor_${currentUser.uid}`]) return;
+
               const isMine = m.sender === currentUser.uid;
               const isLast = idx === list.length - 1;
               const dl     = _mDate(m.timestamp);
@@ -18184,6 +18305,9 @@ body.arcade-fs-ios body::after { display:none !important; }
               [`typing_${currentUser.uid}`]: false
           };
           upd[`unread_${tgtUidSnapshot}`] = increment(1);
+          // If recipient previously deleted this conversation, restore it on new message
+          upd[`deleted_${tgtUidSnapshot}`]  = false;
+          upd[`archived_${tgtUidSnapshot}`] = false;
 
           // Save to Firestore BEFORE clearing input — nothing is lost if it fails
           await setDoc(ref, upd, { merge: true });
