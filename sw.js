@@ -10,8 +10,8 @@
  * shadownexussocial.online (/) and any local dev server (/).
  */
 
-const CACHE_VERSION = 'v55';
-const BUILD_ID      = 'SNS-2026-ETERNAL-STREAM-003';
+const CACHE_VERSION = 'v56';
+const BUILD_ID      = 'SNS-2026-FOUNDER-FIX-004';
 const CACHE_NAME    = `shadow-nexus-${CACHE_VERSION}`;
 const MEDIA_CACHE   = `shadow-nexus-media-${CACHE_VERSION}`;
 
@@ -39,9 +39,8 @@ const SHELL_FILES = [
   'studio.css',
   'nexus.css',
   'nexus.js',
-  'cloud-stream.html',
-  'cloud-stream.js',
-  'cloud-stream.css',
+  // cloud-stream.html / cloud-stream.js / cloud-stream.css are standalone-page assets
+  // and must NOT be precached in the main app shell.
   'manifest.json',
   'icon-192.png',
   'icon-512.png',
@@ -61,7 +60,7 @@ const MEDIA_CACHE_MAX = 100;
 const MEDIA_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 /** Paths that must always go to the network (never served from cache) */
-const NETWORK_FIRST_PATHS = ['live.html', 'live.js', 'live.css', 'cloud-stream.html', 'cloud-stream.js'];
+const NETWORK_FIRST_PATHS = ['live.html', 'live.js', 'live.css'];
 
 const PRECACHE_URLS = SHELL_FILES.map(f => BASE + f);
 

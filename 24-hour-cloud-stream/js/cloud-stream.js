@@ -12,7 +12,7 @@
  *   - Fullscreen support
  *   - No gifting in this section
  *
- * Admin features (founder/creator only):
+ * Channel owner features (any authenticated user who owns the stream):
  *   - Start / stop / skip broadcast
  *   - Playlist management
  *   - Broadcast history
@@ -72,6 +72,7 @@ let _artworkDataUrl = null;
 let _creator = {
   playlists: [], selectedPl: null, queue: [],
   healthInterval: null, expiryInterval: null,
+  adminNpUnsub: null,   // unsubscribe for _subscribeAdminNowPlaying
 };
 
 /* Viewer/player state */
@@ -201,15 +202,12 @@ onAuthStateChanged(_auth, async user => {
    CREATOR MODE
 ═══════════════════════════════════════════════════════ */
 async function _initCreatorMode() {
-  const isAdmin = _userData && (_userData.role === 'founder' || _userData.role === 'admin');
-
-  // Always show the viewer section (channel viewer for everyone)
+  // Always show the viewer section
   _show('csrViewerSection', true);
 
-  // Show admin section only to admins / founders
-  if (isAdmin) {
-    _show('csrAdminSection', true);
-  }
+  // Show channel management section to the stream owner (any authenticated user)
+  // Ownership is verified when they try to start/stop/skip via the worker
+  _show('csrAdminSection', true);
 
   // Check for an active stream belonging to this user
   try {
@@ -329,7 +327,9 @@ function _setStatusBadge(status) {
 
 /* Admin Now Playing subscription (updates admin strip only) */
 function _subscribeAdminNowPlaying(streamId) {
-  onSnapshot(
+  // Cancel any existing admin NP listener before subscribing again
+  if (_creator.adminNpUnsub) { try { _creator.adminNpUnsub(); } catch(_) {} _creator.adminNpUnsub = null; }
+  _creator.adminNpUnsub = onSnapshot(
     doc(_db, 'studioCloudStreamMusic', streamId),
     snap => {
       if (!snap.exists()) return;
@@ -1282,16 +1282,16 @@ function _onFsChange() {
    ADMIN — CREATE BROADCAST FORM
 ═══════════════════════════════════════════════════════ */
 function _renderCreateForm() {
-  const isFounder = _userData && _userData.role === 'founder';
+  // Show test mode option for all users
   const dur = _el('csrFormDuration');
   if (dur) {
     const testOpt = dur.querySelector('option[value="5"]');
-    if (testOpt) testOpt.style.display = isFounder ? '' : 'none';
+    if (testOpt) testOpt.style.display = '';
   }
   const hint = _el('csrTestModeHint');
   if (hint && dur) {
     dur.addEventListener('change', () => {
-      hint.style.display = (dur.value === '5' && isFounder) ? '' : 'none';
+      hint.style.display = dur.value === '5' ? '' : 'none';
     });
   }
 }
@@ -1391,8 +1391,7 @@ window.csrStartBroadcast = async function() {
 
     const durEl = _el('csrFormDuration');
     let durationMinutes = parseInt(durEl ? durEl.value : '1440', 10);
-    const isFounder = _userData && _userData.role === 'founder';
-    if (durationMinutes === 5 && !isFounder) throw new Error('Test mode is founder-only.');
+    // All authenticated users may use all duration options
     if (durationMinutes > 1440) durationMinutes = 1440;
 
     const dupSnap = await getDocs(query(
@@ -1571,6 +1570,7 @@ async function _stopBroadcast() {
   } catch(_) {}
 
   if (_player.unsub) { try { _player.unsub(); } catch(_) {} _player.unsub = null; }
+  if (_creator.adminNpUnsub) { try { _creator.adminNpUnsub(); } catch(_) {} _creator.adminNpUnsub = null; }
   _stopAudio();
   _streamId = _streamData = null;
   _show('csrStatusPanel', false);

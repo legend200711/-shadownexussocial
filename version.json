@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-ETERNAL-STREAM-003",
-  "swVersion": "v55",
-  "deployedAt": "2026-10-04T00:00:00Z",
+  "buildId": "SNS-2026-FOUNDER-FIX-004",
+  "swVersion": "v56",
+  "deployedAt": "2026-10-05T00:00:00Z",
   "project": "horr-a08f4",
-  "studioVersion": "3.0.0",
+  "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
-  "nexusVersion": "1.0.0",
-  "note": "24-HOUR NEXUS: Eternal Stream + Studio merged into ONE unified Egyptian/Horror/Cosmic experience. New nexusPage replaces separate studioPage + Eternal Stream nav entries. nexus.css (Egyptian gold theme), nexus.js (unified Watch/Vault/Playlists/Queue/Upload/Control), all using same Firebase collections. SW v55 cache bust."
+  "nexusVersion": "1.0.1",
+  "note": "FOUNDER-FIX-004: Isolate Founder UI — remove cloud-stream.css from main app, fix studioPage links to route to nexusPage, add async render guard to renderAdminPanel (prevents stale callbacks from painting DOM after panel close), enhance snxFounderPanelCleanup with render abort, remove legacy cloud-stream files from SW precache. SW v56 cache bust."
 }

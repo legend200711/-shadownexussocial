@@ -131,6 +131,16 @@
       }
     },
 
+    "nexusViewers": {
+      "$channelId": {
+        ".read":  "auth != null",
+        "$sessionId": {
+          ".write": "auth != null"
+        }
+      }
+    },
+
+
     "userLive": {
       "$uid": {
         ".read":  "auth != null",

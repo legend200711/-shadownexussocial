@@ -703,6 +703,43 @@ service cloud.firestore {
         && (resource.data.ownerUid == request.auth.uid || isFounder());
     }
 
+    // ── 24-Hour Nexus Channels ────────────────────────────────────────────────
+    //
+    //   /nexusChannels/{channelId}
+    //     channelId == ownerUid (one channel per user)
+    //     Public fields: channelName, ownerDisplayName, ownerUsername,
+    //                    category, isPublic, isLive, activeStreamId,
+    //                    currentMedia, viewerCount, likeCount, createdAt, updatedAt
+    //
+    //     Security:
+    //       - Public/signed-in users can READ public channels (for discovery)
+    //       - Only the channel owner (channelId == auth.uid) can CREATE/UPDATE
+    //       - Sensitive user data (email, password) is NEVER stored here
+    //       - viewerCount / likeCount may be incremented by any signed-in user
+    //         (handled by the client via increment())
+    //       - Owner writes are always verified by channelId == auth.uid
+
+    match /nexusChannels/{channelId} {
+      // Any signed-in user can read (for discovery); public channels readable by anyone
+      allow read: if isSignedIn() || resource.data.isPublic == true;
+
+      // Only the channel owner can create their own channel doc
+      allow create: if isOwner(channelId)
+        && request.resource.data.ownerUid == request.auth.uid
+        && !('email' in request.resource.data)
+        && !('password' in request.resource.data);
+
+      // Owner can update their own channel settings; any signed-in user can
+      // increment viewerCount or likeCount (social interactions only)
+      allow update: if isOwner(channelId)
+        || (isSignedIn()
+            && request.resource.data.diff(resource.data)
+                 .affectedKeys().hasOnly(['viewerCount', 'likeCount', 'updatedAt']));
+
+      // Only the owner can delete their channel
+      allow delete: if isOwner(channelId);
+    }
+
     // ── Music (public catalogue) ───────────────────────────────────────────────
     //
     //   /music/{musicId}

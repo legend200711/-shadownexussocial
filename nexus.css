@@ -1078,3 +1078,326 @@
   .nx-control-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .nx-watch-portal { max-height: 220px; }
 }
+
+/* ═══════════════════════════════════════════════════════
+   TOP ACTION BAR — DISCOVER / MY CHANNEL
+═══════════════════════════════════════════════════════ */
+.nx-top-action-bar {
+  display: flex;
+  gap: 0;
+  background: var(--nx-bg2);
+  border-bottom: 1px solid var(--nx-border);
+  padding: 0 14px;
+}
+
+.nx-action-btn {
+  flex: 1;
+  padding: 13px 8px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--nx-text2);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  text-align: center;
+}
+
+.nx-action-btn:hover {
+  color: var(--nx-gold);
+}
+
+.nx-action-btn.active {
+  color: var(--nx-gold-text);
+  border-bottom-color: var(--nx-gold);
+  text-shadow: var(--nx-gold-glow);
+}
+
+/* ═══════════════════════════════════════════════════════
+   MAIN SECTIONS
+═══════════════════════════════════════════════════════ */
+.nx-main-section {
+  display: block;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DISCOVERY — Search + Channel Grid
+═══════════════════════════════════════════════════════ */
+.nx-discover-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--nx-bg2);
+  border: 1px solid var(--nx-border);
+  border-radius: 30px;
+  padding: 10px 16px;
+  margin: 14px 14px 0;
+}
+
+.nx-discover-search-icon { font-size: 16px; flex-shrink: 0; opacity: 0.7; }
+
+.nx-discover-search {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--nx-text);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.nx-discover-search::placeholder { color: var(--nx-text3); }
+
+.nx-discover-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 14px 8px;
+}
+
+.nx-discover-count {
+  font-size: 11px;
+  color: var(--nx-gold);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+#nxLiveNowSection    { padding: 0 0 4px; }
+#nxNewChannelsSection { padding: 0 14px 4px; }
+
+.nx-channel-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding: 0 14px;
+}
+
+/* Channel cards */
+.nx-channel-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--nx-bg2);
+  border: 1px solid var(--nx-border);
+  border-radius: 14px;
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
+}
+
+.nx-channel-card:hover {
+  border-color: var(--nx-border2);
+  background: rgba(197,164,29,0.05);
+}
+
+.nx-card-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.nx-card-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--nx-bg3), #1a1a0a);
+  border: 2px solid var(--nx-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--nx-gold);
+  overflow: hidden;
+}
+
+.nx-card-live-badge {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #8a0a14;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 20px;
+  white-space: nowrap;
+  border: 1px solid rgba(255,50,50,0.4);
+}
+
+.nx-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.nx-card-channel-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--nx-gold-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.3px;
+}
+
+.nx-card-creator {
+  font-size: 11px;
+  color: var(--nx-text2);
+  margin-top: 1px;
+}
+
+.nx-card-media {
+  font-size: 11px;
+  color: var(--nx-text2);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-style: italic;
+}
+
+.nx-card-stats {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.nx-card-viewers,
+.nx-card-likes,
+.nx-card-cat {
+  font-size: 10px;
+  color: var(--nx-text3);
+  letter-spacing: 0.3px;
+}
+
+.nx-card-viewers { color: var(--nx-turquoise); }
+
+.nx-discover-empty {
+  padding: 24px 14px;
+  text-align: center;
+  color: var(--nx-text3);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.nx-discover-loading {
+  padding: 24px 14px;
+  text-align: center;
+  color: var(--nx-text3);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   LIVE BADGE (general)
+═══════════════════════════════════════════════════════ */
+.nx-live-badge {
+  display: inline-block;
+  background: #8a0a14;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,50,50,0.4);
+  margin-top: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   CHANNEL AVATAR
+═══════════════════════════════════════════════════════ */
+.nx-channel-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--nx-bg3), #1a1a0a);
+  border: 2px solid var(--nx-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--nx-gold);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PUBLIC CHANNEL BRAND (watch section)
+═══════════════════════════════════════════════════════ */
+.nx-public-channel-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px 10px;
+  background: var(--nx-bg2);
+  border-bottom: 1px solid var(--nx-border);
+}
+
+.nx-public-channel-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--nx-bg3), #1a1a0a);
+  border: 2px solid var(--nx-border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--nx-gold);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.nx-public-channel-name {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--nx-gold-text);
+  letter-spacing: 0.5px;
+}
+
+.nx-public-channel-creator {
+  font-size: 12px;
+  color: var(--nx-text2);
+}
+
+/* ═══════════════════════════════════════════════════════
+   FORM GROUPS (Channel Create / Settings)
+═══════════════════════════════════════════════════════ */
+.nx-form-group {
+  margin-bottom: 12px;
+}
+
+.nx-form-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--nx-text3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE ADJUSTMENTS
+═══════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .nx-channel-grid {
+    grid-template-columns: 1fr;
+  }
+  .nx-discover-search-wrap {
+    margin: 12px 10px 0;
+  }
+  .nx-action-btn {
+    font-size: 12px;
+    padding: 11px 6px;
+  }
+}
