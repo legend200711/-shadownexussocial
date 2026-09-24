@@ -1,11 +1,11 @@
 /*
- * nexus-intro.css
+ * nexus-intro.css  v2
  * Shadow Nexus Social — Cinematic Welcome Experience
- * Self-contained: all rules are namespaced to #snxIntro*
- * NO flashing / strobe effects. Atmospheric only.
+ * Namespaced: #snxIntro* / .snxi-*   Zero collision with existing styles.
+ * NO flashing / strobe effects.  Atmospheric only.
  */
 
-/* ─── Overlay container ─────────────────────────────────────────────────── */
+/* ─── Overlay ───────────────────────────────────────────────────────────── */
 #snxIntroOverlay {
     position: fixed;
     inset: 0;
@@ -16,8 +16,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    /* visibility toggled by JS class */
-    transition: opacity 1.8s ease;
+    /* transition used only for exit, not entry */
+    transition: opacity 1.6s ease;
 }
 #snxIntroOverlay.snxi-exit {
     opacity: 0;
@@ -27,31 +27,34 @@
     display: none !important;
 }
 
-/* ─── Stars / particles layer ───────────────────────────────────────────── */
+/* ─── Stars ─────────────────────────────────────────────────────────────── */
 #snxIntroStars {
     position: absolute;
     inset: 0;
+    pointer-events: none;
     background:
-        radial-gradient(1px 1px at 10% 15%, rgba(180,220,255,0.7) 0%, transparent 100%),
-        radial-gradient(1px 1px at 22% 42%, rgba(180,220,255,0.5) 0%, transparent 100%),
-        radial-gradient(1px 1px at 35% 8%,  rgba(200,240,255,0.6) 0%, transparent 100%),
-        radial-gradient(1px 1px at 48% 28%, rgba(180,220,255,0.4) 0%, transparent 100%),
-        radial-gradient(1px 1px at 55% 62%, rgba(180,220,255,0.6) 0%, transparent 100%),
-        radial-gradient(1px 1px at 63% 18%, rgba(200,240,255,0.5) 0%, transparent 100%),
-        radial-gradient(1px 1px at 72% 48%, rgba(180,220,255,0.7) 0%, transparent 100%),
-        radial-gradient(1px 1px at 80% 10%, rgba(200,240,255,0.4) 0%, transparent 100%),
-        radial-gradient(1px 1px at 88% 35%, rgba(180,220,255,0.6) 0%, transparent 100%),
-        radial-gradient(1px 1px at 92% 70%, rgba(180,220,255,0.5) 0%, transparent 100%),
-        radial-gradient(1px 1px at 5%  80%, rgba(200,240,255,0.3) 0%, transparent 100%),
-        radial-gradient(1px 1px at 17% 90%, rgba(180,220,255,0.5) 0%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 42% 85%, rgba(200,240,255,0.8) 0%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 78% 78%, rgba(180,220,255,0.7) 0%, transparent 100%),
-        radial-gradient(1px 1px at 94% 90%, rgba(200,240,255,0.5) 0%, transparent 100%);
+        radial-gradient(1.2px 1.2px at  8% 12%, rgba(180,230,255,.75) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 18% 44%, rgba(180,230,255,.55) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 27%  6%, rgba(210,245,255,.65) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 38% 30%, rgba(180,230,255,.80) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 46% 72%, rgba(180,230,255,.60) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 55% 20%, rgba(210,245,255,.55) 0%, transparent 100%),
+        radial-gradient(1.2px 1.2px at 63% 55%, rgba(180,230,255,.75) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 72%  8%, rgba(210,245,255,.50) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 80% 40%, rgba(180,230,255,.65) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 88% 82%, rgba(180,230,255,.70) 0%, transparent 100%),
+        radial-gradient(1px   1px   at  4% 78%, rgba(210,245,255,.45) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 12% 94%, rgba(180,230,255,.55) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 34% 88%, rgba(210,245,255,.65) 0%, transparent 100%),
+        radial-gradient(1.2px 1.2px at 58% 92%, rgba(180,230,255,.60) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 78% 68%, rgba(210,245,255,.70) 0%, transparent 100%),
+        radial-gradient(1px   1px   at 94% 15%, rgba(180,230,255,.50) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 96% 85%, rgba(210,245,255,.65) 0%, transparent 100%);
     opacity: 0;
-    animation: snxiStarsFade 4s 1s forwards ease-out;
+    animation: snxiStarsFade 5s 0.8s forwards ease-out;
 }
 
-/* ─── Distant lightning (slow, atmospheric, NOT strobe) ─────────────────── */
+/* ─── Slow atmospheric lightning ────────────────────────────────────────── */
 #snxIntroLightning {
     position: absolute;
     inset: 0;
@@ -61,16 +64,20 @@
 .snxi-bolt {
     position: absolute;
     top: 0;
-    width: 1px;
-    background: linear-gradient(180deg, rgba(80,160,255,0) 0%, rgba(80,160,255,0.45) 30%, rgba(80,160,255,0.15) 70%, rgba(80,160,255,0) 100%);
+    width: 1.5px;
     opacity: 0;
-    filter: blur(1.5px);
+    background: linear-gradient(180deg,
+        rgba(60,140,255,0) 0%,
+        rgba(60,140,255,.4) 35%,
+        rgba(80,160,255,.18) 70%,
+        rgba(60,140,255,0) 100%);
+    filter: blur(1.8px);
     transform-origin: top center;
 }
-.snxi-bolt:nth-child(1) { left: 8%;  height: 45vh; animation: snxiBolt 12s 5s infinite ease-in-out; }
-.snxi-bolt:nth-child(2) { left: 15%; height: 38vh; animation: snxiBolt 18s 9s  infinite ease-in-out; }
-.snxi-bolt:nth-child(3) { left: 82%; height: 52vh; animation: snxiBolt 15s 3s  infinite ease-in-out; }
-.snxi-bolt:nth-child(4) { left: 90%; height: 42vh; animation: snxiBolt 20s 14s infinite ease-in-out; }
+.snxi-bolt:nth-child(1){ left:7%;  height:50vh; animation: snxiBolt 16s  5s  infinite ease-in-out; }
+.snxi-bolt:nth-child(2){ left:14%; height:38vh; animation: snxiBolt 22s  10s infinite ease-in-out; }
+.snxi-bolt:nth-child(3){ left:82%; height:55vh; animation: snxiBolt 19s  4s  infinite ease-in-out; }
+.snxi-bolt:nth-child(4){ left:91%; height:44vh; animation: snxiBolt 25s  17s infinite ease-in-out; }
 
 /* ─── Fog layers ─────────────────────────────────────────────────────────── */
 #snxIntroFog {
@@ -78,76 +85,37 @@
     inset: 0;
     pointer-events: none;
 }
-.snxi-fog-band {
+.snxi-fog {
     position: absolute;
     width: 220%;
     left: -60%;
     border-radius: 50%;
+    filter: blur(32px);
     opacity: 0;
-    animation: snxiFogDrift var(--fog-dur, 60s) var(--fog-delay, 0s) linear infinite;
-    filter: blur(28px);
 }
-.snxi-fog-band:nth-child(1) {
-    height: 26vh;
-    bottom: -4vh;
-    background: radial-gradient(ellipse at 50% 60%, rgba(0,40,80,0.72) 0%, transparent 70%);
-    --fog-dur: 55s; --fog-delay: 0s;
-    animation: snxiFogIn 3s 0.5s both ease-out, snxiFogDrift 55s 3.5s linear infinite;
+.snxi-fog:nth-child(1){
+    height: 28vh;
+    bottom: -6vh;
+    background: radial-gradient(ellipse at 50% 65%, rgba(0,40,100,.72) 0%, transparent 70%);
+    animation: snxiFogIn 3s .5s both ease-out, snxiFogDrift 60s 3.5s linear infinite;
 }
-.snxi-fog-band:nth-child(2) {
+.snxi-fog:nth-child(2){
     height: 20vh;
-    bottom: 8vh;
-    background: radial-gradient(ellipse at 50% 60%, rgba(0,30,70,0.52) 0%, transparent 70%);
-    --fog-dur: 70s; --fog-delay: 1s;
-    animation: snxiFogIn 3.5s 1.2s both ease-out, snxiFogDrift 70s 4.7s linear infinite;
+    bottom: 10vh;
+    background: radial-gradient(ellipse at 50% 60%, rgba(0,30,80,.52) 0%, transparent 70%);
+    animation: snxiFogIn 3.5s 1.2s both ease-out, snxiFogDrift 75s 4.7s linear infinite reverse;
 }
-.snxi-fog-band:nth-child(3) {
-    height: 14vh;
-    top: 22vh;
-    background: radial-gradient(ellipse at 50% 50%, rgba(0,20,50,0.38) 0%, transparent 70%);
-    --fog-dur: 80s; --fog-delay: 2s;
-    animation: snxiFogIn 4s 2s both ease-out, snxiFogDrift 80s 6s linear infinite;
+.snxi-fog:nth-child(3){
+    height: 15vh;
+    top: 24vh;
+    background: radial-gradient(ellipse at 50% 50%, rgba(0,20,60,.35) 0%, transparent 70%);
+    animation: snxiFogIn 4s 2s both ease-out, snxiFogDrift 90s 6s linear infinite;
 }
-
-/* fog puffing outward on exit */
-.snxi-fog-band.snxi-fog-expand {
-    animation: snxiFogExpand 1.8s ease-out forwards !important;
-    transition: none;
+.snxi-fog.snxi-fog-expand {
+    animation: snxiFogBurst 1.8s ease-out forwards !important;
 }
 
-/* ─── Blue flames ────────────────────────────────────────────────────────── */
-#snxIntroFlames {
-    position: absolute;
-    bottom: 0;
-    left: 0; right: 0;
-    height: 22vh;
-    pointer-events: none;
-    overflow: hidden;
-    opacity: 0;
-    animation: snxiFlamesIn 2.5s 2.2s both ease-out;
-}
-.snxi-flame {
-    position: absolute;
-    bottom: 0;
-    border-radius: 50% 50% 20% 20%;
-    transform-origin: bottom center;
-    animation: snxiFlame var(--fdur, 3.5s) var(--fdelay, 0s) ease-in-out infinite alternate;
-}
-/* Left cluster */
-.snxi-flame:nth-child(1)  { width:60px;  height:14vh; left:2%;   background:radial-gradient(ellipse at 50% 100%, rgba(0,80,255,0.85),rgba(0,30,120,0.2)); --fdur:3.2s; --fdelay:0s; }
-.snxi-flame:nth-child(2)  { width:45px;  height:10vh; left:5%;   background:radial-gradient(ellipse at 50% 100%, rgba(0,100,255,0.6), rgba(0,20,80,0.1));  --fdur:2.8s; --fdelay:0.4s; }
-.snxi-flame:nth-child(3)  { width:80px;  height:18vh; left:9%;   background:radial-gradient(ellipse at 50% 100%, rgba(0,60,220,0.8),  rgba(0,20,100,0.2)); --fdur:4s;   --fdelay:0.2s; }
-.snxi-flame:nth-child(4)  { width:50px;  height:12vh; left:14%;  background:radial-gradient(ellipse at 50% 100%, rgba(0,80,255,0.7),  rgba(0,20,80,0.15)); --fdur:3.6s; --fdelay:0.7s; }
-.snxi-flame:nth-child(5)  { width:40px;  height:9vh;  left:18%;  background:radial-gradient(ellipse at 50% 100%, rgba(20,120,255,0.55),rgba(0,20,70,0.1));  --fdur:2.5s; --fdelay:1s; }
-/* Center subtle glow */
-.snxi-flame:nth-child(6)  { width:110px; height:22vh; left:calc(50% - 55px); background:radial-gradient(ellipse at 50% 100%, rgba(0,60,200,0.5), rgba(0,10,60,0.1)); --fdur:5s; --fdelay:0.3s; filter:blur(6px); }
-/* Right cluster */
-.snxi-flame:nth-child(7)  { width:50px;  height:12vh; right:2%;  background:radial-gradient(ellipse at 50% 100%, rgba(0,80,255,0.85),rgba(0,30,120,0.2)); --fdur:3.4s; --fdelay:0.5s; }
-.snxi-flame:nth-child(8)  { width:70px;  height:16vh; right:5%;  background:radial-gradient(ellipse at 50% 100%, rgba(0,70,220,0.75),rgba(0,20,90,0.2));  --fdur:3.8s; --fdelay:0.1s; }
-.snxi-flame:nth-child(9)  { width:45px;  height:10vh; right:10%; background:radial-gradient(ellipse at 50% 100%, rgba(0,100,255,0.6), rgba(0,20,80,0.1));  --fdur:2.6s; --fdelay:0.8s; }
-.snxi-flame:nth-child(10) { width:60px;  height:14vh; right:15%; background:radial-gradient(ellipse at 50% 100%, rgba(0,80,255,0.7), rgba(0,20,80,0.15)); --fdur:3s;   --fdelay:1.1s; }
-
-/* ─── Shadow forest silhouette ───────────────────────────────────────────── */
+/* ─── Forest silhouettes ─────────────────────────────────────────────────── */
 #snxIntroForest {
     position: absolute;
     bottom: 0;
@@ -155,50 +123,48 @@
     height: 28vh;
     pointer-events: none;
     opacity: 0;
-    animation: snxiForestIn 3s 1.8s both ease-out;
+    animation: snxiSilIn 3s 1.8s both ease-out;
 }
 .snxi-tree {
     position: absolute;
     bottom: 0;
     background: #000;
 }
-.snxi-tree::before { content:''; position:absolute; }
-/* jagged pine tree via clip-path */
-.snxi-tree:nth-child(1)  { width:60px; height:22vh; left:0%;    clip-path: polygon(50% 0%,100% 100%,0% 100%); }
-.snxi-tree:nth-child(2)  { width:80px; height:28vh; left:3%;    clip-path: polygon(50% 0%,100% 100%,0% 100%); }
-.snxi-tree:nth-child(3)  { width:50px; height:18vh; left:7%;    clip-path: polygon(50% 0%,100% 100%,0% 100%); }
-.snxi-tree:nth-child(4)  { width:70px; height:24vh; left:11%;   clip-path: polygon(50% 0%,100% 100%,0% 100%); }
-.snxi-tree:nth-child(5)  { width:55px; height:20vh; left:16%;   clip-path: polygon(50% 0%,100% 100%,0% 100%); }
-.snxi-tree:nth-child(6)  { width:45px; height:15vh; left:20%;   clip-path: polygon(50% 0%,100% 100%,0% 100%); }
-.snxi-tree:nth-child(7)  { width:65px; height:22vh; right:20%;  clip-path: polygon(50% 0%,100% 100%,0% 100%); }
-.snxi-tree:nth-child(8)  { width:50px; height:17vh; right:15%;  clip-path: polygon(50% 0%,100% 100%,0% 100%); }
-.snxi-tree:nth-child(9)  { width:80px; height:26vh; right:10%;  clip-path: polygon(50% 0%,100% 100%,0% 100%); }
-.snxi-tree:nth-child(10) { width:55px; height:19vh; right:5%;   clip-path: polygon(50% 0%,100% 100%,0% 100%); }
-.snxi-tree:nth-child(11) { width:70px; height:24vh; right:1%;   clip-path: polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(1) { width:60px; height:22vh; left:0%;   clip-path:polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(2) { width:80px; height:28vh; left:3%;   clip-path:polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(3) { width:50px; height:18vh; left:7%;   clip-path:polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(4) { width:75px; height:25vh; left:11%;  clip-path:polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(5) { width:55px; height:20vh; left:16%;  clip-path:polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(6) { width:48px; height:16vh; left:20%;  clip-path:polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(7) { width:68px; height:23vh; right:19%; clip-path:polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(8) { width:52px; height:18vh; right:14%; clip-path:polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(9) { width:82px; height:27vh; right:9%;  clip-path:polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(10){ width:57px; height:20vh; right:4%;  clip-path:polygon(50% 0%,100% 100%,0% 100%); }
+.snxi-tree:nth-child(11){ width:70px; height:24vh; right:0%;  clip-path:polygon(50% 0%,100% 100%,0% 100%); }
 
-/* ─── Wolf silhouette ────────────────────────────────────────────────────── */
+/* ─── Wolf ───────────────────────────────────────────────────────────────── */
 #snxIntroWolf {
     position: absolute;
-    bottom: 22vh;
+    bottom: 24vh;
     left: 50%;
     transform: translateX(-50%);
-    width: clamp(60px, 12vw, 130px);
-    height: clamp(38px, 7.5vw, 80px);
+    width: clamp(62px, 12vw, 140px);
+    height: clamp(40px, 7.5vw, 88px);
     opacity: 0;
-    animation: snxiWolfFade 4s 6s both ease-out;
-    filter: blur(2.5px) drop-shadow(0 0 14px rgba(0,100,255,0.35));
+    animation: snxiWolfFade 4s 7s both ease-out;
+    filter: blur(2.5px) drop-shadow(0 0 18px rgba(0,100,255,.32));
 }
 
-/* ─── Black cat ──────────────────────────────────────────────────────────── */
+/* ─── Cat ────────────────────────────────────────────────────────────────── */
 #snxIntroCat {
     position: absolute;
-    bottom: 26vh;
-    left: -120px;
+    bottom: 27vh;
+    left: -130px;
     width: 90px;
-    height: 55px;
+    height: 56px;
     opacity: 0;
-    animation: snxiCatWalk 8s 3.5s both linear;
-    filter: drop-shadow(0 0 8px rgba(0,80,255,0.3));
+    animation: snxiCatWalk 9s 4s both linear;
+    filter: drop-shadow(0 0 8px rgba(0,80,255,.28));
 }
 
 /* ─── Crows ──────────────────────────────────────────────────────────────── */
@@ -209,68 +175,78 @@
 }
 .snxi-crow {
     position: absolute;
-    top: var(--cy, 20%);
-    left: -80px;
-    width: 32px;
-    height: 16px;
+    top: var(--cy, 18%);
+    left: -90px;
+    width: 34px;
+    height: 18px;
     opacity: 0;
-    animation: snxiCrowFly var(--cdur, 14s) var(--cdelay, 2s) both linear;
+    animation: snxiCrowFly var(--cdur,16s) var(--cdelay,2s) both linear;
     will-change: transform;
 }
 
-/* ─── Portal / energy ring ───────────────────────────────────────────────── */
+/* ─── Blue flames ────────────────────────────────────────────────────────── */
+#snxIntroFlames {
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    height: 24vh;
+    pointer-events: none;
+    overflow: hidden;
+    opacity: 0;
+    animation: snxiFlamesIn 2.5s 2.5s both ease-out;
+}
+.snxi-flame {
+    position: absolute;
+    bottom: 0;
+    border-radius: 50% 50% 22% 22%;
+    transform-origin: bottom center;
+    animation: snxiFlame var(--fdur,3.5s) var(--fdelay,0s) ease-in-out infinite alternate;
+}
+.snxi-flame:nth-child(1) { width:62px;  height:14vh; left:2%;  background:radial-gradient(ellipse at 50% 100%,rgba(0,80,255,.85),rgba(0,20,120,.15)); --fdur:3.2s; --fdelay:0s; }
+.snxi-flame:nth-child(2) { width:46px;  height:10vh; left:5%;  background:radial-gradient(ellipse at 50% 100%,rgba(0,100,255,.65),rgba(0,20,90,.1));  --fdur:2.8s; --fdelay:.4s; }
+.snxi-flame:nth-child(3) { width:82px;  height:19vh; left:9%;  background:radial-gradient(ellipse at 50% 100%,rgba(0,60,220,.80),rgba(0,20,100,.2));  --fdur:4s;   --fdelay:.2s; }
+.snxi-flame:nth-child(4) { width:52px;  height:12vh; left:14%; background:radial-gradient(ellipse at 50% 100%,rgba(0,80,255,.70),rgba(0,20,80,.15));  --fdur:3.6s; --fdelay:.7s; }
+.snxi-flame:nth-child(5) { width:42px;  height:9vh;  left:18%; background:radial-gradient(ellipse at 50% 100%,rgba(20,120,255,.55),rgba(0,20,70,.1)); --fdur:2.5s; --fdelay:1s; }
+.snxi-flame:nth-child(6) { width:115px; height:23vh; left:calc(50% - 57px); background:radial-gradient(ellipse at 50% 100%,rgba(0,60,200,.48),rgba(0,10,60,.08)); --fdur:5.2s; --fdelay:.3s; filter:blur(7px); }
+.snxi-flame:nth-child(7) { width:52px;  height:13vh; right:2%; background:radial-gradient(ellipse at 50% 100%,rgba(0,80,255,.85),rgba(0,20,120,.15)); --fdur:3.4s; --fdelay:.5s; }
+.snxi-flame:nth-child(8) { width:72px;  height:17vh; right:5%; background:radial-gradient(ellipse at 50% 100%,rgba(0,70,220,.75),rgba(0,20,90,.18));  --fdur:3.8s; --fdelay:.1s; }
+.snxi-flame:nth-child(9) { width:48px;  height:11vh; right:10%;background:radial-gradient(ellipse at 50% 100%,rgba(0,100,255,.60),rgba(0,20,80,.1));  --fdur:2.6s; --fdelay:.8s; }
+.snxi-flame:nth-child(10){ width:62px;  height:15vh; right:15%;background:radial-gradient(ellipse at 50% 100%,rgba(0,80,255,.70),rgba(0,20,80,.15));  --fdur:3s;   --fdelay:1.1s; }
+.snxi-flame.snxi-flame-react { animation-duration:.8s !important; }
+
+/* ─── Portal ─────────────────────────────────────────────────────────────── */
 #snxIntroPortal {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: min(70vw, 70vh);
-    height: min(70vw, 70vh);
+    transform: translate(-50%,-50%);
+    width: min(72vw, 72vh);
+    height: min(72vw, 72vh);
     border-radius: 50%;
     opacity: 0;
-    animation: snxiPortalIn 3s 3.8s both ease-out;
+    animation: snxiPortalIn 3s 4s both ease-out;
     pointer-events: none;
 }
-.snxi-portal-ring {
+.snxi-pring {
     position: absolute;
     inset: 0;
     border-radius: 50%;
     border: 1px solid transparent;
-    animation: snxiPortalSpin var(--pr-dur, 12s) linear infinite;
+    animation: snxiPortalSpin var(--pr,14s) linear infinite;
 }
-.snxi-portal-ring:nth-child(1) {
-    border-color: rgba(0,120,255,0.22);
-    box-shadow: 0 0 18px rgba(0,100,255,0.12) inset;
-    --pr-dur: 18s;
-}
-.snxi-portal-ring:nth-child(2) {
-    inset: 6%;
-    border-color: rgba(0,80,200,0.18);
-    border-width: 1.5px;
-    --pr-dur: 28s;
-    animation-direction: reverse;
-}
-.snxi-portal-ring:nth-child(3) {
-    inset: 14%;
-    border-color: rgba(0,200,100,0.1);
-    --pr-dur: 40s;
-}
-.snxi-portal-ring:nth-child(4) {
-    inset: 24%;
-    border-color: rgba(0,100,255,0.14);
-    --pr-dur: 22s;
-    animation-direction: reverse;
-}
-.snxi-portal-core {
+.snxi-pring:nth-child(1){ border-color:rgba(0,120,255,.24); box-shadow:0 0 20px rgba(0,100,255,.1) inset; --pr:18s; }
+.snxi-pring:nth-child(2){ inset:7%;  border-color:rgba(0,80,200,.18); border-width:1.5px; --pr:28s; animation-direction:reverse; }
+.snxi-pring:nth-child(3){ inset:15%; border-color:rgba(0,200,110,.10); --pr:42s; }
+.snxi-pring:nth-child(4){ inset:26%; border-color:rgba(0,100,255,.15); --pr:22s; animation-direction:reverse; }
+.snxi-pcore {
     position: absolute;
     inset: 30%;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(0,60,200,0.18) 0%, transparent 70%);
-    animation: snxiPortalPulse 5s ease-in-out infinite alternate;
+    background: radial-gradient(circle, rgba(0,60,200,.20) 0%, transparent 70%);
+    animation: snxiCorePulse 5s ease-in-out infinite alternate;
 }
-/* Portal expand on exit */
 #snxIntroPortal.snxi-portal-expand {
-    animation: snxiPortalExpand 1.8s ease-in forwards !important;
+    animation: snxiPortalBurst 1.8s ease-in forwards !important;
 }
 
 /* ─── Title block ────────────────────────────────────────────────────────── */
@@ -279,219 +255,382 @@
     z-index: 10;
     text-align: center;
     opacity: 0;
-    animation: snxiTitleIn 2s 5.5s both ease-out;
+    animation: snxiTitleIn 2s 6s both ease-out;
     padding: 0 20px;
-    max-width: 100vw;
+    max-width: min(92vw, 900px);
     box-sizing: border-box;
 }
 #snxIntroTitle.snxi-title-exit {
-    animation: snxiTitleExit 1.4s ease-in forwards !important;
+    animation: snxiTitleExit 1.2s ease-in forwards !important;
 }
 .snxi-welcome-to {
-    font-size: clamp(12px, 2.5vw, 20px);
-    letter-spacing: 0.35em;
+    font-size: clamp(11px, 2.4vw, 19px);
+    letter-spacing: .38em;
     text-transform: uppercase;
-    color: rgba(160,200,255,0.75);
-    margin-bottom: 10px;
+    color: rgba(155,210,255,.72);
+    margin-bottom: 9px;
     font-weight: 400;
-    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-family: -apple-system,"Segoe UI",system-ui,sans-serif;
 }
 .snxi-main-title {
-    font-size: clamp(28px, 7.5vw, 88px);
+    font-size: clamp(26px, 7.2vw, 86px);
     font-weight: 900;
-    letter-spacing: 0.08em;
+    letter-spacing: .08em;
     text-transform: uppercase;
     color: #fff;
     line-height: 1.05;
-    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-family: -apple-system,"Segoe UI",system-ui,sans-serif;
     text-shadow:
-        0 0 40px rgba(0,120,255,0.8),
-        0 0 80px rgba(0,80,200,0.4),
-        0 0 120px rgba(0,60,180,0.25);
-    /* Neon blue energy shimmer */
-    animation: snxiTitleGlow 3s 7.5s ease-in-out infinite alternate;
+        0 0 38px rgba(0,120,255,.85),
+        0 0 80px rgba(0,80,200,.45),
+        0 0 130px rgba(0,60,180,.25);
+    animation: snxiTitleGlow 3.5s 8s ease-in-out infinite alternate;
 }
-.snxi-main-title span {
-    /* NEXUS word in slightly brighter accent */
-    color: #4db8ff;
-}
+.snxi-main-title .snxi-accent { color:#4dbaff; }
 .snxi-tagline {
-    font-size: clamp(10px, 2vw, 16px);
-    letter-spacing: 0.45em;
+    font-size: clamp(10px, 1.9vw, 15px);
+    letter-spacing: .46em;
     text-transform: uppercase;
-    color: rgba(0,200,120,0.7);
+    color: rgba(0,210,120,.72);
     margin-top: 14px;
     font-weight: 500;
-    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-family: -apple-system,"Segoe UI",system-ui,sans-serif;
     opacity: 0;
-    animation: snxiTaglineIn 1.5s 7s both ease-out;
+    animation: snxiTagIn 1.5s 7.5s both ease-out;
 }
 
-/* ─── Enter button ───────────────────────────────────────────────────────── */
-#snxIntroEnterBtn {
+/* ─── Now Playing strip ──────────────────────────────────────────────────── */
+#snxIntroNowPlaying {
     position: relative;
     z-index: 10;
-    margin-top: clamp(28px, 5vh, 48px);
-    padding: clamp(12px, 2.5vw, 18px) clamp(28px, 6vw, 60px);
-    font-size: clamp(13px, 2.2vw, 18px);
-    letter-spacing: 0.22em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,10,30,.55);
+    border: 1px solid rgba(0,120,255,.22);
+    border-radius: 28px;
+    padding: 7px 14px 7px 10px;
+    margin-top: 14px;
+    opacity: 0;
+    max-width: min(88vw, 500px);
+    box-sizing: border-box;
+    /* shown by JS when song data is available */
+}
+#snxIntroNowPlaying.snxi-np-visible {
+    animation: snxiNpIn 1.2s ease-out forwards;
+}
+.snxi-np-art {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background: rgba(0,40,100,.6);
+    border: 1px solid rgba(0,120,255,.3);
+    object-fit: cover;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: rgba(80,160,255,.7);
+}
+.snxi-np-info { flex: 1; min-width: 0; }
+.snxi-np-label {
+    font-size: 9px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: rgba(0,200,120,.65);
+    margin-bottom: 2px;
+    font-family: -apple-system,"Segoe UI",system-ui,sans-serif;
+}
+.snxi-np-title {
+    font-size: clamp(11px, 2.5vw, 13px);
+    font-weight: 700;
+    color: #d8eeff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: -apple-system,"Segoe UI",system-ui,sans-serif;
+}
+.snxi-np-artist {
+    font-size: 11px;
+    color: rgba(120,180,255,.65);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: -apple-system,"Segoe UI",system-ui,sans-serif;
+}
+
+/* ─── Buttons row ────────────────────────────────────────────────────────── */
+#snxIntroBtns {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin-top: clamp(22px,4vh,40px);
+}
+#snxIntroEnterBtn {
+    padding: clamp(12px,2.5vw,17px) clamp(28px,6vw,58px);
+    font-size: clamp(13px,2.1vw,17px);
+    letter-spacing: .24em;
     text-transform: uppercase;
     font-weight: 700;
-    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
-    color: #c8e8ff;
-    background: rgba(0,30,90,0.6);
-    border: 1.5px solid rgba(0,140,255,0.6);
+    font-family: -apple-system,"Segoe UI",system-ui,sans-serif;
+    color: #c8eaff;
+    background: rgba(0,28,90,.62);
+    border: 1.5px solid rgba(0,138,255,.62);
     border-radius: 4px;
     cursor: pointer;
-    box-shadow:
-        0 0 22px rgba(0,100,255,0.35),
-        0 0 6px rgba(0,200,120,0.12) inset;
+    box-shadow: 0 0 24px rgba(0,100,255,.38), 0 0 7px rgba(0,200,120,.12) inset;
     opacity: 0;
-    animation: snxiEnterBtnIn 1.5s 8.2s both ease-out;
+    animation: snxiEnterIn 1.5s 8.5s both ease-out;
     outline: none;
-    transition: box-shadow 0.25s ease, border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
+    transition: box-shadow .24s, border-color .24s, color .24s, background .24s;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     white-space: nowrap;
+    position: relative;
 }
-#snxIntroEnterBtn:hover,
-#snxIntroEnterBtn:focus-visible {
+#snxIntroEnterBtn:hover, #snxIntroEnterBtn:focus-visible {
     color: #fff;
-    background: rgba(0,50,150,0.7);
-    border-color: rgba(0,180,255,0.9);
-    box-shadow:
-        0 0 38px rgba(0,140,255,0.55),
-        0 0 14px rgba(0,200,120,0.2) inset;
+    background: rgba(0,48,150,.72);
+    border-color: rgba(0,180,255,.9);
+    box-shadow: 0 0 42px rgba(0,140,255,.60), 0 0 16px rgba(0,200,120,.22) inset;
 }
-#snxIntroEnterBtn:active { transform: scale(0.97); }
 #snxIntroEnterBtn::after {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: 4px;
-    border: 1px solid rgba(0,200,120,0.2);
-    pointer-events: none;
+    content:'';
+    position:absolute;
+    inset:-1px;
+    border-radius:4px;
+    border:1px solid rgba(0,200,120,.22);
+    pointer-events:none;
 }
+#snxIntroEnterBtn:active { transform:scale(.97); }
 
-/* ─── Skip button ────────────────────────────────────────────────────────── */
-#snxIntroSkipBtn {
-    position: absolute;
-    top: max(14px, env(safe-area-inset-top, 14px));
-    right: max(16px, env(safe-area-inset-right, 16px));
-    z-index: 20;
-    background: rgba(0,10,30,0.55);
-    border: 1px solid rgba(0,100,200,0.3);
-    border-radius: 20px;
-    color: rgba(160,200,255,0.65);
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    padding: 7px 16px;
+/* ─── Start Music button (shown when autoplay blocked) ───────────────────── */
+#snxIntroStartMusicBtn {
+    padding: 9px 22px;
+    font-size: clamp(12px,1.8vw,14px);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-family: -apple-system,"Segoe UI",system-ui,sans-serif;
+    color: rgba(160,210,255,.8);
+    background: rgba(0,20,60,.5);
+    border: 1px solid rgba(0,110,220,.38);
+    border-radius: 22px;
     cursor: pointer;
-    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
-    opacity: 0;
-    animation: snxiSkipIn 1s 1s both ease-out;
-    transition: color 0.2s, border-color 0.2s, background 0.2s;
     outline: none;
-    touch-action: manipulation;
+    transition: color .2s, border-color .2s, background .2s;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    display: none; /* shown by JS */
+    opacity: 0;
+    animation: snxiEnterIn 1.2s ease-out both;
 }
-#snxIntroSkipBtn:hover, #snxIntroSkipBtn:focus-visible {
+#snxIntroStartMusicBtn:hover, #snxIntroStartMusicBtn:focus-visible {
     color: #90c8ff;
-    border-color: rgba(0,150,255,0.6);
-    background: rgba(0,20,60,0.7);
+    border-color: rgba(0,150,255,.6);
+    background: rgba(0,30,80,.65);
 }
 
-/* ─── Sound toggle ───────────────────────────────────────────────────────── */
-#snxIntroSoundBtn {
+/* ─── Corner buttons (Skip + Sound) ─────────────────────────────────────── */
+#snxIntroSkipBtn, #snxIntroSoundBtn {
     position: absolute;
-    top: max(14px, env(safe-area-inset-top, 14px));
-    left: max(16px, env(safe-area-inset-left, 16px));
     z-index: 20;
-    background: rgba(0,10,30,0.55);
-    border: 1px solid rgba(0,100,200,0.3);
+    background: rgba(0,8,24,.55);
+    border: 1px solid rgba(0,100,200,.28);
     border-radius: 20px;
-    color: rgba(160,200,255,0.65);
+    color: rgba(155,205,255,.62);
     font-size: 12px;
-    padding: 7px 14px;
+    padding: 7px 15px;
     cursor: pointer;
-    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-family: -apple-system,"Segoe UI",system-ui,sans-serif;
     opacity: 0;
     animation: snxiSkipIn 1s 1s both ease-out;
-    transition: color 0.2s, border-color 0.2s, background 0.2s;
+    transition: color .2s, border-color .2s, background .2s;
     outline: none;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
 }
+#snxIntroSkipBtn  { top:max(14px,env(safe-area-inset-top,14px)); right:max(14px,env(safe-area-inset-right,14px)); }
+#snxIntroSoundBtn { top:max(14px,env(safe-area-inset-top,14px)); left:max(14px,env(safe-area-inset-left,14px)); }
+#snxIntroSkipBtn:hover,  #snxIntroSkipBtn:focus-visible,
 #snxIntroSoundBtn:hover, #snxIntroSoundBtn:focus-visible {
     color: #90c8ff;
-    border-color: rgba(0,150,255,0.6);
-    background: rgba(0,20,60,0.7);
+    border-color: rgba(0,150,255,.58);
+    background: rgba(0,18,55,.7);
 }
 
-/* ─── Keyframe animations ────────────────────────────────────────────────── */
-@keyframes snxiStarsFade   { to { opacity: 1; } }
-@keyframes snxiFogIn       { from { opacity:0; transform:translateX(0); } to { opacity:1; } }
-@keyframes snxiFogDrift    { 0%{transform:translateX(0)} 50%{transform:translateX(8%)} 100%{transform:translateX(0)} }
-@keyframes snxiFogExpand   { 0%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(2.5)} }
-@keyframes snxiFlamesIn    { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
-@keyframes snxiFlame       { 0%{transform:scaleX(1) scaleY(1) translateY(0)} 100%{transform:scaleX(0.88) scaleY(1.12) translateY(-8px)} }
-@keyframes snxiForestIn    { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-@keyframes snxiWolfFade    { 0%{opacity:0} 30%{opacity:0.55} 70%{opacity:0.7} 100%{opacity:0.65} }
-@keyframes snxiCatWalk     { 0%{opacity:0;transform:translateX(0)} 8%{opacity:0.85} 92%{opacity:0.85} 100%{opacity:0;transform:translateX(calc(100vw + 150px))} }
-@keyframes snxiCrowFly {
-    0%   { opacity:0;  transform:translateX(0)           scaleX(1); }
-    5%   { opacity:0.8; }
-    50%  { transform:translateX(calc(55vw + 40px))       scaleX(1); }
-    51%  { transform:translateX(calc(55vw + 40px))       scaleX(-1); }
-    95%  { opacity:0.8; }
-    100% { opacity:0;  transform:translateX(calc(100vw + 100px)) scaleX(-1); }
+/* ─── Music unavailable notice ───────────────────────────────────────────── */
+#snxIntroMusicStatus {
+    position: absolute;
+    bottom: max(10px,env(safe-area-inset-bottom,10px));
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: rgba(80,120,180,.55);
+    letter-spacing: .1em;
+    font-family: -apple-system,"Segoe UI",system-ui,sans-serif;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 10;
 }
-@keyframes snxiPortalIn    { from{opacity:0;transform:translate(-50%,-50%) scale(0.7)} to{opacity:1;transform:translate(-50%,-50%) scale(1)} }
-@keyframes snxiPortalSpin  { to { transform: rotate(360deg); } }
-@keyframes snxiPortalPulse { from{opacity:0.5} to{opacity:1} }
-@keyframes snxiPortalExpand{ 0%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(3.5)} }
-@keyframes snxiTitleIn     { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
-@keyframes snxiTitleGlow   { from{text-shadow:0 0 30px rgba(0,120,255,0.7),0 0 60px rgba(0,80,200,0.35)} to{text-shadow:0 0 50px rgba(0,160,255,0.95),0 0 100px rgba(0,100,220,0.5),0 0 140px rgba(0,60,180,0.3)} }
-@keyframes snxiTitleExit   { to{opacity:0;transform:translateY(-20px)} }
-@keyframes snxiTaglineIn   { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-@keyframes snxiEnterBtnIn  { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-@keyframes snxiSkipIn      { from{opacity:0} to{opacity:1} }
-@keyframes snxiBolt        { 0%,100%{opacity:0} 45%{opacity:0} 50%{opacity:0.3} 55%{opacity:0} }
+
+/* ─── Keyframes ──────────────────────────────────────────────────────────── */
+@keyframes snxiStarsFade  { to { opacity:1; } }
+@keyframes snxiFogIn      { from{opacity:0;} to{opacity:1;} }
+@keyframes snxiFogDrift   { 0%{transform:translateX(0)} 50%{transform:translateX(9%)} 100%{transform:translateX(0)} }
+@keyframes snxiFogBurst   { 0%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(2.8)} }
+@keyframes snxiSilIn      { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+@keyframes snxiWolfFade   { 0%{opacity:0} 28%{opacity:.55} 72%{opacity:.68} 100%{opacity:.62} }
+@keyframes snxiCatWalk    { 0%{opacity:0;transform:translateX(0)} 8%{opacity:.88} 92%{opacity:.88} 100%{opacity:0;transform:translateX(calc(100vw + 160px))} }
+@keyframes snxiCrowFly    { 0%{opacity:0;transform:translateX(0) scaleX(1)} 6%{opacity:.82} 50%{transform:translateX(calc(55vw + 45px)) scaleX(1)} 51%{transform:translateX(calc(55vw + 45px)) scaleX(-1)} 94%{opacity:.82} 100%{opacity:0;transform:translateX(calc(100vw + 110px)) scaleX(-1)} }
+@keyframes snxiFlamesIn   { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+@keyframes snxiFlame      { 0%{transform:scaleX(1) scaleY(1) translateY(0)} 100%{transform:scaleX(.88) scaleY(1.13) translateY(-9px)} }
+@keyframes snxiPortalIn   { from{opacity:0;transform:translate(-50%,-50%) scale(.65)} to{opacity:1;transform:translate(-50%,-50%) scale(1)} }
+@keyframes snxiPortalSpin { to{transform:rotate(360deg)} }
+@keyframes snxiCorePulse  { from{opacity:.4} to{opacity:1} }
+@keyframes snxiPortalBurst{ 0%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(3.8)} }
+@keyframes snxiTitleIn    { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+@keyframes snxiTitleGlow  { from{text-shadow:0 0 28px rgba(0,120,255,.72),0 0 55px rgba(0,80,200,.38)} to{text-shadow:0 0 55px rgba(0,165,255,1),0 0 110px rgba(0,100,220,.55),0 0 150px rgba(0,60,180,.32)} }
+@keyframes snxiTitleExit  { to{opacity:0;transform:translateY(-22px)} }
+@keyframes snxiTagIn      { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes snxiNpIn       { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes snxiEnterIn    { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@keyframes snxiSkipIn     { from{opacity:0} to{opacity:1} }
+@keyframes snxiBolt       { 0%,100%{opacity:0} 45%{opacity:0} 50%{opacity:.32} 55%{opacity:0} }
 
 /* ─── Reduced motion ─────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-    #snxIntroOverlay,
-    #snxIntroStars,
-    #snxIntroFlames,
-    #snxIntroForest,
-    #snxIntroWolf,
-    #snxIntroCat,
-    #snxIntroTitle,
-    .snxi-welcome-to,
-    .snxi-main-title,
-    .snxi-tagline,
-    #snxIntroEnterBtn,
-    #snxIntroSkipBtn,
-    #snxIntroSoundBtn,
-    #snxIntroPortal,
-    .snxi-portal-ring,
-    .snxi-portal-core,
-    .snxi-fog-band,
-    .snxi-crow,
-    .snxi-flame,
-    .snxi-bolt {
-        animation-duration: 0.001ms !important;
-        animation-delay:    0ms    !important;
-        transition-duration: 0.001ms !important;
+    #snxIntroOverlay { transition-duration:.001ms !important; }
+    #snxIntroStars, #snxIntroFlames, #snxIntroForest, #snxIntroWolf, #snxIntroCat,
+    #snxIntroTitle, .snxi-welcome-to, .snxi-main-title, .snxi-tagline,
+    #snxIntroNowPlaying, #snxIntroEnterBtn, #snxIntroStartMusicBtn,
+    #snxIntroSkipBtn, #snxIntroSoundBtn, #snxIntroPortal, .snxi-pring, .snxi-pcore,
+    .snxi-fog, .snxi-crow, .snxi-flame, .snxi-bolt {
+        animation-duration:.001ms !important;
+        animation-delay:0ms !important;
+        transition-duration:.001ms !important;
     }
-    #snxIntroStars  { opacity: 0.6; }
-    #snxIntroForest { opacity: 0.8; }
-    #snxIntroFlames { opacity: 0.6; }
-    #snxIntroWolf   { opacity: 0.5; }
-    #snxIntroPortal { opacity: 0.7; }
-    #snxIntroTitle  { opacity: 1; }
-    .snxi-tagline   { opacity: 1; }
-    #snxIntroEnterBtn { opacity: 1; }
-    #snxIntroSkipBtn  { opacity: 1; }
-    #snxIntroSoundBtn { opacity: 1; }
+    #snxIntroStars  { opacity:.6; }
+    #snxIntroForest { opacity:.8; }
+    #snxIntroFlames { opacity:.6; }
+    #snxIntroWolf   { opacity:.5; }
+    #snxIntroPortal { opacity:.7; }
+    #snxIntroTitle  { opacity:1; }
+    .snxi-tagline   { opacity:1; }
+    #snxIntroNowPlaying { opacity:1; }
+    #snxIntroEnterBtn   { opacity:1; }
+    #snxIntroSkipBtn    { opacity:1; }
+    #snxIntroSoundBtn   { opacity:1; }
+    #snxIntroStartMusicBtn { opacity:1; }
 }
+
+/* ─── Founder Control — Welcome Music tab ───────────────────────────────── */
+.snxwm-card {
+    background: rgba(0,12,35,.7);
+    border: 1px solid rgba(0,140,255,.22);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+}
+.snxwm-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0,100,200,.14);
+    flex-wrap: wrap;
+}
+.snxwm-row:last-child { border-bottom: none; }
+.snxwm-label { font-size:12px; color:#6a90b8; flex:1; min-width:140px; }
+.snxwm-label strong { display:block; font-size:13px; color:#d8eeff; margin-bottom:2px; }
+.snxwm-label small { font-size:11px; color:#4a6a88; display:block; }
+.snxwm-btns { display:flex; gap:8px; flex-wrap:wrap; }
+.snxwm-btn {
+    padding: 7px 16px;
+    font-size: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,140,255,.38);
+    background: rgba(0,30,90,.4);
+    color: #7ac8ff;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background .2s, border-color .2s;
+    white-space: nowrap;
+}
+.snxwm-btn:hover { background:rgba(0,50,140,.6); border-color:rgba(0,180,255,.6); }
+.snxwm-btn.danger { border-color:rgba(255,60,80,.38); color:#ff8899; background:rgba(80,0,15,.3); }
+.snxwm-btn.danger:hover { background:rgba(120,0,20,.5); border-color:rgba(255,60,80,.65); }
+.snxwm-btn.primary { border-color:rgba(0,200,100,.4); color:#5effb8; background:rgba(0,60,30,.3); }
+.snxwm-btn.primary:hover { background:rgba(0,80,40,.5); border-color:rgba(0,220,110,.7); }
+.snxwm-song-art {
+    width:48px; height:48px; border-radius:8px;
+    background:rgba(0,30,80,.7); border:1px solid rgba(0,120,255,.28);
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; flex-shrink:0; overflow:hidden;
+}
+.snxwm-song-art img { width:100%; height:100%; object-fit:cover; border-radius:8px; }
+.snxwm-song-info { flex:1; min-width:0; }
+.snxwm-song-title { font-size:13px; font-weight:700; color:#d8eeff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.snxwm-song-artist { font-size:11px; color:#6a90b8; }
+.snxwm-song-meta { font-size:10px; color:#4a6a88; margin-top:2px; }
+.snxwm-status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+.snxwm-status-dot.on  { background:#00dd88; box-shadow:0 0 6px rgba(0,220,140,.55); }
+.snxwm-status-dot.off { background:#4a5a6a; }
+.snxwm-progress {
+    display:none; height:4px; background:rgba(0,100,200,.18); border-radius:2px; overflow:hidden; margin-top:8px;
+}
+.snxwm-progress-bar { height:100%; background:linear-gradient(90deg,#0060ff,#00ccff); width:0; transition:width .3s; border-radius:2px; }
+.snxwm-volume-wrap { display:flex; align-items:center; gap:10px; flex:1; min-width:160px; }
+.snxwm-volume-wrap input[type=range] {
+    flex:1; accent-color:#0088ff; cursor:pointer; height:4px; min-width:80px;
+}
+.snxwm-vol-val { font-size:12px; color:#6ab8ff; min-width:32px; text-align:right; }
+
+/* ─── Additional panel / layout classes used by adminTab-welcomemusic ──────── */
+.snxwm-panel {
+    background: rgba(0,12,35,.7);
+    border: 1px solid rgba(0,140,255,.22);
+    border-radius: 12px;
+    padding: 16px 18px;
+}
+.snxwm-title {
+    margin: 0; font-size: 15px; font-weight: 800;
+    color: #00d4ff; text-transform: uppercase; letter-spacing: 0.8px;
+}
+.snxwm-subtitle {
+    margin: 4px 0 0; font-size: 12px; color: #6a90b8;
+}
+.snxwm-section-title {
+    margin: 0 0 10px; font-size: 12px; color: #00d4ff;
+    text-transform: uppercase; letter-spacing: 0.7px;
+}
+.snxwm-status-lbl { font-size:12px; color:#8ab8d8; }
+.snxwm-btn-sm { padding: 5px 12px !important; font-size: 11px !important; }
+.snxwm-btn-off {
+    border-color: rgba(255,80,80,.3) !important;
+    color: #ff8899 !important;
+    background: rgba(60,0,10,.3) !important;
+}
+.snxwm-btn-off:hover {
+    background: rgba(100,0,20,.5) !important;
+    border-color: rgba(255,80,80,.6) !important;
+}
+.snxwm-art {
+    width: 52px; height: 52px; border-radius: 8px;
+    background: rgba(0,30,80,.7); border: 1px solid rgba(0,120,255,.28);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; flex-shrink: 0; overflow: hidden;
+}
+.snxwm-art img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.snxwm-input {
+    width: 100%; padding: 8px 12px; font-size: 13px;
+    background: rgba(0,20,55,.7); border: 1px solid rgba(0,120,220,.3);
+    border-radius: 8px; color: #d8eeff; outline: none; box-sizing: border-box;
+}
+.snxwm-input:focus { border-color: rgba(0,180,255,.6); }

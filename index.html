@@ -2647,6 +2647,15 @@ img.post-media-preview::before {
 .notif-time { font-size:11px; color:#555; margin-top:3px; }
 .notif-actions { display:flex; gap:6px; margin-top:6px; }
 .notif-actions button { padding:4px 10px; font-size:11px; border-radius:12px; }
+/* Individual notification delete button — shown on all notification types */
+.notif-delete-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 14px; color: #5a7a9a; padding: 2px 4px;
+    border-radius: 6px; line-height: 1; flex-shrink: 0;
+    align-self: flex-start; margin-top: 2px;
+    transition: color .15s, background .15s;
+}
+.notif-delete-btn:hover { color: #ff5577; background: rgba(255,40,80,.1); }
 
 /* ════════════════════════════════════════════
    SETTINGS PAGE
@@ -7585,6 +7594,8 @@ body.arcade-fs-ios body::after { display:none !important; }
     <div class="msg-ctx-item danger" id="msgCtxDeleteMe"  onclick="msgCtxDeleteMe()">🗑 Delete for Me</div>
     <div class="msg-ctx-item danger" id="msgCtxDeleteAll" onclick="msgCtxDeleteAll()">🗑 Delete for Everyone</div>
     <div class="msg-ctx-item danger" id="msgCtxReport"    onclick="msgCtxReportMsg()" style="display:none;">🚨 Report Message</div>
+    <div class="msg-ctx-divider"></div>
+    <div class="msg-ctx-item" id="msgCtxCancel" onclick="document.getElementById('msgCtxMenu').style.display='none'">✕ Cancel</div>
 </div>
 
 <!-- ═══════════════════════════════════════════
@@ -8932,6 +8943,7 @@ body.arcade-fs-ios body::after { display:none !important; }
     <button class="admin-tab" onclick="switchAdminTab('pages')">👁 Pages &amp; Controls</button>
     <button class="admin-tab" onclick="switchAdminTab('cloudstreams');snxAdminLoadCloudStreams()">☁️ CloudStreams</button>
     <button class="admin-tab" onclick="switchAdminTab('r2storage');snxR2StatusOpen()">🗄️ R2 Storage</button>
+    <button class="admin-tab" onclick="switchAdminTab('welcomemusic');snxwmOpen()">🎵 Welcome Music</button>
     <button class="admin-tab" onclick="switchAdminTab('themes');snxTCCOpen()">🎨 Theme Engine</button>
     <button class="admin-tab" onclick="switchAdminTab('system');snxLoadBuildDiagnostics()">🖥️ System</button>
     <button class="admin-tab" onclick="switchAdminTab('status');window._snxUpgradeStatusOpen&&window._snxUpgradeStatusOpen()">⚡ Status</button>
@@ -10164,6 +10176,109 @@ body.arcade-fs-ios body::after { display:none !important; }
     </div>
   </div>
 </div><!-- end adminTab-r2storage -->
+
+<!-- ══════════════════════════════════
+     TAB: WELCOME MUSIC
+     Founder-only — nexus-intro.js required
+══════════════════════════════════ -->
+<div class="admin-tab-content" id="adminTab-welcomemusic">
+
+  <div style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h3 class="snxwm-title">🎵 Welcome Screen Music</h3>
+      <p class="snxwm-subtitle">Control the cinematic welcome experience music for all visitors.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="snxwm-btn" onclick="snxwmPreviewFullIntro()">▶ Preview Full Intro</button>
+    </div>
+  </div>
+
+  <!-- Status panel -->
+  <div class="snxwm-panel">
+    <h4 class="snxwm-section-title">⚙️ Settings</h4>
+    <div class="snxwm-row">
+      <span class="snxwm-label">Welcome Screen</span>
+      <span class="snxwm-status-dot on" id="snxwmScreenDot"></span>
+      <span class="snxwm-status-lbl" id="snxwmScreenLbl">Enabled</span>
+      <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmToggleScreen(true)">Enable</button>
+      <button class="snxwm-btn snxwm-btn-sm snxwm-btn-off" onclick="snxwmToggleScreen(false)">Disable</button>
+    </div>
+    <div class="snxwm-row">
+      <span class="snxwm-label">Welcome Music</span>
+      <span class="snxwm-status-dot off" id="snxwmMusicDot"></span>
+      <span class="snxwm-status-lbl" id="snxwmMusicLbl">Disabled</span>
+      <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmToggleMusic(true)">Enable</button>
+      <button class="snxwm-btn snxwm-btn-sm snxwm-btn-off" onclick="snxwmToggleMusic(false)">Disable</button>
+    </div>
+    <div class="snxwm-row">
+      <span class="snxwm-label">Loop Song</span>
+      <span class="snxwm-status-dot on" id="snxwmLoopDot"></span>
+      <span class="snxwm-status-lbl" id="snxwmLoopLbl">On</span>
+      <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmToggleLoop(true)">On</button>
+      <button class="snxwm-btn snxwm-btn-sm snxwm-btn-off" onclick="snxwmToggleLoop(false)">Off</button>
+    </div>
+    <div class="snxwm-row">
+      <span class="snxwm-label">Now Playing Strip</span>
+      <span class="snxwm-status-dot on" id="snxwmNpDot"></span>
+      <span class="snxwm-status-lbl" id="snxwmNpLbl">Showing</span>
+      <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmToggleNowPlaying(true)">Show</button>
+      <button class="snxwm-btn snxwm-btn-sm snxwm-btn-off" onclick="snxwmToggleNowPlaying(false)">Hide</button>
+    </div>
+  </div>
+
+  <!-- Volume -->
+  <div class="snxwm-panel" style="margin-top:10px;">
+    <h4 class="snxwm-section-title">🔊 Volume</h4>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <input type="range" id="snxwmVolSlider" min="0" max="100" value="45" style="flex:1;min-width:120px;accent-color:#00d4ff;"
+        oninput="document.getElementById('snxwmVolVal').textContent=this.value+'%'">
+      <span id="snxwmVolVal" style="font-size:13px;color:#d8eeff;min-width:38px;">45%</span>
+      <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmSaveVolume(document.getElementById('snxwmVolSlider').value)">💾 Save</button>
+    </div>
+  </div>
+
+  <!-- Current song -->
+  <div class="snxwm-panel" style="margin-top:10px;">
+    <h4 class="snxwm-section-title">🎵 Current Song</h4>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <div class="snxwm-art" id="snxwmArtEl">♪</div>
+      <div style="flex:1;min-width:0;">
+        <div class="snxwm-song-title"  id="snxwmTitleEl">No song uploaded</div>
+        <div class="snxwm-song-artist" id="snxwmArtistEl"></div>
+        <div class="snxwm-song-meta"   id="snxwmMetaEl"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+      <button class="snxwm-btn" onclick="snxwmPreviewAudio()">▶ Preview Audio</button>
+      <button class="snxwm-btn snxwm-btn-off" onclick="snxwmPausePreview()">⏸ Pause</button>
+      <button class="snxwm-btn snxwm-btn-off" onclick="snxwmRemoveSong()">🗑 Remove Song</button>
+    </div>
+  </div>
+
+  <!-- Upload -->
+  <div class="snxwm-panel" style="margin-top:10px;">
+    <h4 class="snxwm-section-title">⬆️ Upload Song</h4>
+    <p style="font-size:12px;color:#4a7a9a;margin:0 0 10px;">Accepted: MP3, M4A, AAC, WAV, OGG, FLAC, OPUS (max 200 MB)</p>
+    <input type="file" id="snxwmFileInput" accept="audio/*" style="display:none;" onchange="snxwmUploadSong(this,false)">
+    <button class="snxwm-btn" onclick="document.getElementById('snxwmFileInput').click()">📁 Choose Audio File</button>
+    <div id="snxwmProgressWrap" style="display:none;margin-top:10px;">
+      <div style="font-size:12px;color:#4a9ade;margin-bottom:4px;">Uploading…</div>
+      <progress id="snxwmProgress" value="0" max="100" style="width:100%;accent-color:#00d4ff;"></progress>
+    </div>
+  </div>
+
+  <!-- Song metadata -->
+  <div class="snxwm-panel" style="margin-top:10px;">
+    <h4 class="snxwm-section-title">🏷️ Song Info (Optional)</h4>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <input type="text" id="snxwmSongTitle"  placeholder="Song title"  class="snxwm-input">
+      <input type="text" id="snxwmSongArtist" placeholder="Artist name" class="snxwm-input">
+      <button class="snxwm-btn snxwm-btn-sm" onclick="snxwmSaveMeta()" style="align-self:flex-start;">💾 Save Info</button>
+    </div>
+  </div>
+
+  <div id="snxwmStatus" style="font-size:12px;color:#4a9ade;margin-top:12px;min-height:18px;"></div>
+</div><!-- end adminTab-welcomemusic -->
 
 <!-- ══════════════════════════════════
      TAB: NEXUS GLOBAL THEME ENGINE
@@ -11625,6 +11740,10 @@ body.arcade-fs-ios body::after { display:none !important; }
       onSnapshot, arrayUnion, arrayRemove, runTransaction, where, getDocs, writeBatch, increment,
       serverTimestamp, enableNetwork, disableNetwork,
   };
+
+  // ── Legacy bridge aliases used by nexus-intro.js ──
+  window._snxFirestoreDB  = db;
+  window._snxFirestoreFns = { doc, getDoc, setDoc, updateDoc };
 
   // ── Auth-ready queue — lets non-module scripts register callbacks that
   //    run as soon as Firebase auth resolves (avoids the re-login requirement) ──
@@ -15494,13 +15613,20 @@ body.arcade-fs-ios body::after { display:none !important; }
                       ${actHtml}
                   </div>`;
           } else {
+              // Add a 🗑 delete button to every non-message notification
+              const _delBtnHtml = nid
+                  ? `<button class="notif-delete-btn" title="Delete notification"
+                         onclick="event.stopPropagation();deleteNotifById('${nid}')"
+                         aria-label="Delete notification">🗑</button>`
+                  : '';
               item.innerHTML = `
                   <div class="notif-icon">${icon}</div>
-                  <div class="notif-body">
+                  <div class="notif-body" style="flex:1;min-width:0;">
                       <div class="notif-text">${text}</div>
                       <div class="notif-time">${fmtTimeAgo(n.ts)}</div>
                       ${actHtml}
-                  </div>`;
+                  </div>
+                  ${_delBtnHtml}`;
           }
           item.addEventListener('click', () => {
               markNotifById(nid);
@@ -15535,7 +15661,9 @@ body.arcade-fs-ios body::after { display:none !important; }
       }
   };
 
-  /* Delete a single notification by its stable Firestore ID */
+  /* Delete a single notification by its stable Firestore ID.
+     Immediately removes the item from the rendered list and updates
+     all badge counts — no page refresh required. */
   window.deleteNotifById = async function(nid) {
       if (!nid || !currentUser) return;
       const snap = await getDoc(doc(db,"users",currentUser.uid));
@@ -15543,17 +15671,26 @@ body.arcade-fs-ios body::after { display:none !important; }
       const updated = notifs.filter(n => n.id !== nid);
       if (updated.length === notifs.length) return; // not found — nothing to do
       await updateDoc(doc(db,"users",currentUser.uid),{notifications:updated});
-      // Immediately refresh badge counts from the updated list
+      // Immediately update UI — no refresh required
+      window._lastNotifList = updated;
+      renderNotifications(updated);
       _snxRefreshNotifBadges(updated);
   };
 
-  /* Legacy index-based delete kept for any callers that may still pass an index */
+  /* Legacy index-based delete — uses stable ID internally so deletion is
+     always correct even when the rendered order differs from the array. */
   window.deleteNotifByIdx = async function(idx) {
       const snap = await getDoc(doc(db,"users",currentUser.uid));
       const notifs = snap.data().notifications||[];
       if (idx < 0 || idx >= notifs.length) return;
+      // Prefer stable-ID path when available
+      const targetId = notifs[idx] && notifs[idx].id;
+      if (targetId) { return window.deleteNotifById(targetId); }
+      // Fallback: splice by index (no stable ID present)
       notifs.splice(idx, 1);
       await updateDoc(doc(db,"users",currentUser.uid),{notifications:notifs});
+      window._lastNotifList = notifs;
+      renderNotifications(notifs);
       _snxRefreshNotifBadges(notifs);
   };
 
@@ -15590,8 +15727,9 @@ body.arcade-fs-ios body::after { display:none !important; }
       const ok = await snxConfirm({ title: 'Clear All Notifications', body: 'Clear all notifications? This cannot be undone.', confirmText: 'Clear All', danger: true });
       if (!ok) return;
       await updateDoc(doc(db,"users",currentUser.uid),{notifications:[]});
-      _snxRefreshNotifBadges([]);
-      if (window._lastNotifList) { window._lastNotifList = []; renderNotifications([]); }
+      window._lastNotifList = [];
+      renderNotifications([]);    // immediately clear the rendered list
+      _snxRefreshNotifBadges([]); // zero all badges — never leave ghost counts
       toastNotification("✓ Notifications cleared.");
   };
 
