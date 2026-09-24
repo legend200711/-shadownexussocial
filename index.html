@@ -43,24 +43,26 @@
 <meta name="twitter:image"       content="https://shadownexussocial.online/icon-512.png">
 
 <!-- ── Shared stylesheet ── -->
-<link rel="stylesheet" href="style.css?v=SNS-2026-ETERNAL-STREAM-002">
-<link rel="stylesheet" href="album.css?v=SNS-2026-ETERNAL-STREAM-002">
-<link rel="stylesheet" href="profile-music.css?v=SNS-2026-ETERNAL-STREAM-002">
-<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-ETERNAL-STREAM-002">
+<link rel="stylesheet" href="style.css?v=SNS-2026-ETERNAL-STREAM-003">
+<link rel="stylesheet" href="album.css?v=SNS-2026-ETERNAL-STREAM-003">
+<link rel="stylesheet" href="profile-music.css?v=SNS-2026-ETERNAL-STREAM-003">
+<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-ETERNAL-STREAM-003">
 <!-- ── Shadow Nexus Social Realm — full immersive redesign ── -->
-<link rel="stylesheet" href="realm.css?v=SNS-2026-ETERNAL-STREAM-002">
+<link rel="stylesheet" href="realm.css?v=SNS-2026-ETERNAL-STREAM-003">
 <!-- ── Mobile responsive design layer ── -->
-<link rel="stylesheet" href="mobile.css?v=SNS-2026-ETERNAL-STREAM-002">
+<link rel="stylesheet" href="mobile.css?v=SNS-2026-ETERNAL-STREAM-003">
 <!-- ── Shadow Nexus Gifting & Monetization ── -->
-<link rel="stylesheet" href="snx-gifts.css?v=SNS-2026-ETERNAL-STREAM-002">
+<link rel="stylesheet" href="snx-gifts.css?v=SNS-2026-ETERNAL-STREAM-003">
 <!-- ── Shadow Nexus 24-Hour Studio (Cloud Stream) ── -->
-<link rel="stylesheet" href="cloud-stream.css?v=SNS-2026-ETERNAL-STREAM-002">
+<link rel="stylesheet" href="cloud-stream.css?v=SNS-2026-ETERNAL-STREAM-003">
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library / Upload / Playlists / Queue ── -->
-<link rel="stylesheet" href="studio.css?v=SNS-2026-ETERNAL-STREAM-002">
+<link rel="stylesheet" href="studio.css?v=SNS-2026-ETERNAL-STREAM-003">
 <!-- ── Nexus Global Theme Engine ── -->
-<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-ETERNAL-STREAM-002">
+<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-ETERNAL-STREAM-003">
+<!-- ── Shadow Nexus 24-HOUR NEXUS — unified Egyptian/Horror theme ── -->
+<link rel="stylesheet" href="nexus.css?v=SNS-2026-ETERNAL-STREAM-003">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-ETERNAL-STREAM-002">
+<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-ETERNAL-STREAM-003">
 
 <!-- ── Preconnect to Firebase + R2 CDN so first load is faster ── -->
 <link rel="preconnect" href="https://www.gstatic.com">
@@ -6636,10 +6638,10 @@ body.arcade-fs-ios body::after { display:none !important; }
             <span class="sc-item-icon">📡</span>
             <span class="sc-item-label">Go Live</span>
         </button>
-        <!-- Eternal Stream -->
-        <button class="sc-item" id="scNavEternalStream" onclick="window.location.href='cloud-stream.html'" aria-label="Eternal Stream" style="color:#c5a41d;">
+        <!-- 24-HOUR NEXUS (unified) -->
+        <button class="sc-item" id="scNavNexus" onclick="realmNavTo('nexusPage')" aria-label="24-HOUR NEXUS" style="color:#c5a41d;">
             <span class="sc-item-icon">𓂀</span>
-            <span class="sc-item-label">Eternal Stream</span>
+            <span class="sc-item-label">24-Hour Nexus</span>
         </button>
         <!-- Arcade -->
         <button class="sc-item" id="scNavArcade" onclick="openArcadeHub()" aria-label="Arcade">
@@ -6758,9 +6760,9 @@ body.arcade-fs-ios body::after { display:none !important; }
             <div class="ncm-icon-wrap">📡</div>
             <div class="ncm-label">Go Live</div>
         </div>
-        <div class="ncm-item" id="ncmEternalStream" onclick="window.location.href='cloud-stream.html'" style="color:#c5a41d;">
+        <div class="ncm-item" id="ncmNexus" onclick="realmNavTo('nexusPage');mobileNavTo('_close')" style="color:#c5a41d;">
             <div class="ncm-icon-wrap">𓂀</div>
-            <div class="ncm-label">Eternal Stream</div>
+            <div class="ncm-label">24-Hour Nexus</div>
         </div>
         <div class="ncm-item" id="ncmArcade" onclick="mobileNavTo('_arcade')">
             <div class="ncm-icon-wrap">🕹️</div>
@@ -6896,11 +6898,8 @@ body.arcade-fs-ios body::after { display:none !important; }
             <span class="nav-icon">📡</span> Go Live
             <span id="navLiveDot" class="nav-badge" style="display:none;background:#ff3344;"></span>
         </button>
-        <button class="nav-item nav-item-studio" id="navStudio" onclick="realmNavTo('studioPage')" style="color:#00d4ff;border-left:3px solid rgba(0,212,255,0.45);">
-            <span class="nav-icon">🎬</span> 24-Hour Studio
-        </button>
-        <button class="nav-item" id="navEternalStream" onclick="window.location.href='cloud-stream.html'" style="color:#c5a41d;border-left:3px solid rgba(197,164,29,0.45);">
-            <span class="nav-icon">𓂀</span> Eternal Stream
+        <button class="nav-item" id="navNexus" onclick="realmNavTo('nexusPage')" style="color:#c5a41d;border-left:3px solid rgba(197,164,29,0.55);">
+            <span class="nav-icon">𓂀</span> 24-HOUR NEXUS
         </button>
         <button class="nav-item" id="navArcade" onclick="openArcadeHub()">
             <span class="nav-icon">🕹️</span> Arcade
@@ -11427,6 +11426,349 @@ body.arcade-fs-ios body::after { display:none !important; }
   </div><!-- end snxStudioTab_stream -->
 
 </div><!-- end studioPage -->
+
+<!-- ████████████████████████████████████████████████████████
+     𓂀  SHADOW NEXUS — 24-HOUR NEXUS
+     Unified Eternal Stream + Studio in Egyptian/Horror theme
+     ████████████████████████████████████████████████████████ -->
+<div class="page" id="nexusPage">
+
+  <!-- ── HEADER ── -->
+  <header class="nx-header">
+    <div class="nx-header-eye" onclick="snxNexusSwitchTab('watch')" title="Watch">𓂀</div>
+    <div class="nx-header-center">
+      <div class="nx-header-title">24-HOUR NEXUS</div>
+      <div class="nx-header-sub">THE ETERNAL STREAM · SHADOW NEXUS</div>
+    </div>
+    <div class="nx-viewers-badge">
+      <div class="nx-viewers-dot"></div>
+      <span id="nxViewerCount">0 WATCHING</span>
+    </div>
+  </header>
+
+  <!-- ── TAB BAR ── -->
+  <nav class="nx-tab-bar" id="nxTabBar">
+    <button class="nx-tab active" data-nxtab="watch"     onclick="snxNexusSwitchTab('watch')">
+      <span class="nx-tab-icon">𓂀</span>WATCH
+    </button>
+    <button class="nx-tab" id="nxTab_vault"     data-nxtab="vault"     onclick="snxNexusSwitchTab('vault')" style="display:none;">
+      <span class="nx-tab-icon">𓃭</span>VAULT
+    </button>
+    <button class="nx-tab" id="nxTab_playlists" data-nxtab="playlists" onclick="snxNexusSwitchTab('playlists')" style="display:none;">
+      <span class="nx-tab-icon">𓏲</span>PLAYLISTS
+    </button>
+    <button class="nx-tab" id="nxTab_queue"     data-nxtab="queue"     onclick="snxNexusSwitchTab('queue')" style="display:none;">
+      <span class="nx-tab-icon">𓂝</span>QUEUE
+    </button>
+    <button class="nx-tab" id="nxTab_upload"    data-nxtab="upload"    onclick="snxNexusSwitchTab('upload')" style="display:none;">
+      <span class="nx-tab-icon">↑</span>UPLOAD
+    </button>
+    <button class="nx-tab" id="nxTab_control"   data-nxtab="control"   onclick="snxNexusSwitchTab('control')" style="display:none;">
+      <span class="nx-tab-icon">⚙</span>CONTROL
+    </button>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════════
+       WATCH — The Eternal Stream
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="nx-panel active" id="nxWatchPanel" data-nxtab="watch" style="padding:12px 14px 120px;">
+
+    <!-- Portal -->
+    <div class="nx-watch-portal">
+      <canvas class="nx-watch-scene-canvas" id="nxSceneCanvas"></canvas>
+      <video class="nx-watch-video" id="nxWatchVideo" playsinline autoplay muted></video>
+      <img class="nx-watch-picture" id="nxWatchPicture" alt="">
+
+      <!-- Offline state -->
+      <div class="nx-watch-offline" id="nxWatchOffline">
+        <div class="nx-watch-offline-eye">𓂀</div>
+        <div class="nx-watch-offline-msg">THE ETERNAL STREAM AWAITS<br><span style="font-size:10px;opacity:0.6;">No broadcast active</span></div>
+      </div>
+      <!-- Online state overlay (hidden when offline) -->
+      <div id="nxWatchOnline" style="display:none;position:absolute;bottom:8px;left:10px;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:rgba(197,164,29,0.85);text-shadow:0 0 8px rgba(197,164,29,0.6);" id="nxSceneLabel"></div>
+      </div>
+      <!-- Fullscreen button -->
+      <button onclick="(function(){var p=document.getElementById('nexusPage');if(p)if(p.requestFullscreen)p.requestFullscreen();})()"
+        style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.5);border:1px solid rgba(197,164,29,0.3);color:rgba(197,164,29,0.8);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;"
+        title="Fullscreen">⛶</button>
+    </div>
+
+    <!-- Now Transmitting -->
+    <div class="nx-now-transmitting">
+      <div class="nx-nt-label">NOW TRANSMITTING</div>
+      <div class="nx-nt-title" id="nxNtTitle">THE ETERNAL SILENCE</div>
+      <div class="nx-nt-artist" id="nxNtArtist"></div>
+      <div style="font-size:10px;color:var(--nx-text3);margin-top:4px;" id="nxNtNext"></div>
+    </div>
+
+    <!-- Social row -->
+    <div class="nx-social-row">
+      <button class="nx-social-btn" id="nxLikeBtn" onclick="snxNexusToggleLike()">
+        ❤ <span id="nxLikeCount">0</span>
+      </button>
+      <div class="nx-social-viewers">
+        👁 <span id="nxWatchViewers">0</span> WATCHING
+      </div>
+    </div>
+
+    <!-- Prophecy Queue (viewer-facing — read only) -->
+    <div class="nx-card">
+      <div class="nx-section-title">THE PROPHECY QUEUE</div>
+      <ul class="nx-queue-list" id="nxProphecyQueueList">
+        <li class="nx-queue-item">
+          <span class="nx-queue-num">𓂀</span>
+          <span class="nx-queue-title">The channel is preparing its transmission…</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Tomb of Sound scene name (cosmetic) -->
+    <div style="text-align:center;margin-top:4px;font-size:10px;color:var(--nx-text3);letter-spacing:1.5px;" id="nxSceneName"></div>
+
+  </div><!-- end Watch panel -->
+
+  <!-- ══════════════════════════════════════════════════════════
+       VAULT — Nexus Media Vault
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="nx-panel" id="nxVaultPanel" data-nxtab="vault" style="padding:12px 14px 120px;">
+
+    <div class="nx-section-title">𓃭 NEXUS MEDIA VAULT</div>
+
+    <input class="nx-input" type="search" id="nxVaultSearch" placeholder="🔍 Search the Vault…"
+      oninput="snxNexusVaultSearch()" style="margin-bottom:12px;">
+
+    <div class="nx-media-filter-row">
+      <button class="nx-media-filter-btn active" data-filter="all"     onclick="snxNexusVaultFilter('all')">ALL MEDIA</button>
+      <button class="nx-media-filter-btn"         data-filter="music"   onclick="snxNexusVaultFilter('music')">🎵 MUSIC</button>
+      <button class="nx-media-filter-btn"         data-filter="video"   onclick="snxNexusVaultFilter('video')">🎬 VIDEO</button>
+      <button class="nx-media-filter-btn"         data-filter="picture" onclick="snxNexusVaultFilter('picture')">🖼 PICTURES</button>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <span id="nxVaultCount" style="font-size:11px;color:var(--nx-text3);">0 ITEMS</span>
+      <button class="nx-btn nx-btn-sm nx-btn-primary" onclick="snxNexusSwitchTab('upload')">↑ UPLOAD</button>
+    </div>
+
+    <div id="nxVaultList"></div>
+
+  </div><!-- end Vault panel -->
+
+  <!-- ══════════════════════════════════════════════════════════
+       PLAYLISTS — Prophecy Playlists
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="nx-panel" id="nxPlaylistsPanel" data-nxtab="playlists" style="padding:12px 14px 120px;">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div class="nx-section-title" style="margin-bottom:0;">𓏲 PROPHECY PLAYLISTS</div>
+      <button class="nx-btn nx-btn-primary" onclick="snxNexusCreatePlaylist()">+ CREATE PLAYLIST</button>
+    </div>
+
+    <div id="nxPlaylistsList"></div>
+
+    <!-- Playlist editor (inline — shown when playlist is opened) -->
+    <div id="nxPlaylistEditor" style="display:none;margin-top:14px;padding:14px;background:var(--nx-panel);border:1px solid var(--nx-border2);border-radius:14px;">
+      <div id="nxPlaylistEditorInner"></div>
+    </div>
+
+  </div><!-- end Playlists panel -->
+
+  <!-- ══════════════════════════════════════════════════════════
+       QUEUE — The Prophecy Queue (management view)
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="nx-panel" id="nxQueuePanel" data-nxtab="queue" style="padding:12px 14px 120px;">
+
+    <div class="nx-section-title">𓂝 THE PROPHECY QUEUE</div>
+
+    <!-- Current Transmission (mini) -->
+    <div class="nx-card" style="margin-bottom:12px;">
+      <div style="font-size:9px;letter-spacing:1.5px;color:var(--nx-text3);margin-bottom:4px;">NOW PLAYING</div>
+      <div style="font-size:15px;font-weight:800;color:var(--nx-gold-text);" id="nxNPTitle">—</div>
+      <div style="font-size:11px;color:var(--nx-text2);" id="nxNPArtist"></div>
+      <div style="font-size:10px;color:var(--nx-text3);margin-top:3px;" id="nxNPNext"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="nx-btn nx-btn-sm" onclick="snxNexusQueuePlayPause()">⏯ Play/Pause</button>
+        <button class="nx-btn nx-btn-sm" onclick="snxNexusQueueSkip()">⏭ Skip</button>
+        <button class="nx-btn nx-btn-sm nx-btn-danger" onclick="snxNexusQueueClear()">✕ Clear All</button>
+      </div>
+    </div>
+
+    <div style="font-size:9px;letter-spacing:1.5px;color:var(--nx-text3);margin-bottom:8px;">UP NEXT</div>
+    <div id="nxQueueList"></div>
+
+    <!-- Add from Vault section -->
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--nx-border);">
+      <div class="nx-section-title">ADD FROM VAULT</div>
+      <input class="nx-input" type="search" id="nxQueueSearch" placeholder="🔍 Search library…"
+        oninput="(function(){var q=(document.getElementById('nxQueueSearch')||{}).value||'';document.querySelectorAll('#nxQueueVaultList .nx-track-item').forEach(function(el){var t=(el.dataset.title||'').toLowerCase();var a=(el.dataset.artist||'').toLowerCase();el.style.display=(t.includes(q.toLowerCase())||a.includes(q.toLowerCase()))?'':'none';});})()"
+        style="margin-bottom:8px;">
+      <div id="nxQueueVaultList" style="max-height:300px;overflow-y:auto;"></div>
+      <script>
+        // Populate queue vault list when queue tab loads
+        document.addEventListener('DOMContentLoaded', function() {
+          if (typeof window._snxOnAuthReady === 'function') {
+            window._snxOnAuthReady(function() {
+              // Defer to let studio.js load tracks first
+              setTimeout(function() {
+                var el = document.getElementById('nxQueueVaultList');
+                if (!el) return;
+                var tracks = (window._music && window._music.tracks) ? window._music.tracks : [];
+                if (!tracks.length) { el.innerHTML = '<div style="color:var(--nx-text3);font-size:12px;padding:8px 0;">Upload music in the Upload tab first.</div>'; return; }
+                el.innerHTML = tracks.map(function(t) {
+                  return '<div class="nx-track-item" data-title="' + (t.title||'').replace(/"/g,'') + '" data-artist="' + (t.artist||'').replace(/"/g,'') + '">' +
+                    '<div class="nx-track-info" style="flex:1;min-width:0;cursor:pointer;" onclick="snxNexusAddToQueue(\'' + (t.id||'').replace(/'/g,'') + '\')">' +
+                      '<div class="nx-track-title">' + (t.title||'Untitled').replace(/</g,'&lt;') + '</div>' +
+                      '<div class="nx-track-artist">' + (t.artist||'').replace(/</g,'&lt;') + '</div>' +
+                    '</div>' +
+                    '<button class="nx-btn nx-btn-sm" onclick="snxNexusAddToQueue(\'' + (t.id||'').replace(/'/g,'') + '\')">+ ADD</button>' +
+                  '</div>';
+                }).join('');
+              }, 1500);
+            });
+          }
+        });
+      </script>
+    </div>
+
+  </div><!-- end Queue panel -->
+
+  <!-- ══════════════════════════════════════════════════════════
+       UPLOAD — Offering Chamber
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="nx-panel" id="nxUploadPanel" data-nxtab="upload" style="padding:12px 14px 120px;">
+
+    <div class="nx-section-title">↑ UPLOAD TO NEXUS</div>
+
+    <!-- Type selector -->
+    <div class="nx-upload-type-row">
+      <button class="nx-upload-type-btn active" data-type="music"   onclick="snxNexusSetUploadType('music')">🎵 MUSIC</button>
+      <button class="nx-upload-type-btn"         data-type="video"   onclick="snxNexusSetUploadType('video')">🎬 VIDEO</button>
+      <button class="nx-upload-type-btn"         data-type="picture" onclick="snxNexusSetUploadType('picture')">🖼 PICTURE</button>
+    </div>
+
+    <!-- Drop zone -->
+    <div class="nx-upload-zone" id="nxUploadZone"
+      onclick="snxNexusOpenFilePicker()"
+      ondragover="event.preventDefault();this.classList.add('drag-over');"
+      ondragleave="this.classList.remove('drag-over');"
+      ondrop="event.preventDefault();this.classList.remove('drag-over');if(event.dataTransfer&&event.dataTransfer.files&&event.dataTransfer.files.length){var fakeEvt={target:{files:event.dataTransfer.files}};snxNexusFilesSelected(fakeEvt);}">
+      <span class="nx-upload-icon">↑</span>
+      <div class="nx-upload-zone-title">Click or Drag &amp; Drop</div>
+      <div class="nx-upload-zone-sub" id="nxUploadZoneSub">MP3, M4A, AAC, OGG, WAV, FLAC, OPUS<br>Up to 1,000 files at once</div>
+    </div>
+
+    <button class="nx-btn nx-btn-primary" style="width:100%;padding:14px;font-size:14px;border-radius:14px;margin-bottom:16px;" onclick="snxNexusOpenFilePicker()">
+      SELECT FILES
+    </button>
+
+    <!-- Upload progress -->
+    <div class="nx-upload-progress-bar-wrap" id="nxUploadProgress">
+      <div class="nx-upload-progress-bar-fill" id="nxUploadProgressBar"></div>
+    </div>
+
+    <!-- Hidden music file input (mp3/music — uses studio.js snxMusicFilesSelected) -->
+    <input type="file" id="nxUploadFileInput"
+      accept="audio/*,.mp3,.m4a,.aac,.ogg,.wav,.flac,.opus"
+      multiple style="display:none;"
+      onchange="snxNexusFilesSelected(event)">
+
+    <div style="margin-top:16px;font-size:12px;color:var(--nx-text3);text-align:center;line-height:1.7;">
+      Files are stored on <strong style="color:var(--nx-text2);">Cloudflare R2</strong>.<br>
+      After upload, media appears immediately in the <strong style="color:var(--nx-gold);">Nexus Media Vault</strong>.
+    </div>
+
+    <!-- nxUploadDashboard — no duplicate ID with studio.js's snxUploadDashboard -->
+    <div id="nxUploadDashboard" style="margin-top:12px;"></div>
+
+  </div><!-- end Upload panel -->
+
+  <!-- ══════════════════════════════════════════════════════════
+       CONTROL — Founder / Authorized Channel Controls
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="nx-panel" id="nxControlPanelWrap" data-nxtab="control" style="padding:12px 14px 120px;">
+
+    <div class="nx-section-title">⚙ FOUNDER CHANNEL CONTROLS</div>
+
+    <!-- Now Playing control card -->
+    <div class="nx-np-card" id="nxControlPanel">
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;">
+        <div class="nx-np-artwork">𓂀</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:9px;letter-spacing:1.5px;color:var(--nx-text3);margin-bottom:3px;">CURRENT TRANSMISSION</div>
+          <div class="nx-np-title" id="nxControlNPTitle">—</div>
+          <div class="nx-np-artist" id="nxControlNPArtist"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          <div style="font-size:11px;color:var(--nx-turquoise);">👁 <span id="nxControlViewers">0</span></div>
+        </div>
+      </div>
+      <div class="nx-np-controls">
+        <button class="nx-btn" onclick="snxNexusControlPlayPause()">⏯ Play/Pause</button>
+        <button class="nx-btn" onclick="snxNexusControlSkip()">⏭ Skip</button>
+        <button class="nx-btn nx-btn-danger" onclick="snxNexusControlStop()">⛔ Stop Channel</button>
+      </div>
+    </div>
+
+    <!-- Start new stream -->
+    <div class="nx-card">
+      <div style="font-size:12px;font-weight:700;color:var(--nx-gold);margin-bottom:10px;">START ETERNAL STREAM</div>
+      <button class="nx-btn nx-btn-primary" style="width:100%;" onclick="snxNexusStartStream()">
+        ▶ START CLOUD STREAM
+      </button>
+    </div>
+
+    <!-- Link to founder admin panel -->
+    <div class="nx-card">
+      <div style="font-size:12px;font-weight:700;color:var(--nx-gold);margin-bottom:8px;">ADVANCED CONTROLS</div>
+      <button class="nx-btn" style="width:100%;" onclick="realmNavTo('adminPage');closeMobileDrawer&&closeMobileDrawer();">
+        🛸 Open Founder Control Panel
+      </button>
+    </div>
+
+    <!-- Cloud Stream diagnostic -->
+    <div class="nx-card" id="snxCSPreDiagCard" style="display:none;">
+      <div style="font-size:11px;font-weight:700;color:var(--nx-gold);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;">
+        🔬 Studio Diagnostic
+        <button onclick="snxRefreshStudioDiag()" class="nx-btn nx-btn-sm">↺ Refresh</button>
+      </div>
+      <div id="snxCSDiagPreBody" style="font-size:11px;line-height:1.7;color:var(--nx-text3);">Click Refresh</div>
+    </div>
+    <button class="nx-btn nx-btn-sm" onclick="snxToggleStudioDiag()" style="margin-top:8px;">Show Diagnostic</button>
+
+  </div><!-- end Control panel -->
+
+  <!-- TOAST -->
+  <div id="nxToast" class="nx-toast"></div>
+
+  <!-- SEND TO STREAM MODAL -->
+  <div class="nx-stream-modal" id="nxStreamModal">
+    <div class="nx-stream-modal-inner">
+      <div class="nx-stream-modal-title">▶ SEND TO ETERNAL STREAM</div>
+      <button class="nx-stream-option" onclick="snxNexusStreamPlayNow()">
+        <span class="nx-stream-option-icon">▶</span>
+        <div><strong>PLAY NOW</strong><br><span style="font-size:11px;color:var(--nx-text2);">Start playing immediately on the stream</span></div>
+      </button>
+      <button class="nx-stream-option" onclick="snxNexusStreamAddToQueue()">
+        <span class="nx-stream-option-icon">+ Q</span>
+        <div><strong>ADD TO QUEUE</strong><br><span style="font-size:11px;color:var(--nx-text2);">Add all tracks to end of Prophecy Queue</span></div>
+      </button>
+      <button class="nx-stream-option" onclick="snxNexusStreamAddNext()">
+        <span class="nx-stream-option-icon">↩</span>
+        <div><strong>PLAY NEXT</strong><br><span style="font-size:11px;color:var(--nx-text2);">Insert after current track</span></div>
+      </button>
+      <button class="nx-btn" style="width:100%;margin-top:8px;" onclick="snxNexusStreamModalClose()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Hidden: Studio fields needed by snxStartCloudStream -->
+  <input type="hidden" id="snxCSStreamName">
+  <input type="hidden" id="snxCSDescription">
+  <input type="hidden" id="snxCSCategory" value="Music">
+  <input type="hidden" id="snxCSDuration" value="1440">
+
+</div><!-- end nexusPage -->
+
+
 
 
 <script type="module">
@@ -20632,6 +20974,12 @@ function navTo(pageId) {
         // Load blocked users (Security tab might be active)
         if (typeof window.snxLoadBlockedUsers === 'function') window.snxLoadBlockedUsers();
     }
+    // Initialize 24-HOUR NEXUS when nexusPage or studioPage opens
+    if (pageId === 'nexusPage' || pageId === 'studioPage') {
+        if (typeof window.snxNexusInit === 'function') window.snxNexusInit();
+        // Also kick off studio.js init for backend functions (tracks, playlists, queue)
+        if (typeof window.snxStudioInit === 'function') window.snxStudioInit();
+    }
     // Initialize Global Search when search page opens
     if (pageId === 'searchPage') {
         if (typeof window._snxUpgradeSearchOpen === 'function') window._snxUpgradeSearchOpen();
@@ -24229,12 +24577,15 @@ function _supportStopCanvas() {
      ═══════════════════════════════════════════════════════════ -->
 
 <!-- ── Global Background Internet Manager (must load before script.js) ── -->
-<script src="snx-net.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
+<script src="snx-net.js?v=SNS-2026-ETERNAL-STREAM-003"></script>
 
-<script src="script.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
+<script src="script.js?v=SNS-2026-ETERNAL-STREAM-003"></script>
 
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library, Upload, Playlists, Queue ── -->
-<script src="studio.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
+<script src="studio.js?v=SNS-2026-ETERNAL-STREAM-003"></script>
+
+<!-- ── Shadow Nexus 24-HOUR NEXUS — unified Eternal Stream + Studio ── -->
+<script src="nexus.js?v=SNS-2026-ETERNAL-STREAM-003"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════
@@ -29550,16 +29901,16 @@ window.switchAdminTab = function(tab) {
 </script>
 
 <!-- ── Profile Photo Album module (must load after the main IIFE) ── -->
-<script src="album.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
+<script src="album.js?v=SNS-2026-ETERNAL-STREAM-003"></script>
 
 <!-- ── Profile Music System (loads after Firebase is initialized) ── -->
-<script src="profile-music.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
+<script src="profile-music.js?v=SNS-2026-ETERNAL-STREAM-003"></script>
 
 <!-- ── Profile Theme System (loads after Firebase is initialized) ── -->
-<script src="profile-theme.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
+<script src="profile-theme.js?v=SNS-2026-ETERNAL-STREAM-003"></script>
 
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<script src="shadow-nexus-upgrade.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
+<script src="shadow-nexus-upgrade.js?v=SNS-2026-ETERNAL-STREAM-003"></script>
 
 <!-- ═══════════════════ GRIM AI ASSISTANT PANEL ═══════════════════ -->
 
@@ -31311,7 +31662,8 @@ function updateShadowCoreActive(pageId) {
         'moderatorPage':     ['navMod', 'scNavMod', 'ncmMod'],
         'administratorPage': ['navAdminOfficer', 'scNavAdm', 'ncmAdm'],
         'adminPage':         ['navAdmin', 'scNavFounder', 'ncmFounder'],
-        'studioPage':        ['navStudio']
+        'studioPage':        ['navNexus', 'scNavNexus', 'ncmNexus'],
+        'nexusPage':         ['navNexus', 'scNavNexus', 'ncmNexus']
     };
 
     var ids = map[pageId] || [];
@@ -31532,7 +31884,7 @@ document.addEventListener('click', function(e) {
 </script>
 
 <!-- ████ SHADOW NEXUS GIFTS — Gifting & Creator Monetization ████ -->
-<script type="module" src="snx-gifts.js?v=SNS-2026-ETERNAL-STREAM-002"></script>
+<script type="module" src="snx-gifts.js?v=SNS-2026-ETERNAL-STREAM-003"></script>
 
 <!-- Coin balance sync across all nav displays -->
 <script>
@@ -31586,8 +31938,8 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = 'SNS-2026-ETERNAL-STREAM-002';
-  var SW_VER   = 'v54';
+  var BUILD_ID = 'SNS-2026-ETERNAL-STREAM-003';
+  var SW_VER   = 'v55';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
 
@@ -31739,7 +32091,7 @@ document.addEventListener('click', function(e) {
 (function() {
   'use strict';
 
-  var _SNX_BUILD    = 'SNS-2026-ETERNAL-STREAM-002';
+  var _SNX_BUILD    = 'SNS-2026-ETERNAL-STREAM-003';
   var _SNX_SW_VER   = 'v54';
   var _SNX_DEPLOY   = '2026-10-03T00:00:00Z';
   var _SNX_PROJECT  = 'horr-a08f4';

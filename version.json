@@ -1,9 +1,10 @@
 {
-  "buildId": "SNS-2026-ETERNAL-STREAM-002",
-  "swVersion": "v54",
-  "deployedAt": "2026-10-03T00:00:00Z",
+  "buildId": "SNS-2026-ETERNAL-STREAM-003",
+  "swVersion": "v55",
+  "deployedAt": "2026-10-04T00:00:00Z",
   "project": "horr-a08f4",
-  "studioVersion": "2.2.0",
-  "cloudStreamVersion": "eternal-2.0",
-  "note": "Eternal Stream connected to index.html: old embedded Cloud Stream UI retired from studioPage, new Egyptian/Horror/Cosmic Eternal Stream (cloud-stream.html) is the only active Cloud Stream frontend. All nav routes (desktop sidebar, ShadowCore, Nexus Core mobile menu, Live Hub, Feed live cards) now point to cloud-stream.html. SW v54 forces cache bust."
+  "studioVersion": "3.0.0",
+  "cloudStreamVersion": "eternal-3.0",
+  "nexusVersion": "1.0.0",
+  "note": "24-HOUR NEXUS: Eternal Stream + Studio merged into ONE unified Egyptian/Horror/Cosmic experience. New nexusPage replaces separate studioPage + Eternal Stream nav entries. nexus.css (Egyptian gold theme), nexus.js (unified Watch/Vault/Playlists/Queue/Upload/Control), all using same Firebase collections. SW v55 cache bust."
 }
