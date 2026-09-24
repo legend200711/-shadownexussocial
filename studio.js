@@ -26,7 +26,7 @@
    0. CONSTANTS
 ═══════════════════════════════════════════════════════ */
 var STUDIO_VERSION = '1.3.0';
-var APP_BUILD_VERSION = '2026-09-23-GLOBAL-UPDATE';
+var APP_BUILD_VERSION = 'SNS-2026-10-02-COSMIC-001';
 
 // Expose for debug panels and version verification
 window.SNX_STUDIO_BUILD = APP_BUILD_VERSION;

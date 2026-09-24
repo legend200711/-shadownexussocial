@@ -1,8 +1,9 @@
 {
-  "buildId": "SNS-2026-10-01-001",
-  "swVersion": "v52",
-  "deployedAt": "2026-10-01T00:00:00Z",
+  "buildId": "SNS-2026-10-02-COSMIC-001",
+  "swVersion": "v53",
+  "deployedAt": "2026-10-02T00:00:00Z",
   "project": "horr-a08f4",
-  "studioVersion": "2.1.0",
-  "note": "Major platform upgrade: Platform Status Center, Founder Announcements (rich scheduling/targeting), Global Nexus Search (multi-category), Account Security & Privacy Center, Live Notifications, Per-Feature Maintenance Controls, Enhanced Audit Log with filters, Founder Panel lifecycle hooks. New files: shadow-nexus-upgrade.js, shadow-nexus-upgrade.css. SW v52."
+  "studioVersion": "2.2.0",
+  "cloudStreamVersion": "cosmic-1.0",
+  "note": "Global production sync: 24-Hour Cloud Stream cosmic redesign (RTDB presence viewer count, likes-only, two-column desktop layout, music artwork mode, starfield CSS), Firebase RTDB presence rules deployed, SW v53 forces cache bust on all PWA clients."
 }
