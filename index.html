@@ -58,7 +58,7 @@
 <!-- ── Nexus Global Theme Engine ── -->
 <link rel="stylesheet" href="theme-engine.css?v=SNS-2026-ALBUM-PRIVACY-001">
 <!-- ── Shadow Nexus Cinematic Welcome Experience ── -->
-<link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-INTRO-001">
+<link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-INTRO-003">
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Egyptian/Horror theme ── -->
 <link rel="stylesheet" href="nexus.css?v=SNS-2026-ALBUM-PRIVACY-001">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
@@ -6558,12 +6558,10 @@ body.arcade-fs-ios body::after { display:none !important; }
     <div class="snx-gate-label">Loading…</div>
 </div>
 
-<!-- ████ SHADOW NEXUS REALM — Entering Animation ████ -->
-<div id="snxEnterOverlay">
-    <div class="snx-enter-logo">SHADOW NEXUS SOCIAL</div>
-    <div class="snx-enter-sub">REALM INITIALIZING</div>
-    <div class="snx-enter-bar"><div class="snx-enter-bar-fill"></div></div>
-</div>
+<!-- ████ SHADOW NEXUS REALM — Entering Animation ████
+     Hidden: replaced by the cinematic nexus-intro.js welcome experience.
+     Keep the element for legacy JS guard (initEnterOverlay checks for it). -->
+<div id="snxEnterOverlay" style="display:none!important"></div>
 
 <!-- Stars + Particles Canvas -->
 <canvas id="snxStarsCanvas"></canvas>
@@ -31506,25 +31504,12 @@ document.getElementById('gp-messages')?.addEventListener('touchmove', (e) => {
 'use strict';
 
 /* ═══════════════════════════════════════════════════════
-   1. ENTER OVERLAY — auto-dismiss after animation
+   1. ENTER OVERLAY — replaced by nexus-intro.js cinematic welcome.
+      This stub exists only to prevent JS errors on old cached pages.
    ═══════════════════════════════════════════════════════ */
 (function initEnterOverlay() {
-    var overlay = document.getElementById('snxEnterOverlay');
-    if (!overlay) return;
-    // Mark as seen immediately so a hard-refresh before the timeout fires
-    // never replays the intro screen in the same session.
-    var alreadySeen = !!sessionStorage.getItem('snx-realm-entered');
-    sessionStorage.setItem('snx-realm-entered', '1');
-    if (alreadySeen) {
-        overlay.style.display = 'none';
-        return;
-    }
-    // Dismiss after the CSS animation completes (3.2s fade + 0.8s = 4s).
-    // Also stop the CSS animation on every child so the browser releases
-    // the element from its animation engine once hidden.
-    setTimeout(function() {
-        overlay.classList.add('done');
-    }, 4050);
+    // No-op: the old REALM INITIALIZING overlay is permanently hidden via CSS.
+    // The cinematic welcome experience is handled entirely by nexus-intro.js.
 })();
 
 /* ═══════════════════════════════════════════════════════

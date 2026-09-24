@@ -87,20 +87,26 @@
         el.setAttribute('aria-label', 'Shadow Nexus Social cinematic welcome');
 
         el.innerHTML =
+            // Atmospheric blue glow (emerges slowly)
+            '<div id="snxIntroGlow" aria-hidden="true"></div>' +
             '<div id="snxIntroStars" aria-hidden="true"></div>' +
-            // Lightning
+            // Lightning (6 bolts for depth) + environmental glow
             '<div id="snxIntroLightning" aria-hidden="true">' +
             '<div class="snxi-bolt"></div><div class="snxi-bolt"></div>' +
             '<div class="snxi-bolt"></div><div class="snxi-bolt"></div>' +
+            '<div class="snxi-bolt"></div><div class="snxi-bolt"></div>' +
             '</div>' +
-            // Fog
+            '<div id="snxIntroLightGlow" aria-hidden="true"></div>' +
+            // Fog (4 layers: background, midground, foreground, high-depth)
             '<div id="snxIntroFog" aria-hidden="true">' +
-            '<div class="snxi-fog"></div><div class="snxi-fog"></div><div class="snxi-fog"></div>' +
+            '<div class="snxi-fog"></div><div class="snxi-fog"></div>' +
+            '<div class="snxi-fog"></div><div class="snxi-fog"></div>' +
             '</div>' +
-            // Portal
+            // Portal (5 rings: 4 rings + 1 particle ring + core)
             '<div id="snxIntroPortal" aria-hidden="true">' +
             '<div class="snxi-pring"></div><div class="snxi-pring"></div>' +
             '<div class="snxi-pring"></div><div class="snxi-pring"></div>' +
+            '<div class="snxi-pring"></div>' +
             '<div class="snxi-pcore"></div>' +
             '</div>' +
             // Forest
@@ -113,11 +119,14 @@
             '<div id="snxIntroCrows" aria-hidden="true"></div>' +
             // Cat
             '<div id="snxIntroCat" aria-hidden="true">' + _catSVG() + '</div>' +
-            // Flames
+            // Flames + ground glow
             '<div id="snxIntroFlames" aria-hidden="true">' +
             Array(10).fill('<div class="snxi-flame"></div>').join('') +
             '</div>' +
-            // Title
+            '<div id="snxIntroFlameGlow" aria-hidden="true"></div>' +
+            // Blue energy burst (enter transition layer)
+            '<div id="snxIntroEnergy" aria-hidden="true"></div>' +
+            // Title (welcome-to animates in separately before main title)
             '<div id="snxIntroTitle">' +
             '<div class="snxi-welcome-to">Welcome to</div>' +
             '<div class="snxi-main-title">SHADOW <span class="snxi-accent">NEXUS</span> SOCIAL</div>' +
@@ -147,20 +156,28 @@
     }
 
     function _injectCrows(container) {
+        // Varied sizes, speeds, paths — some far, some closer to foreground
         var data = [
-            {top:'12%',dur:'17s',delay:'1.5s'},{top:'19%',dur:'21s',delay:'5s'},
-            {top:'9%', dur:'15s',delay:'8s'}, {top:'23%',dur:'19s',delay:'12s'},
-            {top:'14%',dur:'23s',delay:'2.5s'},{top:'7%', dur:'18s',delay:'17s'},
+            {top:'11%', dur:'17s', delay:'2s',   size:'28px'},   // distant, fast
+            {top:'18%', dur:'22s', delay:'6s',   size:'34px'},   // mid
+            {top:'8%',  dur:'15s', delay:'10s',  size:'22px'},   // very distant
+            {top:'22%', dur:'20s', delay:'14s',  size:'38px'},   // closer
+            {top:'13%', dur:'25s', delay:'3.5s', size:'26px'},   // slow, distant
+            {top:'6%',  dur:'18s', delay:'19s',  size:'20px'},   // very far
         ];
-        data.forEach(function(c){
-            var d=document.createElement('div');
-            d.className='snxi-crow';
-            d.style.setProperty('--cy',c.top);
-            d.style.setProperty('--cdur',c.dur);
-            d.style.setProperty('--cdelay',c.delay);
-            d.innerHTML=_crowSVG();
+        // On mobile only show 3 crows to save performance
+        var maxCrows = (window.innerWidth < 640) ? 3 : data.length;
+        for (var i = 0; i < maxCrows; i++) {
+            var c = data[i];
+            var d = document.createElement('div');
+            d.className = 'snxi-crow';
+            d.style.setProperty('--cy', c.top);
+            d.style.setProperty('--cdur', c.dur);
+            d.style.setProperty('--cdelay', c.delay);
+            d.style.setProperty('--csz', c.size);
+            d.innerHTML = _crowSVG();
             container.appendChild(d);
-        });
+        }
     }
 
     // ── Audio helpers ─────────────────────────────────────────────────────────
@@ -285,32 +302,43 @@
             return;
         }
 
-        // Cinematic exit:
+        // Cinematic exit — camera zooms into the portal:
         // 1. Portal expand
         var portal = document.getElementById('snxIntroPortal');
         if (portal) portal.classList.add('snxi-portal-expand');
 
-        // 2. Flames react
+        // 2. Flames react faster (portal is pulling energy)
         document.querySelectorAll('.snxi-flame').forEach(function(f){ f.classList.add('snxi-flame-react'); });
 
-        // 3. Fog burst
+        // 3. Fog bursts outward (portal push)
         document.querySelectorAll('.snxi-fog').forEach(function(f){ f.classList.add('snxi-fog-expand'); });
 
-        // 4. Title fade
+        // 4. Title dissolves
         var title = document.getElementById('snxIntroTitle');
         if (title) title.classList.add('snxi-title-exit');
 
-        // 5. Fade music
+        // 5. Camera zoom — CSS scale on overlay
+        setTimeout(function(){
+            if (ov) ov.classList.add('snxi-enter-travel');
+        }, 400);
+
+        // 6. Blue energy burst fills screen
+        var energy = document.getElementById('snxIntroEnergy');
+        if (energy) {
+            setTimeout(function(){ energy.classList.add('snxi-energy-burst'); }, 800);
+        }
+
+        // 7. Fade music
         _fadeOutAudio(function(){});
 
-        // 6. Fade overlay
-        setTimeout(function(){ ov.classList.add('snxi-exit'); }, 600);
+        // 8. Fade overlay
+        setTimeout(function(){ ov.classList.add('snxi-exit'); }, 1000);
 
-        // 7. Remove from DOM
+        // 9. Remove from DOM
         setTimeout(function(){
             ov.classList.add('snxi-gone');
             if (typeof window.snxIntroCompleted === 'function') window.snxIntroCompleted();
-        }, 2400);
+        }, 2800);
     }
 
     // ── Wire buttons ──────────────────────────────────────────────────────────
