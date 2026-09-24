@@ -39,6 +39,10 @@ import {
   collection, query, orderBy, limit, where, onSnapshot,
   serverTimestamp, documentId, increment
 } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
+import {
+  getDatabase, ref as rtdbRef, set as rtdbSet, remove as rtdbRemove,
+  onDisconnect, onValue, serverTimestamp as rtdbServerTimestamp,
+} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js';
 
 /* ── Firebase config ─────────────────────────────────────────────────── */
 const _CFG = {
@@ -51,9 +55,10 @@ const _CFG = {
   appId:             '1:933810617818:web:efb24f123337dd987c14e3',
 };
 
-const _app  = getApps().length ? getApp() : initializeApp(_CFG);
-const _auth = getAuth(_app);
-const _db   = getFirestore(_app);
+const _app   = getApps().length ? getApp() : initializeApp(_CFG);
+const _auth  = getAuth(_app);
+const _db    = getFirestore(_app);
+const _rtdb  = getDatabase(_app);
 
 setPersistence(_auth, browserLocalPersistence).catch(() => {});
 
@@ -100,6 +105,16 @@ let _player = {
   // queue for Up Next
   _queue:          [],
   _queueIndex:     0,
+};
+
+/* RTDB Presence state */
+let _presence = {
+  sessionId:        null,  // unique tab session ID
+  streamId:         null,  // which stream we're present in
+  rtdbRef:          null,  // RTDB node ref for this session
+  unsub:            null,  // onValue unsubscribe for viewer count
+  heartbeatTimer:   null,  // stale-session heartbeat
+  staleTimeout:     75000, // ms — sessions older than this are excluded
 };
 
 /* Audio Visualizer state */
@@ -154,10 +169,14 @@ function _showError(id, msg) {
 }
 
 function _getSessionId() {
-  if (_user) return _user.uid;
-  const KEY = 'snx_csr_guest_session';
-  let id = localStorage.getItem(KEY);
-  if (!id) { id = 'g_' + Math.random().toString(36).slice(2) + '_' + Date.now().toString(36); localStorage.setItem(KEY, id); }
+  // Always use a stable per-tab key (NOT uid), so refreshing the same tab
+  // replaces the same RTDB presence slot rather than creating a new one.
+  const TAB_KEY = 'snx_csr_tab_session';
+  let id = sessionStorage.getItem(TAB_KEY);
+  if (!id) {
+    id = (Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)).slice(0, 20);
+    sessionStorage.setItem(TAB_KEY, id);
+  }
   return id;
 }
 
@@ -209,6 +228,7 @@ async function _initCreatorMode() {
   // Show admin section only to admins / founders
   if (isAdmin) {
     _show('csrAdminSection', true);
+    _show('csrAdminDivider', true);
   }
 
   // Check for an active stream belonging to this user
@@ -464,6 +484,7 @@ async function _initListenerForStream(streamId, streamData) {
 
   _joinAsListener(streamId);
   _startListenerHeartbeat(streamId);
+  _startRtdbPresence(streamId);  // accurate RTDB viewer count
   _fetchLikes(streamId);
   _startAudioWatchdog(streamId);
 }
@@ -481,9 +502,13 @@ function _syncToNowPlaying(d) {
   const nextTitle = d.nextTitle       || '';
 
   // Update Now Playing panel
-  _setText('csrNpTitle',  title);
-  _setText('csrNpArtist', artist);
+  _setText('csrNpTitle',   title);
+  _setText('csrNpArtist',  artist);
   _setText('csrTotalTime', _fmtDur(dur));
+
+  // Also update music-stage title/artist overlay
+  _setText('csrMusicTitle',  title);
+  _setText('csrMusicArtist', artist);
 
   // Type badge
   const typeBadge = _el('csrNpTypeBadge');
@@ -636,6 +661,10 @@ function _activateMusicMode(url, dur, artworkUrl) {
       if (def) def.style.display = '';
     }
   }
+
+  // Show music info div in stage
+  const info = _el('csrMusicInfo');
+  if (info) info.style.display = '';
 
   _loadAndPlayAudio(url, dur);
 }
@@ -1033,7 +1062,119 @@ window.csrRetryConnect = function() {
 };
 
 /* ═══════════════════════════════════════════════════════
-   VIEWER PRESENCE — heartbeat
+   RTDB PRESENCE — accurate active viewer count
+   Path: presence/cloudStream/{streamId}/{sessionId}
+   Each tab gets one slot; onDisconnect removes it immediately.
+   Heartbeat updates lastSeen so stale sessions (crashed tabs)
+   are excluded from the live count after STALE_MS.
+═══════════════════════════════════════════════════════ */
+const PRESENCE_STALE_MS = 75000; // sessions not seen in 75s are stale
+
+async function _startRtdbPresence(streamId) {
+  if (!streamId) return;
+  if (_presence.streamId === streamId && _presence.rtdbRef) return; // already tracking
+
+  // Clean up previous presence slot (different stream or stale ref)
+  await _stopRtdbPresence(false);
+
+  const sessionId = _getSessionId();
+  _presence.sessionId = sessionId;
+  _presence.streamId  = streamId;
+
+  const presencePath = `presence/cloudStream/${streamId}/${sessionId}`;
+  const myRef = rtdbRef(_rtdb, presencePath);
+  _presence.rtdbRef = myRef;
+
+  const presenceData = {
+    uid:       _user ? _user.uid : null,
+    joinedAt:  Date.now(),
+    lastSeen:  Date.now(),
+  };
+
+  try {
+    // Write presence; schedule automatic cleanup on disconnect
+    await rtdbSet(myRef, presenceData);
+    await onDisconnect(myRef).remove();
+  } catch (e) {
+    console.warn('[CSR RTDB] presence write failed:', e.message);
+    return;
+  }
+
+  // Heartbeat — updates lastSeen periodically to prove liveness
+  if (_presence.heartbeatTimer) clearInterval(_presence.heartbeatTimer);
+  _presence.heartbeatTimer = setInterval(async () => {
+    try {
+      await rtdbSet(myRef, { ...presenceData, lastSeen: Date.now() });
+    } catch (_) {}
+  }, 30000);
+
+  // Subscribe to viewer count
+  _subscribeRtdbViewerCount(streamId);
+
+  // Remove presence on page unload
+  window.addEventListener('beforeunload', () => {
+    // sendBeacon can't hit RTDB directly; just best-effort remove
+    try { rtdbRemove(myRef); } catch (_) {}
+  }, { once: true });
+}
+
+async function _stopRtdbPresence(alsoUnsubCount = true) {
+  if (_presence.heartbeatTimer) {
+    clearInterval(_presence.heartbeatTimer);
+    _presence.heartbeatTimer = null;
+  }
+  if (_presence.rtdbRef) {
+    try { await rtdbRemove(_presence.rtdbRef); } catch (_) {}
+    _presence.rtdbRef = null;
+  }
+  if (alsoUnsubCount && _presence.unsub) {
+    try { _presence.unsub(); } catch (_) {}
+    _presence.unsub = null;
+  }
+  _presence.sessionId = null;
+  _presence.streamId  = null;
+}
+
+function _subscribeRtdbViewerCount(streamId) {
+  if (!streamId) return;
+  if (_presence.unsub) { try { _presence.unsub(); } catch (_) {} }
+
+  const countPath = `presence/cloudStream/${streamId}`;
+  const countRef  = rtdbRef(_rtdb, countPath);
+
+  const unsub = onValue(countRef, snap => {
+    if (!snap.exists()) {
+      _updateViewerDisplay(0);
+      return;
+    }
+    const sessions = snap.val();
+    const now = Date.now();
+    let active = 0;
+    for (const [, data] of Object.entries(sessions)) {
+      if (data && typeof data.lastSeen === 'number') {
+        if (now - data.lastSeen < PRESENCE_STALE_MS) active++;
+      } else if (data && data.joinedAt) {
+        // legacy: no lastSeen, count if joined recently
+        if (now - data.joinedAt < PRESENCE_STALE_MS) active++;
+      }
+    }
+    _updateViewerDisplay(active);
+  }, err => console.warn('[CSR RTDB] viewer count error:', err.message));
+
+  _presence.unsub = unsub;
+}
+
+function _updateViewerDisplay(count) {
+  _player.listenerCount = count;
+  const countStr = String(count);
+  _setText('csrViewerCount',       countStr); // Now Playing panel
+  _setText('csrWatchingCount',     countStr); // Channel brand row
+  _setText('csrHeaderViewerCount', countStr); // Header pill
+  _setText('csrInfoListeners',     countStr); // Admin panel
+}
+
+/* ═══════════════════════════════════════════════════════
+   WORKER PRESENCE — heartbeat (kept for worker-side listener tracking)
 ═══════════════════════════════════════════════════════ */
 async function _joinAsListener(streamId) {
   if (!streamId) return;
@@ -1065,10 +1206,10 @@ function _startListenerHeartbeat(streamId) {
       });
       const d = await r.json().catch(() => ({}));
       if (d.rejoin) { await _joinAsListener(streamId); return; }
-      if (typeof d.viewerCount === 'number') {
-        _player.listenerCount = d.viewerCount;
-        _setText('csrViewerCount', String(d.viewerCount));
-        _setText('csrInfoListeners', String(d.viewerCount));
+      // NOTE: viewer count display is now driven by RTDB presence (_subscribeRtdbViewerCount).
+      // We only update here as a fallback if RTDB is unavailable.
+      if (typeof d.viewerCount === 'number' && _player.listenerCount === 0) {
+        _updateViewerDisplay(d.viewerCount);
       }
     } catch(_) {}
   };
@@ -1078,7 +1219,12 @@ function _startListenerHeartbeat(streamId) {
 
   window.addEventListener('beforeunload', () => _leaveAsListener(streamId), { once: true });
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') { _joinAsListener(streamId); _beat(); }
+    if (document.visibilityState === 'visible') {
+      _joinAsListener(streamId);
+      _beat();
+      // Re-register RTDB presence in case tab was sleeping
+      _startRtdbPresence(streamId);
+    }
   });
 }
 
