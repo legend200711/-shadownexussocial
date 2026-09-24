@@ -18,12 +18,13 @@
     var DEFAULT_VOLUME  = 0.45;
 
     // ── State ─────────────────────────────────────────────────────────────────
-    var _cfg         = null;   // welcomeConfig from Firestore
-    var _audio       = null;   // HTMLAudioElement
-    var _muted       = false;  // visitor mute state
-    var _audioStarted= false;  // whether audio has ever been started
-    var _overlay     = null;   // the overlay DOM element
-    var _exiting     = false;  // guard against double-exit
+    var _cfg              = null;   // welcomeConfig from Firestore
+    var _audio            = null;   // HTMLAudioElement
+    var _muted            = false;  // visitor mute state
+    var _audioStarted     = false;  // whether audio has ever been started
+    var _overlay          = null;   // the overlay DOM element
+    var _exiting          = false;  // guard against double-exit
+    var _founderPreviewActive = false; // true ONLY while snxwmPreviewFullIntro is running
 
     // ── Session helpers ───────────────────────────────────────────────────────
     function _shouldShow() {
@@ -722,6 +723,7 @@
         if (old) old.remove();
         _stopAudio();
         _exiting = false;
+        _founderPreviewActive = true;  // mark: a Founder-preview overlay is now live
 
         var ov = _buildOverlay();
         document.body.insertBefore(ov, document.body.firstChild);
@@ -734,6 +736,7 @@
         function _previewExit(fast) {
             if (_previewExiting) return;
             _previewExiting = true;
+            _founderPreviewActive = false; // preview is ending
             // Stop audio started by the preview
             _stopAudio();
             var ov2 = document.getElementById('snxIntroOverlay');
@@ -799,21 +802,25 @@
 
     // ── Cleanup hook — called by snxFounderPanelCleanup on navigation away ──
     window.snxwmCleanup = function () {
-        // Stop preview audio
+        // Stop preview audio (short clip played from the Current Song panel)
         if (_previewAudio) {
             try { _previewAudio.pause(); _previewAudio.src = ''; } catch(_) {}
             _previewAudio = null;
         }
-        // Remove any Founder-triggered intro preview overlay from body
-        var previewOv = document.getElementById('snxIntroOverlay');
-        if (previewOv) {
-            // Only remove if it's an Founder-preview (the real cinematic was already
-            // dismissed before the app showed; this is a re-injection from snxwmPreviewFullIntro)
-            previewOv.style.display = 'none';
-            if (previewOv.parentNode) previewOv.parentNode.removeChild(previewOv);
+        // Remove the Founder-preview overlay ONLY if a Founder preview is
+        // actually running.  Do NOT touch the real visitor cinematic intro —
+        // that has already been dismissed before the app became visible, and
+        // a fresh _buildAndRun() overlay must NOT be destroyed by cleanup.
+        if (_founderPreviewActive) {
+            _founderPreviewActive = false;
+            _stopAudio(); // stop preview cinematic audio
+            var previewOv = document.getElementById('snxIntroOverlay');
+            if (previewOv) {
+                previewOv.style.display = 'none';
+                if (previewOv.parentNode) previewOv.parentNode.removeChild(previewOv);
+            }
+            _exiting = false; // allow a future preview to start clean
         }
-        // Stop cinematic audio (the preview-only audio instance)
-        _stopAudio();
         // Reset preview button states
         var pbtn  = document.getElementById('snxwmPreviewBtn');
         var ppbtn = document.getElementById('snxwmPauseBtn');
@@ -822,8 +829,6 @@
         // Hide progress bar
         var progWrap = document.getElementById('snxwmProgressWrap');
         if (progWrap) progWrap.style.display = 'none';
-        // Reset exiting flag so next preview works
-        _exiting = false;
     };
 
 })();
