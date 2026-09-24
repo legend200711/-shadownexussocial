@@ -63,6 +63,8 @@
 <link rel="stylesheet" href="nexus.css?v=SNS-2026-ALBUM-PRIVACY-001">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
 <link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-ALBUM-PRIVACY-001">
+<!-- ── Shadow Nexus Adaptive Cinematic Performance System ── -->
+<link rel="stylesheet" href="snx-perf.css?v=SNS-2026-PERF-001">
 
 <!-- ── Preconnect to Firebase + R2 CDN so first load is faster ── -->
 <link rel="preconnect" href="https://www.gstatic.com">
@@ -8382,6 +8384,70 @@ body.arcade-fs-ios body::after { display:none !important; }
             </div>
         </div>
 
+        <!-- ══════════════════════════════════════════════════
+             ⚡ NEXUS PERFORMANCE — Adaptive Quality Settings
+             ══════════════════════════════════════════════════ -->
+        <div class="settings-section" id="snxPerfSettingsSection">
+            <h4>⚡ Nexus Performance</h4>
+            <p style="font-size:12px;color:#6a90b8;margin:0 0 12px;line-height:1.5;">
+                Control how the Shadow Nexus atmosphere adapts to your device.<br>
+                <strong style="color:#00AEEF;">AUTO</strong> is recommended — it adjusts automatically.
+            </p>
+
+            <!-- Current mode badge -->
+            <div id="snxPerfCurrentBadge" class="snx-perf-current-badge">
+                <span class="snx-nexus-ring sm"></span>
+                <span id="snxPerfCurrentLabel">Detecting…</span>
+            </div>
+
+            <!-- Mode selector -->
+            <div class="snx-perf-mode-grid" id="snxPerfModeGrid">
+                <button class="snx-perf-btn" data-mode="AUTO" onclick="snxPerfSelectMode('AUTO')">🔄 AUTO</button>
+                <button class="snx-perf-btn" data-mode="ULTRA" onclick="snxPerfSelectMode('ULTRA')">💎 ULTRA</button>
+                <button class="snx-perf-btn" data-mode="HIGH" onclick="snxPerfSelectMode('HIGH')">⚡ HIGH</button>
+                <button class="snx-perf-btn" data-mode="BALANCED" onclick="snxPerfSelectMode('BALANCED')">⚖️ BALANCED</button>
+                <button class="snx-perf-btn" data-mode="LITE" onclick="snxPerfSelectMode('LITE')">🌙 LITE</button>
+                <button class="snx-perf-btn" data-mode="MINIMAL" onclick="snxPerfSelectMode('MINIMAL')">🔲 MINIMAL</button>
+            </div>
+
+            <!-- Quick toggles -->
+            <div class="snx-perf-toggles">
+                <div class="snx-perf-toggle-row">
+                    <div>
+                        <div class="snx-perf-toggle-label">🎭 Reduce Motion</div>
+                        <div class="snx-perf-toggle-sub">Follow your system motion preference</div>
+                    </div>
+                    <label class="notif-toggle-wrap">
+                        <input type="checkbox" id="snxPerfReduceMotion" class="notif-toggle-cb"
+                               onchange="snxPerfSaveToggle('reduceMotion', this.checked)">
+                        <span class="notif-toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="snx-perf-toggle-row">
+                    <div>
+                        <div class="snx-perf-toggle-label">📡 Reduce Data Usage</div>
+                        <div class="snx-perf-toggle-sub">Lower-resolution assets &amp; less preloading</div>
+                    </div>
+                    <label class="notif-toggle-wrap">
+                        <input type="checkbox" id="snxPerfReduceData" class="notif-toggle-cb"
+                               onchange="snxPerfSaveToggle('reduceData', this.checked)">
+                        <span class="notif-toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="snx-perf-toggle-row">
+                    <div>
+                        <div class="snx-perf-toggle-label">🌙 Reduce Background Effects</div>
+                        <div class="snx-perf-toggle-sub">Fewer particles &amp; background animations</div>
+                    </div>
+                    <label class="notif-toggle-wrap">
+                        <input type="checkbox" id="snxPerfReduceBg" class="notif-toggle-cb"
+                               onchange="snxPerfSaveToggle('reduceBg', this.checked)">
+                        <span class="notif-toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
         <div class="settings-section">
             <h4>⚠️ Danger Zone</h4>
             <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
@@ -8947,6 +9013,7 @@ body.arcade-fs-ios body::after { display:none !important; }
     <button class="admin-tab" onclick="switchAdminTab('status');window._snxUpgradeStatusOpen&&window._snxUpgradeStatusOpen()">⚡ Status</button>
     <button class="admin-tab" onclick="switchAdminTab('maintenance');window._snxUpgradeMaintenanceOpen&&window._snxUpgradeMaintenanceOpen()">🔧 Maintenance</button>
     <button class="admin-tab" onclick="switchAdminTab('auditlog');window._snxUpgradeAuditOpen&&window._snxUpgradeAuditOpen()">📋 Audit Log</button>
+    <button class="admin-tab" onclick="switchAdminTab('perfstatus');snxPerfDashOpen()">⚡ Performance</button>
 </div>
 
 <!-- ══════════════════════════════════
@@ -9238,6 +9305,24 @@ body.arcade-fs-ios body::after { display:none !important; }
         <button class="snx-diag-copy-btn" onclick="snxCopyDiagReport()">
             📋 COPY DIAGNOSTIC REPORT
         </button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB: PERFORMANCE STATUS (Founder)
+══════════════════════════════════ -->
+<div class="admin-tab-content" id="adminTab-perfstatus">
+    <div class="snx-perf-dashboard">
+        <div class="snx-perf-dash-title">⚡ NEXUS PERFORMANCE STATUS</div>
+        <div class="snx-perf-dash-grid" id="snxPerfDashGrid">
+            <div style="grid-column:1/-1;color:#4a7a9a;font-size:12px;padding:8px 0;">Loading diagnostics…</div>
+        </div>
+        <button class="snx-perf-reset-btn" onclick="if(window.SNXPerf){SNXPerf.resetAuto();snxPerfDashOpen();toastNotification('⚡ Auto optimization reset.');}">
+            🔄 RESET AUTO OPTIMIZATION
+        </button>
+    </div>
+    <div class="section-card" style="margin-bottom:14px;font-size:12px;color:#4a7a9a;line-height:1.7;">
+        ℹ️ Diagnostics show non-sensitive performance data only. No user data is exposed here.
     </div>
 </div>
 
@@ -21023,6 +21108,14 @@ function navTo(pageId) {
     if (pageId !== 'profile' && typeof window.snxMusic?.stopMusicTab === 'function') {
         window.snxMusic.stopMusicTab();
     }
+
+    // SNXPerf: tell performance system which context we're entering
+    if (window.SNXPerf) {
+        // Leaving live hub = no longer in live context
+        if (pageId !== 'liveHubPage') {
+            SNXPerf.setLiveActive(false);
+        }
+    }
     show(pageId);
     // Scroll to top on every page navigation so Founder Panel content
     // never appears at the scroll position of a previously-visited page
@@ -22314,10 +22407,14 @@ const _isMobileDevice = typeof window !== 'undefined' && (
     window.innerWidth < 768 || (navigator.hardwareConcurrency || 4) <= 4
 );
 
+// Expose render function so SNXPerf can resume it
+window._snxBgRender = function() { if (!_bgPaused && !_bgRafId) render(); };
+
 function _seedAsh(w, h) {
     ashPts = [];
-    // Mobile: max 15 particles; desktop: max 35
-    const maxAsh = _isMobileDevice ? 15 : 35;
+    // Use SNXPerf config if available, else fall back to mobile heuristic
+    const maxAsh = (window._snxPerfCfg ? window._snxPerfCfg.particles : null)
+                    || (_isMobileDevice ? 15 : 35);
     const count = Math.min(maxAsh, Math.floor((w * h) / 32000));
     for (let i = 0; i < count; i++) {
         ashPts.push({
@@ -22336,7 +22433,8 @@ function _seedAsh(w, h) {
 function _seedGrid(w, h) {
     points = [];
     // Mobile: max 25 grid points; desktop: max 50
-    const maxGrid = _isMobileDevice ? 25 : 50;
+    const maxGrid = (window._snxPerfCfg ? window._snxPerfCfg.gridPoints : null)
+                    || (_isMobileDevice ? 25 : 50);
     const count = Math.min(maxGrid, Math.floor((w * h) / 24000));
     for (let i = 0; i < count; i++) {
         points.push({
@@ -22362,7 +22460,15 @@ window.addEventListener("resize", resize, { passive: true });
 resize();
 
 function render() {
-    if (_bgPaused) { _bgRafId = null; return; }
+    if (_bgPaused || window._snxBgPauseOverride) { _bgRafId = null; return; }
+
+    // Re-seed if SNXPerf requested it (quality level changed)
+    if (window._snxReseedParticles) {
+        window._snxReseedParticles = false;
+        _seedAsh(canvas.width, canvas.height);
+        _seedGrid(canvas.width, canvas.height);
+    }
+
     const W = canvas.width, H = canvas.height;
     const t = performance.now();
     const now = t * 0.001;
@@ -22517,9 +22623,10 @@ function render() {
     ctx.fillStyle = edgeGrd;
     ctx.fillRect(0, 0, W, H);
 
-    /* Layer 6 — Blue lightning bolt flashes */
+    /* Layer 6 — Blue lightning bolt flashes (only when quality allows) */
     const ltPhase = (now * 0.07) % 1;
-    if (ltPhase > 0.88 && ltPhase < 0.96) {
+    const _ltOn = !window._snxPerfCfg || window._snxPerfCfg.lightningOn;
+    if (_ltOn && ltPhase > 0.88 && ltPhase < 0.96) {
         const ltAlpha = ltPhase < 0.92
             ? (ltPhase - 0.88) / 0.04
             : 1 - (ltPhase - 0.92) / 0.04;
@@ -22557,9 +22664,10 @@ function render() {
         ctx.restore();
     }
 
-    /* Layer 7 — Blue flame orbs at bottom corners */
+    /* Layer 7 — Blue flame orbs at bottom corners (only when quality allows) */
+    const _flOn = !window._snxPerfCfg || window._snxPerfCfg.flameOrbs;
     const flamePhase = now * 1.4;
-    [[W * 0.05, H], [W * 0.95, H], [W * 0.5, H]].forEach(([fx, fy], fi) => {
+    if (_flOn) [[W * 0.05, H], [W * 0.95, H], [W * 0.5, H]].forEach(([fx, fy], fi) => {
         const fp = flamePhase + fi * 2.1;
         const fh = (60 + Math.sin(fp) * 20) * edgePulse;
         const fg = ctx.createRadialGradient(fx, fy, 0, fx, fy - fh * 0.4, fh);
@@ -22603,13 +22711,21 @@ document.addEventListener("visibilitychange", () => {
    We keep total count very low (max 14) to avoid performance issues.
 */
 (function spawnDomAsh() {
-    // Mobile gets fewer DOM particles to save battery/CPU
-    const MAX_DOM_ASH = _isMobileDevice ? 7 : 14;
     let domAshCount = 0;
+
+    function _maxDomAsh() {
+        // Use SNXPerf if available, otherwise fall back to mobile heuristic
+        if (window._snxPerfCfg && typeof window._snxPerfCfg.domAsh === 'number') {
+            return window._snxPerfCfg.domAsh;
+        }
+        return _isMobileDevice ? 7 : 14;
+    }
 
     function spawnOne() {
         // Don't spawn new particles while the tab is hidden
         if (document.hidden) { domAshCount = Math.max(0, domAshCount - 1); return; }
+        const MAX_DOM_ASH = _maxDomAsh();
+        if (MAX_DOM_ASH === 0) { domAshCount = 0; return; } // MINIMAL/LITE mode
         if (domAshCount >= MAX_DOM_ASH) return;
         domAshCount++;
         const el = document.createElement('div');
@@ -22639,7 +22755,8 @@ document.addEventListener("visibilitychange", () => {
     }
 
     // Stagger initial spawns across 3 seconds
-    for (let i = 0; i < MAX_DOM_ASH; i++) {
+    const _initCount = _maxDomAsh();
+    for (let i = 0; i < _initCount; i++) {
         setTimeout(spawnOne, i * 220);
     }
 })();
@@ -33755,6 +33872,175 @@ window.snxFounderPanelCleanup = (function() {
   };
 })();
 
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SHADOW NEXUS ADAPTIVE CINEMATIC PERFORMANCE SYSTEM
+     Loaded before the Welcome Experience so quality is applied
+     before any cinematic assets render.
+     ═══════════════════════════════════════════════════════════ -->
+<script src="snx-perf.js?v=SNS-2026-PERF-001"></script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PERFORMANCE SETTINGS UI — Settings page + Founder dashboard
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── Settings page: select a mode ── */
+  window.snxPerfSelectMode = function (modeStr) {
+    if (!window.SNXPerf) return;
+    SNXPerf.setMode(modeStr);
+    _updatePerfSettingsUI();
+    if (typeof toastNotification === 'function') {
+      toastNotification('⚡ Nexus Performance: ' + modeStr);
+    }
+  };
+
+  /* ── Settings page: save a toggle ── */
+  window.snxPerfSaveToggle = function (key, on) {
+    localStorage.setItem('snxPerfToggle_' + key, on ? '1' : '0');
+    if (key === 'reduceBg' && on) {
+      // Force to LITE or lower
+      if (window.SNXPerf) {
+        var idx = ['MINIMAL','LITE','BALANCED','HIGH','ULTRA'].indexOf(SNXPerf.mode);
+        if (idx > 1) SNXPerf.setMode('LITE');
+      }
+    }
+    if (key === 'reduceData' && on) {
+      localStorage.setItem('snxPerfMode', 'LITE');
+      if (window.SNXPerf) SNXPerf.setMode('LITE');
+    }
+    _updatePerfSettingsUI();
+  };
+
+  /* ── Update the Settings UI to reflect current state ── */
+  function _updatePerfSettingsUI() {
+    if (!window.SNXPerf) return;
+    var mode = SNXPerf.mode;
+    var isAuto = SNXPerf.isAuto !== undefined ? SNXPerf.isAuto : (localStorage.getItem('snxPerfMode') === 'AUTO' || !localStorage.getItem('snxPerfMode'));
+
+    // Update label
+    var labelEl = document.getElementById('snxPerfCurrentLabel');
+    if (labelEl) {
+      labelEl.textContent = 'NEXUS ' + mode + (isAuto ? ' (AUTO)' : ' (MANUAL)');
+    }
+
+    // Remove ring spinner once mode known
+    var badge = document.getElementById('snxPerfCurrentBadge');
+    if (badge) {
+      var ring = badge.querySelector('.snx-nexus-ring');
+      if (ring) ring.style.display = 'none';
+    }
+
+    // Update button active states
+    document.querySelectorAll('#snxPerfModeGrid .snx-perf-btn').forEach(function (btn) {
+      btn.classList.remove('active', 'active-auto');
+      var bMode = btn.getAttribute('data-mode');
+      if (bMode === 'AUTO' && isAuto) {
+        btn.classList.add('active-auto');
+      } else if (bMode === mode && !isAuto) {
+        btn.classList.add('active');
+      }
+    });
+
+    // Update toggles from localStorage
+    var toggleKeys = ['reduceMotion', 'reduceData', 'reduceBg'];
+    toggleKeys.forEach(function (k) {
+      var cb = document.getElementById('snxPerfReduce' + k.charAt(0).toUpperCase() + k.slice(1));
+      if (cb) cb.checked = localStorage.getItem('snxPerfToggle_' + k) === '1';
+    });
+  }
+
+  /* ── Founder dashboard open ── */
+  window.snxPerfDashOpen = function () {
+    if (!window.SNXPerf) return;
+    var grid = document.getElementById('snxPerfDashGrid');
+    if (!grid) return;
+
+    var d = SNXPerf.getDiagnostics();
+    var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+
+    function _item(key, val, cls) {
+      return '<div class="snx-perf-dash-item">' +
+        '<div class="snx-perf-dash-key">' + _e(key) + '</div>' +
+        '<div class="snx-perf-dash-val ' + (cls || '') + '">' + _e(String(val)) + '</div>' +
+        '</div>';
+    }
+    function _e(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function _fpsCls(fps) {
+      if (fps >= 55) return 'good';
+      if (fps >= 30) return 'warn';
+      return 'err';
+    }
+
+    grid.innerHTML =
+      _item('Cinematic Mode',   d.mode + (d.isAuto ? ' (AUTO)' : ' (MANUAL)'), 'good') +
+      _item('Avg Frame Rate',   d.frameRateAvg + ' fps', _fpsCls(d.frameRateAvg)) +
+      _item('Connection Tier',  d.connectionTier, d.connectionTier === 'good' ? 'good' : d.connectionTier === 'ok' ? 'warn' : 'err') +
+      _item('Effective Type',   d.effectiveType) +
+      _item('Save-Data',        d.saveData ? 'ON' : 'off', d.saveData ? 'warn' : '') +
+      _item('Reduced Motion',   d.reducedMotion ? 'ON' : 'off') +
+      _item('PWA Mode',         d.isPWA ? 'Yes' : 'No') +
+      _item('Platform',         d.isIOS ? 'iOS' : d.isAndroid ? 'Android' : d.isMobile ? 'Mobile' : 'Desktop') +
+      _item('CPU Cores',        d.hardwareCores) +
+      _item('Device RAM',       d.deviceMemoryGB !== 'unknown' ? d.deviceMemoryGB + ' GB' : 'unknown') +
+      _item('Live Active',      d.liveActive ? 'YES' : 'No', d.liveActive ? 'warn' : '') +
+      _item('Camera Active',    d.cameraActive ? 'YES' : 'No', d.cameraActive ? 'warn' : '') +
+      _item('Welcome Music',    d.activeMedia.welcomeMusic ? '▶ Playing' : 'Idle', d.activeMedia.welcomeMusic ? 'warn' : '') +
+      _item('Radio',            d.activeMedia.radio ? '▶ Playing' : 'Idle', d.activeMedia.radio ? 'warn' : '') +
+      _item('Music Hub',        d.activeMedia.musicHub ? '▶ Playing' : 'Idle', d.activeMedia.musicHub ? 'warn' : '');
+  };
+
+  /* ── Hook: update settings UI whenever settings page opens ── */
+  var _origNavToPerf = window.navTo;
+  if (typeof _origNavToPerf === 'function') {
+    window.navTo = function (pageId) {
+      _origNavToPerf(pageId);
+      if (pageId === 'settingsPage') {
+        setTimeout(_updatePerfSettingsUI, 100);
+      }
+    };
+  } else {
+    // navTo defined later — subscribe via DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', function () {
+      var orig = window.navTo;
+      if (typeof orig === 'function') {
+        window.navTo = function (pageId) {
+          orig(pageId);
+          if (pageId === 'settingsPage') setTimeout(_updatePerfSettingsUI, 100);
+        };
+      }
+    });
+  }
+
+  /* ── Initialize UI on page load ── */
+  (function _init() {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(_updatePerfSettingsUI, 500);
+      });
+    } else {
+      setTimeout(_updatePerfSettingsUI, 500);
+    }
+  })();
+
+  /* ── Subscribe to SNXPerf quality changes to keep UI current ── */
+  (function _subscribe() {
+    function _trySubscribe() {
+      if (window.SNXPerf && typeof SNXPerf.onChange === 'function') {
+        SNXPerf.onChange(function () { _updatePerfSettingsUI(); });
+      } else {
+        setTimeout(_trySubscribe, 1500);
+      }
+    }
+    _trySubscribe();
+  })();
+
+})();
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════

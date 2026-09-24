@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-FOUNDER-CLEANUP-001",
-  "swVersion": "v61",
-  "deployedAt": "2025-07-17T00:00:00Z",
+  "buildId": "SNS-2026-PERF-001",
+  "swVersion": "v62",
+  "deployedAt": "2025-07-18T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
   "nexusVersion": "1.0.1",
-  "note": "FOUNDER-CLEANUP-001: Fix Founder panel SPA cleanup and route isolation. Fix broken cleanup chain (shadow-nexus-upgrade.js hook lost by IIFE override). Fix Escape-key listener leak in nexus-intro.js full-intro preview. Add _isAdminPageActive guard to adminLoadSettings. Add failsafe route guard in navTo() to force-remove active class from #adminPage on non-admin navigation. Add SW precache entries for nexus-intro.js/css."
+  "note": "PERF-001: Add SNXPerf global adaptive cinematic performance system. Auto quality levels ULTRA/HIGH/BALANCED/LITE/MINIMAL. Runtime FPS monitor with hysteresis-based downgrade. Background-tab pause, reduced-motion/save-data respects. Canvas particle counts and lightning/flame effects tied to quality level. Settings page performance control UI. Founder dashboard performance diagnostics. Live/camera mode auto-reduces effects. SW bumped to v62."
 }
