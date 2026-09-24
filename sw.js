@@ -10,8 +10,8 @@
  * shadownexussocial.online (/) and any local dev server (/).
  */
 
-const CACHE_VERSION = 'v51';
-const BUILD_ID      = 'SNS-2026-09-25-001';
+const CACHE_VERSION = 'v52';
+const BUILD_ID      = 'SNS-2026-10-01-001';
 const CACHE_NAME    = `shadow-nexus-${CACHE_VERSION}`;
 const MEDIA_CACHE   = `shadow-nexus-media-${CACHE_VERSION}`;
 
@@ -48,6 +48,8 @@ const SHELL_FILES = [
   'favicon-32x32.png',
   'favicon-16x16.png',
   'version.json',
+  'shadow-nexus-upgrade.js',
+  'shadow-nexus-upgrade.css',
   // live.html / live.js / live.css intentionally excluded — always network-fresh
 ];
 

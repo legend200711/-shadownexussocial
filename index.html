@@ -43,22 +43,24 @@
 <meta name="twitter:image"       content="https://shadownexussocial.online/icon-512.png">
 
 <!-- ── Shared stylesheet ── -->
-<link rel="stylesheet" href="style.css?v=SNS-2026-09-25-001">
-<link rel="stylesheet" href="album.css?v=SNS-2026-09-25-001">
-<link rel="stylesheet" href="profile-music.css?v=SNS-2026-09-25-001">
-<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-09-25-001">
+<link rel="stylesheet" href="style.css?v=SNS-2026-10-01-001">
+<link rel="stylesheet" href="album.css?v=SNS-2026-10-01-001">
+<link rel="stylesheet" href="profile-music.css?v=SNS-2026-10-01-001">
+<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-10-01-001">
 <!-- ── Shadow Nexus Social Realm — full immersive redesign ── -->
-<link rel="stylesheet" href="realm.css?v=SNS-2026-09-25-001">
+<link rel="stylesheet" href="realm.css?v=SNS-2026-10-01-001">
 <!-- ── Mobile responsive design layer ── -->
-<link rel="stylesheet" href="mobile.css?v=SNS-2026-09-25-001">
+<link rel="stylesheet" href="mobile.css?v=SNS-2026-10-01-001">
 <!-- ── Shadow Nexus Gifting & Monetization ── -->
-<link rel="stylesheet" href="snx-gifts.css?v=SNS-2026-09-25-001">
+<link rel="stylesheet" href="snx-gifts.css?v=SNS-2026-10-01-001">
 <!-- ── Shadow Nexus 24-Hour Studio (Cloud Stream) ── -->
-<link rel="stylesheet" href="cloud-stream.css?v=SNS-2026-09-25-001">
+<link rel="stylesheet" href="cloud-stream.css?v=SNS-2026-10-01-001">
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library / Upload / Playlists / Queue ── -->
-<link rel="stylesheet" href="studio.css?v=SNS-2026-09-25-001">
+<link rel="stylesheet" href="studio.css?v=SNS-2026-10-01-001">
 <!-- ── Nexus Global Theme Engine ── -->
-<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-09-25-001">
+<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-10-01-001">
+<!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
+<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-10-01-001">
 
 <!-- ── Preconnect to Firebase + R2 CDN so first load is faster ── -->
 <link rel="preconnect" href="https://www.gstatic.com">
@@ -6989,6 +6991,9 @@ body.arcade-fs-ios body::after { display:none !important; }
             <span class="bolt-label">Click Here</span>
         </button> Eclipse Feed</h2>
 
+    <!-- ── Announcements Banner (published announcements shown to users) ── -->
+    <div id="snxAnnDisplay" style="margin-bottom:4px;"></div>
+
     <!-- ── Story Bar ── always visible ── -->
     <div class="section-card" style="padding:12px 14px 8px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
@@ -7770,15 +7775,66 @@ body.arcade-fs-ios body::after { display:none !important; }
 
 <!-- ═══════════ SEARCH PAGE ═══════════ -->
 <div class="page" id="searchPage">
-    <h2 class="eclipse-title">🔍 Find Your People</h2>
+    <h2 class="eclipse-title">🔍 Search the Nexus</h2>
     <div class="section-card">
-        <div class="search-bar-row">
-            <input id="searchInput" placeholder="Search the Nexus by name or handle…" autocomplete="off">
-            <button onclick="runSearch()" style="border-radius:8px;">Search</button>
+        <!-- Global search bar -->
+        <div class="search-bar-row" style="margin-bottom:10px;">
+            <input id="snxSearchInput" placeholder="Search people, music, posts, live…" autocomplete="off"
+                   oninput="snxSearchInput(this.value)"
+                   onkeydown="if(event.key==='Enter')snxRunGlobalSearch(this.value)">
+            <button onclick="snxRunGlobalSearch()" style="border-radius:8px;">Search</button>
         </div>
-        <div id="searchResults"><div class="search-empty">Type a name and press Search</div></div>
+        <!-- Legacy search input (for backward compatibility with runSearch) -->
+        <input id="searchInput" style="display:none;" autocomplete="off">
+        <div id="snxSearchInfo" class="snx-search-debounce-hint"></div>
+
+        <!-- Recent searches -->
+        <div id="snxSearchRecent" style="margin-bottom:10px;"></div>
+
+        <!-- Search result tabs -->
+        <div class="snx-search-tabs">
+            <button class="snx-search-tab active" data-tab="people" onclick="snxSearchSetTab('people')">
+                👥 People <span class="snx-search-tab-badge"></span>
+            </button>
+            <button class="snx-search-tab" data-tab="posts" onclick="snxSearchSetTab('posts')">
+                📝 Posts <span class="snx-search-tab-badge"></span>
+            </button>
+            <button class="snx-search-tab" data-tab="music" onclick="snxSearchSetTab('music')">
+                🎵 Music <span class="snx-search-tab-badge"></span>
+            </button>
+            <button class="snx-search-tab" data-tab="live" onclick="snxSearchSetTab('live')">
+                🔴 Live <span class="snx-search-tab-badge"></span>
+            </button>
+        </div>
+
+        <!-- People results (also holds legacy #searchResults for backward compat) -->
+        <div class="snx-search-panel active" data-tab="people">
+            <div id="snxSearchPeopleResults">
+                <div class="search-empty">Search the Nexus to find people, music, posts and live sessions.</div>
+            </div>
+        </div>
+        <!-- Posts results -->
+        <div class="snx-search-panel" data-tab="posts">
+            <div id="snxSearchPostResults">
+                <div class="search-empty">Search to find public posts.</div>
+            </div>
+        </div>
+        <!-- Music results -->
+        <div class="snx-search-panel" data-tab="music">
+            <div id="snxSearchMusicResults">
+                <div class="search-empty">Search for songs, artists or playlists.</div>
+            </div>
+        </div>
+        <!-- Live results -->
+        <div class="snx-search-panel" data-tab="live">
+            <div id="snxSearchLiveResults">
+                <div class="search-empty">No live sessions found. Try a search to see active streams.</div>
+            </div>
+        </div>
     </div>
 </div>
+<!-- Alias: keep legacy #searchResults pointing to the people panel div -->
+<div id="searchResults" style="display:none;"></div>
 
 <!-- ═══════════ FRIENDS & FAMILY PAGE ═══════════ -->
 <div class="page" id="friendsPage">
@@ -8204,12 +8260,98 @@ body.arcade-fs-ios body::after { display:none !important; }
                 </label>
             </div>
 
+            <div class="settings-row">
+                <div class="settings-label">
+                    🔴 Live Notifications
+                    <small>When someone you follow goes live</small>
+                </div>
+                <label class="notif-toggle-wrap">
+                    <input type="checkbox" id="notifPrefLive" class="notif-toggle-cb" checked onchange="saveNotifPref('live', this.checked)">
+                    <span class="notif-toggle-slider"></span>
+                </label>
+            </div>
+
             <div class="settings-row" style="border-bottom:none;">
                 <div class="settings-label">
                     Push Notifications
                     <small id="pushStatusLabel">Checking permission…</small>
                 </div>
                 <button id="btnEnablePush" style="padding:6px 14px;font-size:12px;border-radius:10px;" onclick="requestPushPermission()">Enable</button>
+            </div>
+        </div>
+
+        <!-- ── 🛡 SECURITY & PRIVACY CENTER ── -->
+        <div class="settings-section">
+            <h4>🛡 Security &amp; Privacy</h4>
+
+            <!-- Security Center Tabs -->
+            <div class="snx-security-tabs" style="margin-bottom:14px;">
+                <button class="snx-security-tab active" data-tab="account" onclick="snxSecuritySetTab('account')">👤 Account</button>
+                <button class="snx-security-tab" data-tab="password"  onclick="snxSecuritySetTab('password')">🔑 Password</button>
+                <button class="snx-security-tab" data-tab="email"     onclick="snxSecuritySetTab('email')">📧 Email</button>
+                <button class="snx-security-tab" data-tab="blocked"   onclick="snxSecuritySetTab('blocked')">🚫 Blocked</button>
+                <button class="snx-security-tab" data-tab="muted"     onclick="snxSecuritySetTab('muted')">🔇 Muted</button>
+                <button class="snx-security-tab" data-tab="sessions"  onclick="snxSecuritySetTab('sessions')">💻 Session</button>
+            </div>
+
+            <!-- ACCOUNT INFORMATION -->
+            <div class="snx-security-panel active" data-tab="account">
+                <p style="font-size:12px;color:#6a90b8;margin:0 0 10px;line-height:1.5;">Your account details. Passwords and tokens are never displayed here.</p>
+                <div id="snxAccountInfoBox">
+                    <div style="font-size:12px;color:#3a5a7a;padding:8px 0;">Loading…</div>
+                </div>
+                <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+                    <button onclick="if(typeof signOutUser==='function')signOutUser();else window._snxAuth&&window._snxAuth.signOut()" style="padding:8px 18px;border-radius:10px;border-color:rgba(255,80,80,0.4);color:#ff7777;font-size:13px;">🚪 Log Out</button>
+                </div>
+            </div>
+
+            <!-- CHANGE PASSWORD -->
+            <div class="snx-security-panel" data-tab="password">
+                <p style="font-size:12px;color:#6a90b8;margin:0 0 12px;line-height:1.5;">Use Firebase's secure password change flow. You must enter your current password to confirm.</p>
+                <div class="snx-password-form">
+                    <label for="snxCurPassword">Current Password</label>
+                    <input type="password" id="snxCurPassword" placeholder="Current password" autocomplete="current-password">
+                    <label for="snxNewPassword">New Password</label>
+                    <input type="password" id="snxNewPassword" placeholder="New password (min 6 characters)" autocomplete="new-password">
+                    <label for="snxConfPassword">Confirm New Password</label>
+                    <input type="password" id="snxConfPassword" placeholder="Confirm new password" autocomplete="new-password">
+                    <button id="snxChangePwBtn" onclick="snxChangePassword()" style="margin-top:12px;width:100%;padding:10px;border-radius:10px;background:linear-gradient(135deg,#003388,#0066cc);border-color:rgba(0,180,255,0.6);color:#fff;font-size:13px;font-weight:700;">Update Password</button>
+                    <p style="font-size:11px;color:#3a5a7a;margin:8px 0 0;line-height:1.6;">If recent authentication is required, you will be prompted to sign in again.</p>
+                </div>
+            </div>
+
+            <!-- CHANGE EMAIL -->
+            <div class="snx-security-panel" data-tab="email">
+                <p style="font-size:12px;color:#6a90b8;margin:0 0 12px;line-height:1.5;">Update your email address. A verification email will be sent before the change takes effect.</p>
+                <div class="snx-password-form">
+                    <label for="snxNewEmail">New Email Address</label>
+                    <input type="email" id="snxNewEmail" placeholder="new@example.com" autocomplete="email">
+                    <label for="snxEmailCurPass">Current Password (to confirm)</label>
+                    <input type="password" id="snxEmailCurPass" placeholder="Current password" autocomplete="current-password">
+                    <button id="snxChangeEmailBtn" onclick="snxChangeEmail()" style="margin-top:12px;width:100%;padding:10px;border-radius:10px;background:linear-gradient(135deg,#003388,#0066cc);border-color:rgba(0,180,255,0.6);color:#fff;font-size:13px;font-weight:700;">Update Email</button>
+                </div>
+            </div>
+
+            <!-- BLOCKED USERS (upgraded from basic section) -->
+            <div class="snx-security-panel" data-tab="blocked">
+                <p style="font-size:12px;color:#6a90b8;margin:0 0 10px;line-height:1.5;">Blocked users cannot message, follow, or interact with your content. Blocking is private.</p>
+                <div id="blockedUsersList"><div style="font-size:13px;color:#3a5a7a;padding:8px 0;">Loading…</div></div>
+                <div id="blockedUsersEmpty" style="display:none;font-size:13px;color:#3a5a7a;padding:8px 0;">You haven't blocked anyone.</div>
+            </div>
+
+            <!-- MUTED USERS -->
+            <div class="snx-security-panel" data-tab="muted">
+                <p style="font-size:12px;color:#6a90b8;margin:0 0 10px;line-height:1.5;">Muted users' content is hidden from your feed. Muted people are not notified.</p>
+                <div id="snxMutedList"><div style="font-size:13px;color:#3a5a7a;padding:8px 0;">Loading…</div></div>
+            </div>
+
+            <!-- SESSION INFO -->
+            <div class="snx-security-panel" data-tab="sessions">
+                <p style="font-size:12px;color:#6a90b8;margin:0 0 10px;line-height:1.5;">Current session and account information. Sign out to end your session on this device.</p>
+                <div id="snxSessionBox"><div style="font-size:12px;color:#3a5a7a;padding:8px 0;">Loading…</div></div>
+                <div style="margin-top:14px;">
+                    <button onclick="if(typeof signOutUser==='function')signOutUser();else window._snxAuth&&window._snxAuth.signOut()" style="padding:8px 18px;border-radius:10px;border-color:rgba(255,80,80,0.4);color:#ff7777;font-size:13px;">🚪 Log Out</button>
+                </div>
             </div>
         </div>
 
@@ -8229,13 +8371,8 @@ body.arcade-fs-ios body::after { display:none !important; }
             </div>
         </div>
 
-        <!-- ── Blocked Users section ── -->
-        <div class="settings-section" id="blockedUsersSection">
-            <h4>🚫 Blocked Users</h4>
-            <p style="font-size:12px;color:#6a90b8;margin:0 0 10px;line-height:1.5;">Blocked users cannot message you, follow you, or interact with your content. Blocking is private.</p>
-            <div id="blockedUsersList"><div style="font-size:13px;color:#3a5a7a;padding:8px 0;">Loading…</div></div>
-            <div id="blockedUsersEmpty" style="display:none;font-size:13px;color:#3a5a7a;padding:8px 0;">You haven't blocked anyone.</div>
-        </div>
+        <!-- ── Blocked Users section (moved to Security & Privacy Center above) ── -->
+        <!-- blockedUsersList and blockedUsersEmpty are inside the Security & Privacy tabs above -->
 
         <!-- ── Saved Posts section ── -->
         <div class="settings-section" id="savedPostsSection">
@@ -8808,6 +8945,9 @@ body.arcade-fs-ios body::after { display:none !important; }
     <button class="admin-tab" onclick="switchAdminTab('r2storage');snxR2StatusOpen()">🗄️ R2 Storage</button>
     <button class="admin-tab" onclick="switchAdminTab('themes');snxTCCOpen()">🎨 Theme Engine</button>
     <button class="admin-tab" onclick="switchAdminTab('system');snxLoadBuildDiagnostics()">🖥️ System</button>
+    <button class="admin-tab" onclick="switchAdminTab('status');window._snxUpgradeStatusOpen&&window._snxUpgradeStatusOpen()">⚡ Status</button>
+    <button class="admin-tab" onclick="switchAdminTab('maintenance');window._snxUpgradeMaintenanceOpen&&window._snxUpgradeMaintenanceOpen()">🔧 Maintenance</button>
+    <button class="admin-tab" onclick="switchAdminTab('auditlog');window._snxUpgradeAuditOpen&&window._snxUpgradeAuditOpen()">📋 Audit Log</button>
 </div>
 
 <!-- ══════════════════════════════════
@@ -8939,21 +9079,121 @@ body.arcade-fs-ios body::after { display:none !important; }
      TAB: ANNOUNCEMENTS
 ══════════════════════════════════ -->
 <div class="admin-tab-content" id="adminTab-announce">
-    <div class="section-card" style="margin-bottom:16px;">
-        <h3 style="margin:0 0 10px;font-size:13px;color:#ff9900;text-transform:uppercase;letter-spacing:0.8px;">📢 Send Announcement</h3>
-        <p style="font-size:12px;color:#6a90b8;margin:0 0 12px;">Sends a push notification + in-app alert to every member instantly.</p>
+
+    <!-- ── Create New Announcement ── -->
+    <div class="section-card" style="margin-bottom:16px;border-color:rgba(255,153,0,0.4);">
+        <h3 style="margin:0 0 14px;font-size:13px;color:#ff9900;text-transform:uppercase;letter-spacing:0.8px;">📢 Create Announcement</h3>
+
+        <div class="snx-ann-form-grid">
+            <!-- Title (full width) -->
+            <div class="snx-ann-full">
+                <label>Title</label>
+                <input id="annTitle" placeholder="Announcement title…" maxlength="120">
+            </div>
+            <!-- Type -->
+            <div>
+                <label>Type</label>
+                <select id="annType" style="margin:0;">
+                    <option value="information">ℹ️ Information</option>
+                    <option value="update">✨ Update</option>
+                    <option value="maintenance">🔧 Maintenance</option>
+                    <option value="event">🎉 Event</option>
+                    <option value="music">🎵 Music</option>
+                    <option value="live">🔴 Live</option>
+                    <option value="warning">⚠️ Warning</option>
+                    <option value="celebration">🎊 Celebration</option>
+                </select>
+            </div>
+            <!-- Priority -->
+            <div>
+                <label>Priority (1=low, 10=high)</label>
+                <input id="annPriority" type="number" min="1" max="10" value="5" style="margin:0;">
+            </div>
+            <!-- Start Date -->
+            <div>
+                <label>Start Date/Time</label>
+                <input id="annStart" type="datetime-local" style="margin:0;">
+            </div>
+            <!-- End Date -->
+            <div>
+                <label>End Date/Time (leave blank = no expiry)</label>
+                <input id="annEnd" type="datetime-local" style="margin:0;">
+            </div>
+            <!-- Link -->
+            <div class="snx-ann-full">
+                <label>Destination Link (optional)</label>
+                <input id="annLink" type="url" placeholder="https://…" style="margin:0;">
+            </div>
+            <!-- Message (full width) -->
+            <div class="snx-ann-full">
+                <label>Message</label>
+                <textarea id="annMessage" rows="4" placeholder="Announcement message…" style="resize:vertical;margin:0;"></textarea>
+            </div>
+        </div>
+
+        <!-- Target Areas -->
+        <div style="margin-top:12px;">
+            <label style="font-size:11px;color:#4a7a9a;text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:8px;">Target Areas</label>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c8e8ff;text-transform:none;margin:0;">
+                    <input type="checkbox" class="ann-target-cb" value="entire_platform" checked style="width:auto;margin:0;"> Entire Platform
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c8e8ff;text-transform:none;margin:0;">
+                    <input type="checkbox" class="ann-target-cb" value="eclipse_feed" style="width:auto;margin:0;"> Eclipse Feed
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c8e8ff;text-transform:none;margin:0;">
+                    <input type="checkbox" class="ann-target-cb" value="music_hub" style="width:auto;margin:0;"> Music Hub
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c8e8ff;text-transform:none;margin:0;">
+                    <input type="checkbox" class="ann-target-cb" value="cloud_stream" style="width:auto;margin:0;"> Cloud Stream
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c8e8ff;text-transform:none;margin:0;">
+                    <input type="checkbox" class="ann-target-cb" value="live" style="width:auto;margin:0;"> Live
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c8e8ff;text-transform:none;margin:0;">
+                    <input type="checkbox" class="ann-target-cb" value="messages" style="width:auto;margin:0;"> Messages
+                </label>
+            </div>
+        </div>
+
+        <!-- Options row -->
+        <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;align-items:center;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c8e8ff;cursor:pointer;margin:0;text-transform:none;">
+                <input type="checkbox" id="annDismissible" checked style="width:auto;margin:0;"> Dismissible by user
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#ffd966;cursor:pointer;margin:0;text-transform:none;">
+                <input type="checkbox" id="annFeatured" style="width:auto;margin:0;"> 📌 Feature on Feed
+            </label>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="snx-ann-actions">
+            <button class="snx-ann-btn-publish" onclick="snxAnnSaveAndPublish('published')">📢 Publish Now</button>
+            <button class="snx-ann-btn-schedule" onclick="snxAnnSaveAndPublish('scheduled')">📅 Schedule</button>
+            <button class="snx-ann-btn-draft"    onclick="snxAnnSaveAndPublish('draft')">💾 Save Draft</button>
+        </div>
+    </div>
+
+    <!-- ── Quick Push (legacy — kept for backward compat) ── -->
+    <div class="section-card" style="margin-bottom:16px;border-color:rgba(255,100,0,0.3);">
+        <h3 style="margin:0 0 10px;font-size:13px;color:#ff9900;text-transform:uppercase;letter-spacing:0.8px;">⚡ Quick Push Notification</h3>
+        <p style="font-size:12px;color:#6a90b8;margin:0 0 12px;">Send a push notification to all members instantly (does not create a persistent announcement).</p>
         <select id="announcementType" style="margin-bottom:10px;">
             <option value="announcement">📢 General Announcement</option>
             <option value="maintenance">🔧 Maintenance Notice</option>
             <option value="emergency">🚨 Emergency Alert</option>
             <option value="feature">✨ New Feature</option>
         </select>
-        <textarea id="adminAnnouncementText" rows="4" placeholder="Write your announcement…" style="resize:vertical;margin-bottom:10px;"></textarea>
-        <button id="btnSendAnnouncement" onclick="sendAdminAnnouncement()" style="width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,#ff6600,#ff9900);border-color:rgba(255,153,0,0.7);color:#fff;font-size:14px;box-shadow:0 0 16px rgba(255,153,0,0.4);">📢 Send to All Members</button>
+        <textarea id="adminAnnouncementText" rows="3" placeholder="Quick notification text…" style="resize:vertical;margin-bottom:10px;"></textarea>
+        <button id="btnSendAnnouncement" onclick="sendAdminAnnouncement()" style="width:100%;padding:10px;border-radius:10px;background:linear-gradient(135deg,#ff6600,#ff9900);border-color:rgba(255,153,0,0.7);color:#fff;font-size:13px;box-shadow:0 0 14px rgba(255,153,0,0.35);">📢 Send Push to All Members</button>
     </div>
+
+    <!-- ── Announcement List ── -->
     <div class="section-card">
-        <h3 style="margin:0 0 10px;font-size:13px;color:#6a90b8;text-transform:uppercase;letter-spacing:0.8px;">📋 Recent Announcements</h3>
-        <div id="adminAnnouncementHistory"><div class="empty-state">No announcements yet.</div></div>
+        <h3 style="margin:0 0 10px;font-size:13px;color:#6a90b8;text-transform:uppercase;letter-spacing:0.8px;">📋 Announcement History</h3>
+        <div id="snxAnnList"><div class="empty-state">Loading announcements…</div></div>
+        <div id="adminAnnouncementHistory" style="display:none;"></div>
+        <button onclick="snxLoadAnnouncements()" style="margin-top:10px;font-size:12px;padding:6px 16px;border-radius:8px;">🔄 Refresh</button>
     </div>
 </div>
 
@@ -8976,6 +9216,100 @@ body.arcade-fs-ios body::after { display:none !important; }
     </div>
 </div>
 
+<!-- ══════════════════════════════════
+     TAB: PLATFORM STATUS CENTER (new)
+══════════════════════════════════ -->
+<div class="admin-tab-content" id="adminTab-status">
+    <!-- Build Info -->
+    <div class="section-card" style="margin-bottom:16px;border-color:rgba(0,212,255,0.35);">
+        <h3 style="margin:0 0 14px;font-size:13px;color:#00d4ff;text-transform:uppercase;letter-spacing:0.8px;">⚡ Nexus System Status</h3>
+        <div id="snxBuildInfoPanel" style="margin-bottom:14px;"></div>
+
+        <!-- Status Grid -->
+        <div id="snxStatusGrid" class="snx-status-grid">
+            <div style="color:#4a7a9a;font-size:12px;grid-column:1/-1;padding:8px 0;">Run a check to see live status.</div>
+        </div>
+
+        <!-- Run Check Button -->
+        <button class="snx-run-check-btn" id="snxRunCheckBtn" onclick="snxRunSystemCheck()">
+            ⚡ RUN FULL SYSTEM CHECK
+        </button>
+    </div>
+
+    <!-- Copy Diagnostic Report -->
+    <div class="section-card" style="margin-bottom:16px;">
+        <h3 style="margin:0 0 10px;font-size:13px;color:#6a90b8;text-transform:uppercase;letter-spacing:0.8px;">📋 Diagnostic Report</h3>
+        <p style="font-size:12px;color:#6a90b8;margin:0 0 12px;line-height:1.6;">Generate a safe diagnostic report you can copy and share when reporting issues. No passwords, auth tokens, or API secrets are included.</p>
+        <button class="snx-diag-copy-btn" onclick="snxCopyDiagReport()">
+            📋 COPY DIAGNOSTIC REPORT
+        </button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB: FEATURE MAINTENANCE (new)
+══════════════════════════════════ -->
+<div class="admin-tab-content" id="adminTab-maintenance">
+    <div class="section-card" style="margin-bottom:16px;border-color:rgba(255,170,50,0.35);">
+        <h3 style="margin:0 0 8px;font-size:13px;color:#ffcc44;text-transform:uppercase;letter-spacing:0.8px;">🔧 Per-Feature Maintenance</h3>
+        <p style="font-size:12px;color:#9bbdd8;margin:0;line-height:1.7;">Toggle individual features into maintenance mode without taking the entire platform offline. Users see a polished maintenance screen when they visit a disabled feature.</p>
+    </div>
+
+    <!-- Feature toggle grid -->
+    <div id="snxFeatureMaintGrid" class="snx-feature-maint-grid">
+        <div style="color:#4a7a9a;font-size:12px;grid-column:1/-1;padding:8px 0;">Loading feature status…</div>
+    </div>
+
+    <!-- Custom maintenance message per feature -->
+    <div class="section-card" style="margin-bottom:16px;border-color:rgba(255,100,0,0.3);">
+        <h3 style="margin:0 0 12px;font-size:13px;color:#ffaa44;text-transform:uppercase;letter-spacing:0.8px;">💬 Maintenance Message</h3>
+        <p style="font-size:12px;color:#9bbdd8;margin:0 0 12px;line-height:1.6;">Set a custom message users will see when they visit a feature in maintenance mode.</p>
+        <select id="snxMaintMsgFeature" style="margin-bottom:10px;font-size:13px;">
+            <option value="">— Select feature —</option>
+            <option value="eclipseFeedEnabled">🏠 Eclipse Feed</option>
+            <option value="profilesEnabled">👤 Profiles</option>
+            <option value="messagesEnabled">💬 Messages</option>
+            <option value="musicHubEnabled">🎵 Music Hub</option>
+            <option value="radioEnabled">📻 24-Hour Radio</option>
+            <option value="cloudStreamEnabled">📺 Cloud Stream</option>
+            <option value="liveEnabled">🔴 Live System</option>
+            <option value="arcadeEnabled">🕹️ Arcade</option>
+        </select>
+        <div class="snx-maint-msg-form">
+            <textarea id="snxMaintMsg" rows="3" placeholder="Enter maintenance message for users…" style="resize:vertical;font-size:13px;"></textarea>
+            <button class="snx-maint-msg-save" onclick="snxSaveFeatureMaintMsg()">💾 Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB: ENHANCED AUDIT LOG (new)
+══════════════════════════════════ -->
+<div class="admin-tab-content" id="adminTab-auditlog">
+    <div class="section-card" style="margin-bottom:16px;border-color:rgba(0,174,239,0.35);">
+        <h3 style="margin:0 0 12px;font-size:13px;color:#00d4ff;text-transform:uppercase;letter-spacing:0.8px;">📋 Founder Audit Log</h3>
+        <p style="font-size:12px;color:#6a90b8;margin:0 0 12px;line-height:1.6;">Every management action is recorded here. Records cannot be modified or deleted.</p>
+
+        <!-- Filter row -->
+        <div class="snx-audit-filter-row">
+            <button class="snx-audit-filter-btn active" data-filter="all" onclick="snxLoadEnhancedAuditLog('all')">All Actions</button>
+            <button class="snx-audit-filter-btn" data-filter="ANNOUNCEMENT" onclick="snxLoadEnhancedAuditLog('ANNOUNCEMENT')">📢 Announcements</button>
+            <button class="snx-audit-filter-btn" data-filter="FEATURE" onclick="snxLoadEnhancedAuditLog('FEATURE')">⚙️ Features</button>
+            <button class="snx-audit-filter-btn" data-filter="MAINTENANCE" onclick="snxLoadEnhancedAuditLog('MAINTENANCE')">🔧 Maintenance</button>
+            <button class="snx-audit-filter-btn" data-filter="SYSTEM" onclick="snxLoadEnhancedAuditLog('SYSTEM')">🩺 System</button>
+            <button class="snx-audit-filter-btn" data-filter="SUSPEND" onclick="snxLoadEnhancedAuditLog('SUSPEND')">⛔ Users</button>
+        </div>
+
+        <div id="snxEnhancedAuditLog">
+            <div style="color:#4a7a9a;font-size:12px;padding:8px 0;">Click a filter or wait for auto-load…</div>
+        </div>
+        <button onclick="snxLoadEnhancedAuditLog()" style="margin-top:10px;font-size:12px;padding:6px 16px;border-radius:8px;">🔄 Refresh</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════
+     EXISTING TAB: SETTINGS (unchanged)
+══════════════════════════════════ -->
 <div class="admin-tab-content" id="adminTab-settings">
     <div class="section-card" style="margin-bottom:16px;">
         <h3 style="margin:0 0 12px;font-size:13px;color:#00d4ff;text-transform:uppercase;letter-spacing:0.8px;">🎨 Theme & Appearance</h3>
@@ -11334,6 +11668,15 @@ body.arcade-fs-ios body::after { display:none !important; }
   // Expose the Firebase Auth instance on window so external scripts (profile-music.js,
   // studio.js, etc.) can always reach auth.currentUser for the live session state.
   window._snxAuth = auth;
+
+  // ── Expose Auth helper methods for Security Center (password/email change) ──
+  window._snxAuthMethods = {
+    EmailAuthProvider,
+    reauthenticateWithCredential,
+    updatePassword: (user, newPass) => import("https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js").then(m => m.updatePassword(user, newPass)),
+    updateEmail: (user, newEmail) => import("https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js").then(m => m.updateEmail(user, newEmail)),
+    verifyBeforeUpdateEmail: (user, newEmail) => import("https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js").then(m => m.verifyBeforeUpdateEmail(user, newEmail)),
+  };
 
   window._snxAuthReadyQueue = window._snxAuthReadyQueue || [];
   window._snxOnAuthReady = function(fn) {
@@ -14541,11 +14884,20 @@ body.arcade-fs-ios body::after { display:none !important; }
      SEARCH
      ═══════════════════════════════════════════════════════════ */
   window.runSearch = async function() {
-      const q = document.getElementById("searchInput").value.trim().toLowerCase();
-      const resultsBox = document.getElementById("searchResults");
-      if (!q) { resultsBox.innerHTML = '<div class="search-empty">Enter a name or username above and press Search.</div>'; return; }
-      if (q.length < 2) { resultsBox.innerHTML = '<div class="search-empty">Type at least 2 characters to search.</div>'; return; }
-      resultsBox.innerHTML = '<div class="search-empty">Searching…</div>';
+      // Forward to the Global Nexus Search system
+      const legacyInput = document.getElementById("searchInput");
+      const newInput = document.getElementById("snxSearchInput");
+      const q = (newInput?.value || legacyInput?.value || '').trim().toLowerCase();
+      if (q.length >= 2 && typeof window.snxRunGlobalSearch === 'function') {
+          if (newInput) newInput.value = q;
+          window.snxRunGlobalSearch(q);
+          return;
+      }
+      // Fallback: write to legacy results div if the new system isn't loaded yet
+      const resultsBox = document.getElementById("snxSearchPeopleResults") || document.getElementById("searchResults");
+      if (!q) { if (resultsBox) resultsBox.innerHTML = '<div class="search-empty">Enter a name or username above and press Search.</div>'; return; }
+      if (q.length < 2) { if (resultsBox) resultsBox.innerHTML = '<div class="search-empty">Type at least 2 characters to search.</div>'; return; }
+      if (resultsBox) resultsBox.innerHTML = '<div class="search-empty">Searching…</div>';
 
       // Use a range query on username to avoid downloading all users.
       // Firestore doesn't support case-insensitive search natively, so we query by
@@ -20456,6 +20808,14 @@ function navTo(pageId) {
     if (pageId === 'settingsPage') {
         if (typeof window._loadNotifPrefs === 'function') window._loadNotifPrefs();
         if (typeof window._showFounderUI === 'function') window._showFounderUI();
+        // Initialize Security Center account info
+        if (typeof window._snxUpgradeSettingsOpen === 'function') window._snxUpgradeSettingsOpen();
+        // Load blocked users (Security tab might be active)
+        if (typeof window.snxLoadBlockedUsers === 'function') window.snxLoadBlockedUsers();
+    }
+    // Initialize Global Search when search page opens
+    if (pageId === 'searchPage') {
+        if (typeof window._snxUpgradeSearchOpen === 'function') window._snxUpgradeSearchOpen();
     }
     // Init community hub on first visit
     if (pageId === 'communityPage') commInitPage();
@@ -24050,12 +24410,12 @@ function _supportStopCanvas() {
      ═══════════════════════════════════════════════════════════ -->
 
 <!-- ── Global Background Internet Manager (must load before script.js) ── -->
-<script src="snx-net.js?v=SNS-2026-09-25-001"></script>
+<script src="snx-net.js?v=SNS-2026-10-01-001"></script>
 
-<script src="script.js?v=SNS-2026-09-25-001"></script>
+<script src="script.js?v=SNS-2026-10-01-001"></script>
 
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library, Upload, Playlists, Queue ── -->
-<script src="studio.js?v=SNS-2026-09-25-001"></script>
+<script src="studio.js?v=SNS-2026-10-01-001"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════
@@ -29371,13 +29731,16 @@ window.switchAdminTab = function(tab) {
 </script>
 
 <!-- ── Profile Photo Album module (must load after the main IIFE) ── -->
-<script src="album.js?v=SNS-2026-09-25-001"></script>
+<script src="album.js?v=SNS-2026-10-01-001"></script>
 
 <!-- ── Profile Music System (loads after Firebase is initialized) ── -->
-<script src="profile-music.js?v=SNS-2026-09-25-001"></script>
+<script src="profile-music.js?v=SNS-2026-10-01-001"></script>
 
 <!-- ── Profile Theme System (loads after Firebase is initialized) ── -->
-<script src="profile-theme.js?v=SNS-2026-09-25-001"></script>
+<script src="profile-theme.js?v=SNS-2026-10-01-001"></script>
+
+<!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
+<script src="shadow-nexus-upgrade.js?v=SNS-2026-10-01-001"></script>
 
 <!-- ═══════════════════ GRIM AI ASSISTANT PANEL ═══════════════════ -->
 
@@ -31350,7 +31713,7 @@ document.addEventListener('click', function(e) {
 </script>
 
 <!-- ████ SHADOW NEXUS GIFTS — Gifting & Creator Monetization ████ -->
-<script type="module" src="snx-gifts.js?v=SNS-2026-09-25-001"></script>
+<script type="module" src="snx-gifts.js?v=SNS-2026-10-01-001"></script>
 
 <!-- Coin balance sync across all nav displays -->
 <script>
@@ -31575,9 +31938,9 @@ document.addEventListener('click', function(e) {
 (function() {
   'use strict';
 
-  var _SNX_BUILD    = 'SNS-2026-09-25-001';
-  var _SNX_SW_VER   = 'v51';
-  var _SNX_DEPLOY   = '2026-09-25T06:00:00Z';
+  var _SNX_BUILD    = 'SNS-2026-10-01-001';
+  var _SNX_SW_VER   = 'v52';
+  var _SNX_DEPLOY   = '2026-10-01T00:00:00Z';
   var _SNX_PROJECT  = 'horr-a08f4';
 
   function _dRow(label, val, ok) {

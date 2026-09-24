@@ -1,8 +1,8 @@
 {
-  "buildId": "SNS-2026-09-25-001",
-  "swVersion": "v51",
-  "deployedAt": "2026-09-25T06:00:00Z",
+  "buildId": "SNS-2026-10-01-001",
+  "swVersion": "v52",
+  "deployedAt": "2026-10-01T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "2.1.0",
-  "note": "Production sync: force master→main, new build marker, SW v51, Founder diagnostics, cache busting. Features: TCC containment, notification routing, message delete/unsend, blocking, Report Center, Cloud Stream likes."
+  "note": "Major platform upgrade: Platform Status Center, Founder Announcements (rich scheduling/targeting), Global Nexus Search (multi-category), Account Security & Privacy Center, Live Notifications, Per-Feature Maintenance Controls, Enhanced Audit Log with filters, Founder Panel lifecycle hooks. New files: shadow-nexus-upgrade.js, shadow-nexus-upgrade.css. SW v52."
 }
