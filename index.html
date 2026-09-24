@@ -20406,6 +20406,12 @@ function navTo(pageId) {
         }
     }
 
+    // When navigating AWAY from the Founder Panel, run cleanup so no
+    // Founder UI leaks onto the normal social pages.
+    if (pageId !== 'adminPage' && typeof window.snxFounderPanelCleanup === 'function') {
+        window.snxFounderPanelCleanup();
+    }
+
     // Stop profile music whenever navigating away from the profile page
     if (pageId !== 'profile' && typeof window.snxMusic?.stopMusicTab === 'function') {
         window.snxMusic.stopMusicTab();
@@ -20439,6 +20445,8 @@ function navTo(pageId) {
         renderAdminPanel();
         if (typeof window.adminLoadSettings  === 'function') window.adminLoadSettings();
         if (typeof window.roleAssignSearch   === 'function') window.roleAssignSearch();
+        // Push a history state so Android back button can detect the Founder Panel is open
+        history.pushState({ snxPage: 'adminPage' }, '');
     }
     // Render moderator panel on navigation
     if (pageId === 'moderatorPage' && typeof window.renderModeratorPanel === 'function') window.renderModeratorPanel();
@@ -32962,6 +32970,13 @@ if (window._snxAuthReadyQueue) {
   window.addEventListener('popstate', function(e) {
     _snxModalHistoryPushed = false; // state was already popped by the browser
 
+    // 0. If Founder Panel is open and the state says "adminPage", navigate to feed
+    if (e.state && e.state.snxPage === 'adminPage') {
+      if (typeof window.snxFounderPanelCleanup === 'function') window.snxFounderPanelCleanup();
+      if (typeof navTo === 'function') navTo('feed');
+      return;
+    }
+
     // 1. SNX Confirm modal
     const confirmModal = document.getElementById('snxConfirmModal');
     if (confirmModal && confirmModal.style.display !== 'none') {
@@ -32992,7 +33007,16 @@ if (window._snxAuthReadyQueue) {
       return;
     }
 
-    // 5. If nothing else matched, let normal navigation happen
+    // 5. If the Founder Panel was visually active (no history state for it),
+    //    run cleanup and return to feed
+    const adminPage = document.getElementById('adminPage');
+    if (adminPage && adminPage.classList.contains('active')) {
+      if (typeof window.snxFounderPanelCleanup === 'function') window.snxFounderPanelCleanup();
+      if (typeof navTo === 'function') navTo('feed');
+      return;
+    }
+
+    // 6. If nothing else matched, let normal navigation happen
     // (the browser already popped history so we just do nothing)
   });
 
@@ -33032,6 +33056,111 @@ if (window._snxAuthReadyQueue) {
       _origIpcClose(...args);
     };
   }
+})();
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FOUNDER PANEL — CENTRALIZED CLEANUP
+   Called automatically by navTo() whenever the Founder navigates AWAY
+   from the adminPage, and by the Android back-button handler.
+
+   This ensures no Founder management UI leaks onto the normal social pages
+   without requiring a page refresh.
+
+   IMPORTANT: This function only cleans up MANAGEMENT UI.
+   It does NOT:
+     - delete test grants, change coin balances, or touch Firestore data
+     - deactivate the published global theme
+     - stop Cloud Stream, Live, Radio, or any backend feature
+   ═══════════════════════════════════════════════════════════════════════ */
+window.snxFounderPanelCleanup = (function() {
+  'use strict';
+
+  // ── 1. Close any body-level overlays that may have been opened from the Founder Panel ──
+  function _closeBodyOverlays() {
+    // Coin purchase modal (appended to body by snxgOpenBuyCoins in snx-gifts.js)
+    const coinModal = document.getElementById('snxCoinModal');
+    if (coinModal && coinModal.classList.contains('open')) {
+      coinModal.classList.remove('open');
+    }
+
+    // Gift tray (appended to body by snxgOpenGiftTray in snx-gifts.js)
+    const giftTray = document.getElementById('snxGiftTray');
+    if (giftTray && giftTray.classList.contains('open')) {
+      giftTray.classList.remove('open');
+      const sendBtn = document.getElementById('giftConfirmSend');
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send 🎁'; }
+    }
+
+    // Theme Engine preview bar (appended to body by theme-engine.js)
+    // Only exit preview if it was opened FROM the Founder Panel.
+    const previewBar = document.getElementById('snx-preview-bar');
+    if (previewBar && previewBar.style.display !== 'none') {
+      if (window.ThemeEngine && typeof window.ThemeEngine.exitPreview === 'function') {
+        window.ThemeEngine.exitPreview();
+      } else {
+        previewBar.style.display = 'none';
+      }
+    }
+
+    // _aiConfirmModal (appended to founder-modal-root / adminPage)
+    const aiModal = document.getElementById('_aiConfirmModal');
+    if (aiModal) aiModal.remove();
+
+    // Clear the Founder-scoped modal root (inline confirmation dialogs)
+    const fmRoot = document.getElementById('founder-modal-root');
+    if (fmRoot) fmRoot.innerHTML = '';
+
+    // snxConfirmModal — hide if visible so it doesn't float over the feed
+    const confirmModal = document.getElementById('snxConfirmModal');
+    if (confirmModal && confirmModal.style.display !== 'none') {
+      confirmModal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+
+  // ── 2. Reset the active admin tab back to "dashboard" ──
+  //    Prevents a stale tab (e.g. "Coin Testing", "Themes") from being
+  //    the visible tab the NEXT time the Founder Panel is opened.
+  function _resetActiveTab() {
+    document.querySelectorAll('#adminTabBar .admin-tab').forEach(function(b) {
+      b.classList.remove('active');
+    });
+    document.querySelectorAll('#adminPage .admin-tab-content').forEach(function(c) {
+      c.classList.remove('active');
+    });
+    var dashBtn     = document.querySelector('#adminTabBar .admin-tab[onclick*="\'dashboard\'"]');
+    var dashContent = document.getElementById('adminTab-dashboard');
+    if (dashBtn)     dashBtn.classList.add('active');
+    if (dashContent) dashContent.classList.add('active');
+  }
+
+  // ── 3. Cancel any pending background timers from Founder tools ──
+  function _cancelPendingTimers() {
+    // Coin-test search debounce (snx-gifts.js module-scoped; exposed for cleanup)
+    if (typeof window._ctgSearchTimer !== 'undefined' && window._ctgSearchTimer) {
+      clearTimeout(window._ctgSearchTimer);
+      window._ctgSearchTimer = null;
+    }
+    // Admin user-search debounce
+    if (typeof window._adminSearchTimer !== 'undefined' && window._adminSearchTimer) {
+      clearTimeout(window._adminSearchTimer);
+      window._adminSearchTimer = null;
+    }
+  }
+
+  // ── 4. Restore body scroll / pointer events ──
+  function _restoreBodyState() {
+    document.body.style.overflow     = '';
+    document.body.style.pointerEvents = '';
+  }
+
+  // ── Exported centralized cleanup ──
+  return function snxFounderPanelCleanup() {
+    try { _closeBodyOverlays();   } catch(e) { console.warn('[SNX Founder] closeBodyOverlays:', e.message); }
+    try { _resetActiveTab();      } catch(e) { console.warn('[SNX Founder] resetActiveTab:',    e.message); }
+    try { _cancelPendingTimers(); } catch(e) { console.warn('[SNX Founder] cancelTimers:',       e.message); }
+    try { _restoreBodyState();    } catch(e) { console.warn('[SNX Founder] restoreBody:',        e.message); }
+  };
 })();
 
 </script>
