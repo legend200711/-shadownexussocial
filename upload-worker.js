@@ -1396,7 +1396,6 @@ export default {
         `users/${musicUid}/`,
         `themes/${musicUid}/`,
         `posts/${musicUid}/`,
-        `rooms/${musicUid}/`,        // Nexus Room audio uploads
       ];
       if (!reqPath || !musicAllowedPrefixes.some(p => reqPath.startsWith(p))) {
         return new Response(JSON.stringify({ error: 'Invalid path: must start with an allowed prefix for your account' }), {
@@ -1474,8 +1473,7 @@ export default {
                           || key.startsWith(`radio/${deleteUid}/`)
                           || key.startsWith(`cloud-stream/${deleteUid}/`)
                           || key.startsWith(`themes/${deleteUid}/`)
-                          || key.startsWith(`users/${deleteUid}/`)
-                          || key.startsWith(`rooms/${deleteUid}/`);  // Nexus Room uploads
+                          || key.startsWith(`users/${deleteUid}/`);
       if (!deleteKeyOwned) {
         return new Response(JSON.stringify({ error: 'Forbidden: key does not belong to your account' }), {
           status: 403, headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })

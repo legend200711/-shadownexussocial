@@ -10,8 +10,8 @@
  * shadownexussocial.online (/) and any local dev server (/).
  */
 
-const CACHE_VERSION = 'v65';
-const BUILD_ID      = 'SNS-2026-CINEMATIC-001';
+const CACHE_VERSION = 'v66';
+const BUILD_ID      = 'SNS-2026-NEXUS-ROOMS-REMOVED';
 const CACHE_NAME    = `shadow-nexus-${CACHE_VERSION}`;
 const MEDIA_CACHE   = `shadow-nexus-media-${CACHE_VERSION}`;
 
@@ -27,8 +27,6 @@ const SHELL_FILES = [
   'offline.html',
   'snx-living-bg.css',
   'snx-living-bg.js',
-  'nexus-rooms.css',
-  'nexus-rooms.js',
   'style.css',
   'album.css',
   'realm.css',

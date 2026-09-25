@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-ROOMS-V2",
+  "buildId": "SNS-2026-NEXUS-ROOMS-REMOVED",
   "swVersion": "v66",
   "deployedAt": "2025-07-23T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
   "nexusVersion": "2.0.0",
-  "note": "SNS-2026-ROOMS-V2: Chat root-cause fix (removed orderBy on subcollection), public/private rooms, Firebase-enforced private room security, invite system (roomInvites collection), music queue with R2 upload, synchronized music playback, host controls panel, lock room, participant kick, TAP TO JOIN AUDIO. Firebase rules + indexes updated. Cloudflare Worker updated for rooms/ path prefix."
+  "note": "SNS-2026-NEXUS-ROOMS-REMOVED: Nexus Rooms feature permanently removed. Deleted nexus-rooms.js, nexus-rooms.css. Removed nexus-rooms pages/modal/nav from index.html. Removed nexusRooms + roomInvites Firebase rules. Removed nexusRooms indexes from firestore.indexes.json. Removed rooms/ path from upload-worker.js. Service worker cache bumped to v66."
 }
