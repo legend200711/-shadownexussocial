@@ -1,299 +1,334 @@
 /**
- * Shadow Nexus Social — Living Backgrounds System
- * snx-living-bg.js  v1.0.0  (SNS-2026-CINEMATIC-001)
+ * Shadow Nexus Social — ShadowNexusEnvironmentController
+ * snx-living-bg.js  v4.0.0  (SNS-2026-WORLD-ENV-001)
  *
- * Responsibilities:
- *  1. Insert background DOM layers (fog, nebula, energy, stars)
- *  2. Render lightweight storm-cloud canvas animation
- *  3. Occasional distant lightning flash (rare, subtle)
- *  4. Floating ember/particle system (≤20 DOM nodes max)
- *  5. Page-visibility API — pause when hidden
- *  6. prefers-reduced-motion support
- *  7. User setting: "Living Backgrounds ON/OFF" (localStorage)
- *  8. Export SNXLivingBg for external toggle
+ * Single authority for the entire animated world environment.
+ * The canvas engine (ECLIPSE STORM ENGINE) lives in index.html and
+ * communicates via window globals. This controller manages:
+ *
+ *   1. Enable / disable the entire environment (localStorage preference)
+ *   2. Section mood — updates CSS class + canvas engine mood
+ *   3. Page visibility — pause CSS animations when tab is hidden
+ *   4. Environmental UI reactions (nav open, music, live, notifications)
+ *   5. Music reaction — gentle glow breathing when music plays
+ *   6. Parallax layer shift on mouse movement (desktop)
+ *   7. CSS DOM layer injection (clouds, fog, energy, stars, green accent)
+ *   8. Public API: window.SNXLivingBg and window.ShadowNexusEnvironmentController
+ *
+ * DOES NOT: create a second canvas, second RAF loop, second rain engine,
+ * second resize listener, or second particle spawner. The canvas engine
+ * is the sole renderer; this file only manages CSS layers and state.
  */
 
 (function () {
     'use strict';
 
-    /* ── Constants ── */
-    var STORAGE_KEY   = 'snx_living_bg';
-    var MAX_EMBERS    = 14; // kept very low for performance
-    var LIGHTNING_MIN = 18000; // ms minimum between flashes
-    var LIGHTNING_MAX = 60000; // ms maximum between flashes
+    /* ──────────────────────────────────────────────────────
+       CONSTANTS
+    ────────────────────────────────────────────────────── */
+    var STORAGE_KEY = 'snx_living_bg';
 
-    /* ── State ── */
+    /* Section → mood map */
+    var MOOD_MAP = {
+        'feed':              'feed',
+        'studioPage':        'music',
+        'nexusPage':         'music',
+        'liveHubPage':       'live',
+        'inboxPage':         'messages',
+        'profile':           'profile',
+        'profilePage':       'profile',
+        'settingsPage':      'profile',
+        'notificationsPage': 'feed',
+        'searchPage':        'feed',
+        'communityPage':     'feed',
+        'friendsPage':       'feed',
+        'stormRoomsPage':    'live',
+        'supportRoomsPage':  'feed',
+        'adminPage':         'profile',
+        'moderatorPage':     'profile',
+        'administratorPage': 'profile'
+    };
+
+    var MOOD_CLASSES = [
+        'snx-mood-feed', 'snx-mood-music', 'snx-mood-live',
+        'snx-mood-messages', 'snx-mood-profile'
+    ];
+
+    /* ──────────────────────────────────────────────────────
+       STATE
+    ────────────────────────────────────────────────────── */
     var _enabled       = true;
     var _reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var _canvas        = null;
-    var _ctx           = null;
-    var _clouds        = [];
-    var _embers        = [];
-    var _raf           = null;
-    var _lightningTimer= null;
     var _mounted       = false;
-    var _paused        = false;
+    var _currentMood   = 'feed';
+    var _musicPlaying  = false;
+    var _musicPulseRaf = null;
+    var _parallaxRaf   = null;
+    var _mouseX        = 0.5;
+    var _mouseY        = 0.5;
+    var _parallaxTX    = 0;
+    var _parallaxTY    = 0;
 
-    /* ── Read saved preference ── */
+    /* Read saved preference */
     try {
         var _saved = localStorage.getItem(STORAGE_KEY);
         if (_saved === 'off') _enabled = false;
-    } catch(e) {}
+    } catch (e) {}
 
-    /* ─────────────────────────────────────────────
+    /* ──────────────────────────────────────────────────────
        DOM LAYER INJECTION
-       ───────────────────────────────────────────── */
+    ────────────────────────────────────────────────────── */
     function _injectLayers() {
         if (_mounted) return;
         _mounted = true;
 
-        // Nebula base
-        var nebula = document.createElement('div');
-        nebula.className = 'snx-bg-nebula snx-bg-layer';
+        /* Nebula base — deepest layer (z: -2) */
+        var nebula = _el('div', 'snx-nebula-layer', 'snx-bg-nebula snx-bg-layer');
         document.body.insertBefore(nebula, document.body.firstChild);
 
-        // Stars
-        var stars = document.createElement('div');
-        stars.className = 'snx-bg-stars snx-bg-layer';
+        /* Deep stars (z: -1 area, behind canvas) */
+        var stars = _el('div', 'snx-stars-layer', 'snx-bg-stars snx-bg-layer');
         document.body.insertBefore(stars, document.body.firstChild);
 
-        // Fog layers
-        var fog2 = document.createElement('div');
-        fog2.className = 'snx-bg-fog2 snx-bg-layer';
+        /* Storm clouds layer 1 */
+        var clouds = _el('div', 'snx-clouds-layer', 'snx-bg-clouds snx-bg-layer');
+        document.body.appendChild(clouds);
+
+        /* Storm clouds layer 2 — counter-drift */
+        var clouds2 = _el('div', 'snx-clouds2-layer', 'snx-bg-clouds2 snx-bg-layer');
+        document.body.appendChild(clouds2);
+
+        /* Storm clouds layer 3 — slower upper bank */
+        var clouds3 = _el('div', 'snx-clouds3-layer', 'snx-bg-clouds3 snx-bg-layer');
+        document.body.appendChild(clouds3);
+
+        /* Fog layer upper (z: 3) */
+        var fog2 = _el('div', 'snx-fog2-layer', 'snx-bg-fog2 snx-bg-layer');
         document.body.appendChild(fog2);
 
-        var fog = document.createElement('div');
-        fog.className = 'snx-bg-fog snx-bg-layer';
+        /* Fog layer lower (z: 4) */
+        var fog = _el('div', 'snx-fog-layer', 'snx-bg-fog snx-bg-layer');
         document.body.appendChild(fog);
 
-        // Energy sweep
-        var energy = document.createElement('div');
-        energy.className = 'snx-bg-energy snx-bg-layer';
+        /* Foreground mist (z: 5) */
+        var mist = _el('div', 'snx-mist-layer', 'snx-bg-mist snx-bg-layer');
+        document.body.appendChild(mist);
+
+        /* Energy sweep — blue glow at bottom */
+        var energy = _el('div', 'snx-energy-layer', 'snx-bg-energy snx-bg-layer');
         document.body.appendChild(energy);
 
-        // Green accent
-        var ga = document.createElement('div');
-        ga.className = 'snx-bg-green-accent snx-bg-layer';
+        /* Neon green horizon accent */
+        var ga = _el('div', 'snx-green-accent-layer', 'snx-bg-green-accent snx-bg-layer');
         document.body.appendChild(ga);
+
+        /* Lightning flash overlay (triggered by JS) */
+        var lf = _el('div', 'snx-lightning-flash', 'snx-bg-layer');
+        document.body.appendChild(lf);
+
+        /* Foreground rain veil */
+        var rv = _el('div', 'snx-rain-veil', 'snx-bg-layer');
+        document.body.appendChild(rv);
     }
 
-    /* ─────────────────────────────────────────────
-       STORM CLOUD CANVAS
-       ───────────────────────────────────────────── */
-    function _initCanvas() {
-        _canvas = document.getElementById('bg-canvas');
-        if (!_canvas) {
-            _canvas = document.createElement('canvas');
-            _canvas.id = 'bg-canvas';
-            _canvas.className = 'snx-storm-canvas';
-            document.body.insertBefore(_canvas, document.body.firstChild);
+    function _el(tag, id, cls) {
+        var e = document.createElement(tag);
+        e.id = id;
+        if (cls) e.className = cls;
+        return e;
+    }
+
+    /* ──────────────────────────────────────────────────────
+       PARALLAX — subtle depth on mouse move (desktop only)
+    ────────────────────────────────────────────────────── */
+    function _initParallax() {
+        if (_reducedMotion) return;
+        if (window.innerWidth < 768) return; /* mobile: skip */
+
+        document.addEventListener('mousemove', function (e) {
+            _mouseX = e.clientX / window.innerWidth;
+            _mouseY = e.clientY / window.innerHeight;
+        }, { passive: true });
+
+        function _applyParallax() {
+            /* Gentle lerp toward target */
+            var targetX = (_mouseX - 0.5) * -18;
+            var targetY = (_mouseY - 0.5) * -10;
+            _parallaxTX += (targetX - _parallaxTX) * 0.045;
+            _parallaxTY += (targetY - _parallaxTY) * 0.045;
+
+            var clouds = document.getElementById('snx-clouds-layer');
+            var clouds2 = document.getElementById('snx-clouds2-layer');
+            var clouds3 = document.getElementById('snx-clouds3-layer');
+            var fog = document.getElementById('snx-fog-layer');
+            var fog2 = document.getElementById('snx-fog2-layer');
+
+            if (clouds)  clouds.style.marginLeft  = (_parallaxTX * 0.6).toFixed(2) + 'px';
+            if (clouds2) clouds2.style.marginLeft = (_parallaxTX * 0.4).toFixed(2) + 'px';
+            if (clouds3) clouds3.style.marginLeft = (_parallaxTX * 0.25).toFixed(2) + 'px';
+            if (fog)     fog.style.marginLeft     = (_parallaxTX * 0.3).toFixed(2) + 'px';
+            if (fog2)    fog2.style.marginLeft    = (_parallaxTX * 0.2).toFixed(2) + 'px';
+
+            /* Tell the canvas engine about parallax offset */
+            window._snxParallaxX = _parallaxTX;
+            window._snxParallaxY = _parallaxTY;
+
+            _parallaxRaf = requestAnimationFrame(_applyParallax);
         }
-        _ctx = _canvas.getContext('2d');
-        _resizeCanvas();
-        window.addEventListener('resize', _resizeCanvas);
-        _initClouds();
+
+        _parallaxRaf = requestAnimationFrame(_applyParallax);
     }
 
-    function _resizeCanvas() {
-        if (!_canvas) return;
-        _canvas.width  = window.innerWidth;
-        _canvas.height = window.innerHeight;
-        _initClouds(); // re-scatter clouds after resize
-    }
-
-    function _initClouds() {
-        if (!_canvas) return;
-        _clouds = [];
-        var count = _reducedMotion ? 2 : 5;
-        for (var i = 0; i < count; i++) {
-            _clouds.push({
-                x:     Math.random() * _canvas.width,
-                y:     Math.random() * (_canvas.height * 0.45),
-                rx:    120 + Math.random() * 180,
-                ry:    40  + Math.random() * 60,
-                alpha: 0.03 + Math.random() * 0.05,
-                speed: 0.08 + Math.random() * 0.12,
-                dir:   Math.random() > 0.5 ? 1 : -1
-            });
-        }
-    }
-
-    function _drawClouds() {
-        if (!_ctx || !_canvas) return;
-        _ctx.clearRect(0, 0, _canvas.width, _canvas.height);
-        for (var i = 0; i < _clouds.length; i++) {
-            var c = _clouds[i];
-            var grad = _ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.rx);
-            grad.addColorStop(0,   'rgba(0,40,120,' + c.alpha + ')');
-            grad.addColorStop(0.5, 'rgba(0,20,80,' + (c.alpha * 0.6) + ')');
-            grad.addColorStop(1,   'rgba(0,10,40,0)');
-            _ctx.beginPath();
-            _ctx.ellipse(c.x, c.y, c.rx, c.ry, 0, 0, Math.PI * 2);
-            _ctx.fillStyle = grad;
-            _ctx.fill();
-            // drift
-            c.x += c.speed * c.dir;
-            if (c.x > _canvas.width  + c.rx) c.x = -c.rx;
-            if (c.x < -c.rx)                 c.x = _canvas.width + c.rx;
-        }
-    }
-
-    /* ─────────────────────────────────────────────
-       LIGHTNING — rare, distant, very subtle
-       ───────────────────────────────────────────── */
-    function _scheduleLightning() {
-        if (_lightningTimer) clearTimeout(_lightningTimer);
-        var delay = LIGHTNING_MIN + Math.random() * (LIGHTNING_MAX - LIGHTNING_MIN);
-        _lightningTimer = setTimeout(_doLightning, delay);
-    }
-
-    function _doLightning() {
-        if (!_enabled || _reducedMotion || _paused) { _scheduleLightning(); return; }
-        // Only flash if page is visible and no media is playing
-        if (document.hidden) { _scheduleLightning(); return; }
-        // Create a brief full-page flash — very low opacity
-        var flash = document.createElement('div');
-        flash.style.cssText = [
-            'position:fixed',
-            'inset:0',
-            'pointer-events:none',
-            'z-index:9993',
-            'background:rgba(100,160,255,0.06)',
-            'transition:opacity 0.08s ease-out',
-            'opacity:1'
-        ].join(';');
-        document.body.appendChild(flash);
-        setTimeout(function () {
-            flash.style.opacity = '0';
-            setTimeout(function () {
-                if (flash.parentNode) flash.parentNode.removeChild(flash);
-            }, 120);
-        }, 80);
-        _scheduleLightning();
-    }
-
-    /* ─────────────────────────────────────────────
-       EMBERS / FLOATING PARTICLES
-       ───────────────────────────────────────────── */
-    function _spawnEmber() {
-        if (_embers.length >= MAX_EMBERS) return;
-        if (!_enabled || _reducedMotion) return;
-        var el = document.createElement('div');
-        var isGreen = Math.random() < 0.2;
-        el.className = 'ash-particle' + (isGreen ? ' green' : '');
-        var duration = 10 + Math.random() * 12;
-        var delay    = Math.random() * 4;
-        var startX   = Math.random() * 100;
-        el.style.cssText = [
-            'left:' + startX + 'vw',
-            'bottom:' + (-2 + Math.random() * 8) + 'vh',
-            '--ash-dur:' + duration + 's',
-            '--ash-delay:' + delay + 's'
-        ].join(';');
-        document.body.appendChild(el);
-        _embers.push(el);
-        // Remove when animation ends
-        var totalMs = (duration + delay) * 1000;
-        setTimeout(function () {
-            if (el.parentNode) el.parentNode.removeChild(el);
-            var idx = _embers.indexOf(el);
-            if (idx !== -1) _embers.splice(idx, 1);
-        }, totalMs + 500);
-    }
-
-    /* ─────────────────────────────────────────────
-       MAIN ANIMATION LOOP
-       ───────────────────────────────────────────── */
-    function _loop() {
-        if (!_paused && _enabled) {
-            _drawClouds();
-        }
-        _raf = requestAnimationFrame(_loop);
-    }
-
-    /* ─────────────────────────────────────────────
-       PAUSE / RESUME (page visibility)
-       ───────────────────────────────────────────── */
-    document.addEventListener('visibilitychange', function () {
-        if (document.hidden) {
-            _paused = true;
-            document.documentElement.classList.add('snx-page-hidden');
-        } else {
-            _paused = false;
-            document.documentElement.classList.remove('snx-page-hidden');
-        }
-    });
-
-    /* ─────────────────────────────────────────────
+    /* ──────────────────────────────────────────────────────
        ENABLE / DISABLE
-       ───────────────────────────────────────────── */
+    ────────────────────────────────────────────────────── */
     function _applyState() {
         if (_enabled) {
             document.documentElement.classList.remove('snx-bg-off');
         } else {
             document.documentElement.classList.add('snx-bg-off');
-            // Clear embers immediately
-            _embers.slice().forEach(function (el) {
-                if (el.parentNode) el.parentNode.removeChild(el);
-            });
-            _embers = [];
         }
     }
 
     function enable() {
         _enabled = true;
-        try { localStorage.setItem(STORAGE_KEY, 'on'); } catch(e) {}
+        try { localStorage.setItem(STORAGE_KEY, 'on'); } catch (e) {}
         _applyState();
+        window._snxBgPauseOverride = false;
+        if (typeof window._snxBgRender === 'function') window._snxBgRender();
     }
 
     function disable() {
         _enabled = false;
-        try { localStorage.setItem(STORAGE_KEY, 'off'); } catch(e) {}
+        try { localStorage.setItem(STORAGE_KEY, 'off'); } catch (e) {}
         _applyState();
+        window._snxBgPauseOverride = true;
     }
 
     function isEnabled() { return _enabled; }
 
-    /* ─────────────────────────────────────────────
-       INIT
-       ───────────────────────────────────────────── */
-    function init() {
-        _applyState();
-        if (!_reducedMotion) {
-            _injectLayers();
-            _initCanvas();
-            _loop();
-            // Spawn embers on a gentle interval
-            if (_enabled) {
-                setInterval(function () {
-                    if (_enabled && !_paused && !document.hidden) _spawnEmber();
-                }, 3500);
-            }
-            _scheduleLightning();
-        } else {
-            // Reduced motion: just inject static nebula + stars
-            _injectLayers();
+    /* ──────────────────────────────────────────────────────
+       SECTION MOOD API
+    ────────────────────────────────────────────────────── */
+    function setMood(mood) {
+        mood = mood || 'feed';
+        if (mood === _currentMood) return;
+        _currentMood = mood;
+        var html = document.documentElement;
+        MOOD_CLASSES.forEach(function (c) { html.classList.remove(c); });
+        if (mood !== 'feed') {
+            html.classList.add('snx-mood-' + mood);
+        }
+        window._snxCurrentMood = mood;
+    }
+
+    function getMoodForPage(pageId) {
+        return MOOD_MAP[pageId] || 'feed';
+    }
+
+    /* ──────────────────────────────────────────────────────
+       ENVIRONMENTAL UI REACTIONS
+       Called by external code: SNXLivingBg.react(type)
+    ────────────────────────────────────────────────────── */
+    function react(type) {
+        if (!_enabled || _reducedMotion) return;
+        var html = document.documentElement;
+
+        switch (type) {
+            case 'nav-open':
+                _flashReact('snx-react-nav', 600);
+                break;
+            case 'music-open':
+                _flashReact('snx-react-music', 900);
+                break;
+            case 'music-start':
+                setMusicReaction(true);
+                break;
+            case 'music-stop':
+                setMusicReaction(false);
+                break;
+            case 'live-open':
+                _flashReact('snx-react-live', 1200);
+                break;
+            case 'notification':
+                _flashReact('snx-react-notif', 500);
+                break;
+            case 'messages-open':
+                /* calmer atmosphere — handled by mood class */
+                break;
         }
     }
 
-    /* Boot after DOM is ready */
+    function _flashReact(cls, duration) {
+        var html = document.documentElement;
+        html.classList.add(cls);
+        setTimeout(function () { html.classList.remove(cls); }, duration);
+    }
+
+    /* ──────────────────────────────────────────────────────
+       MUSIC REACTION
+    ────────────────────────────────────────────────────── */
+    function setMusicReaction(playing) {
+        if (_musicPlaying === playing) return;
+        _musicPlaying = playing;
+        if (playing) {
+            document.documentElement.classList.add('snx-music-active');
+            window._snxMusicActive = true;
+        } else {
+            document.documentElement.classList.remove('snx-music-active');
+            window._snxMusicActive = false;
+        }
+    }
+
+    /* ──────────────────────────────────────────────────────
+       PAGE VISIBILITY — pause CSS animations
+    ────────────────────────────────────────────────────── */
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) {
+            document.documentElement.classList.add('snx-page-hidden');
+        } else {
+            document.documentElement.classList.remove('snx-page-hidden');
+        }
+    });
+
+    /* ──────────────────────────────────────────────────────
+       INIT
+    ────────────────────────────────────────────────────── */
+    function init() {
+        _applyState();
+        _injectLayers();
+        if (!_enabled) {
+            window._snxBgPauseOverride = true;
+        }
+        if (!_reducedMotion) {
+            _initParallax();
+        }
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
     }
 
-    /* ─────────────────────────────────────────────
+    /* ──────────────────────────────────────────────────────
        PUBLIC API
-       ───────────────────────────────────────────── */
-    window.SNXLivingBg = {
-        enable:    enable,
-        disable:   disable,
-        isEnabled: isEnabled,
+    ────────────────────────────────────────────────────── */
+    var api = {
+        enable:           enable,
+        disable:          disable,
+        isEnabled:        isEnabled,
+        setMood:          setMood,
+        getMoodForPage:   getMoodForPage,
+        react:            react,
+        setMusicReaction: setMusicReaction,
         toggle: function () {
             if (_enabled) disable(); else enable();
             return _enabled;
         }
     };
+
+    window.SNXLivingBg = api;
+    window.ShadowNexusEnvironmentController = api; /* alias */
 
 })();

@@ -43,7 +43,7 @@
 <meta name="twitter:image"       content="https://shadownexussocial.online/icon-512.png">
 
 <!-- ── Shared stylesheet ── -->
-<link rel="stylesheet" href="snx-living-bg.css?v=SNS-2026-CINEMATIC-001">
+<link rel="stylesheet" href="snx-living-bg.css?v=SNS-2026-WORLD-ENV-001">
 <link rel="stylesheet" href="style.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <link rel="stylesheet" href="album.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <link rel="stylesheet" href="profile-music.css?v=SNS-2026-GLOBAL-REPAIR-002">
@@ -6511,14 +6511,17 @@ body.arcade-fs-ios body::after { display:none !important; }
     position: fixed;
     inset: 0;
     z-index: 99999;
-    background: #0B1F3A;
+    /* Semi-transparent so animated environment is visible behind the gate */
+    background: rgba(5, 12, 28, 0.82);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 20px;
-    /* Gate fades out instead of snapping away */
-    transition: opacity 0.28s ease, visibility 0.28s ease;
+    /* Gate fades out smoothly over 0.8s, revealing the environment */
+    transition: opacity 0.8s ease, visibility 0.8s ease;
 }
 #snx-auth-gate.resolved {
     opacity: 0;
@@ -21131,6 +21134,20 @@ function navTo(pageId) {
             SNXPerf.setLiveActive(false);
         }
     }
+    // ── Section mood: update animated atmosphere for this section ──
+    if (typeof window.SNXLivingBg !== 'undefined' && typeof window.SNXLivingBg.setMood === 'function') {
+        window.SNXLivingBg.setMood(window.SNXLivingBg.getMoodForPage(pageId));
+        /* Environmental reactions for specific section entries */
+        if (window.SNXLivingBg.react) {
+            if (pageId === 'studioPage' || pageId === 'nexusPage') {
+                window.SNXLivingBg.react('music-open');
+            } else if (pageId === 'liveHubPage') {
+                window.SNXLivingBg.react('live-open');
+            } else if (pageId === 'inboxPage') {
+                window.SNXLivingBg.react('messages-open');
+            }
+        }
+    }
     show(pageId);
     // Scroll to top on every page navigation so Founder Panel content
     // never appears at the scroll position of a previously-visited page
@@ -21266,6 +21283,10 @@ function toastNotification(msg) {
         // Hide after transition ends
         setTimeout(() => { t.style.display = "none"; }, 240);
     }, 3000);
+    /* Environmental reaction — tiny neon green pulse for notifications */
+    if (window.SNXLivingBg && window.SNXLivingBg.react) {
+        window.SNXLivingBg.react('notification');
+    }
 }
 function switchProfileTab(t) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -22381,402 +22402,719 @@ window.addEventListener("keydown", (e) => {
     }
 })();
 
-/* ═══════════════════════════════════════════════════
-   ECLIPSE HORROR BACKGROUND ENGINE
-   Layers (back → front):
-     1. Deep fog wisps — slow horizontal drifting bands
-     2. Cold blue ambient glow pulses (3 roaming orbs)
-     3. Floating ash particles — drifting upward slowly
-     4. Particle grid + connection lines (cyber mode)
-     5. Matrix rain (matrix mode)
-   ═══════════════════════════════════════════════════ */
-const canvas = document.getElementById("bg-canvas");
-const ctx    = canvas.getContext("2d");
+/* ═══════════════════════════════════════════════════════════
+   ECLIPSE STORM BACKGROUND ENGINE  v4 (SNS-2026-WORLD-ENV-001)
+   Single authoritative canvas animation system.
+   Lives here; snx-living-bg.js manages CSS layers and state only.
 
-/* ─── Ash particles ─── */
-let ashPts = [];
+   Canvas layers (back → front):
+     1.  Atmospheric sky gradient
+     2.  Deep fog wisps (slow horizontal bands)
+     3.  Cold-blue ambient glow orbs (slow roaming)
+     4.  Rain — 3 depth layers: distant (thin/fast), mid, close foreground
+     5.  Floating energy particles (pooled, blue + green + embers)
+     6.  Electrical arc sparks
+     7.  Cinematic lightning bolts (varied timing, unpredictable)
+     8.  Cloud illumination flash behind CSS layers
+     9.  Electric bottom-edge glow
+    10.  Blue flame orbs at bottom corners
+    11.  Section-mood overlays (music pulse, live surge)
+    12.  Music reaction glow breathing
+   ═══════════════════════════════════════════════════════════ */
+(function _eclipseEngine() {
+    /* Guard: run exactly once */
+    if (window._snxBgEngineStarted) return;
+    window._snxBgEngineStarted = true;
 
-/* ─── Cyber grid particles ─── */
-let points = [];
+    const canvas = document.getElementById("bg-canvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
 
-/* ─── Ambient glow orbs ─── */
-const glowOrbs = [
-    { x: 0.2, y: 0.7, r: 0, phase: 0.0 },
-    { x: 0.75, y: 0.3, r: 0, phase: 2.1 },
-    { x: 0.5,  y: 0.9, r: 0, phase: 4.2 }
-];
+    /* ─── Particle pools (reused, not constantly created/destroyed) ─── */
+    let ashPts    = [];  // energy particles / embers
+    let points    = [];  // cyber grid nodes
+    let rainClose = [];  // foreground rain (fast, heavy)
+    let rainMid   = [];  // mid-distance rain
+    let rainFar   = [];  // distant thin rain
 
-/* ─── Fog wisps ─── */
-const fogWisps = [
-    { y: 0.6, speed: 0.00008, alpha: 0.06, width: 1.8, phase: 0.0 },
-    { y: 0.75, speed: 0.00006, alpha: 0.05, width: 1.4, phase: 1.4 },
-    { y: 0.88, speed: 0.00010, alpha: 0.07, width: 2.2, phase: 2.8 }
-];
+    /* ─── Ambient glow orbs ─── */
+    const glowOrbs = [
+        { x: 0.18, y: 0.72, phase: 0.0,  spd: 0.058 },
+        { x: 0.78, y: 0.32, phase: 2.1,  spd: 0.044 },
+        { x: 0.50, y: 0.88, phase: 4.2,  spd: 0.071 }
+    ];
 
-let _bgRafId = null;
-let _bgPaused = false;
+    /* ─── Fog wisps ─── */
+    const fogWisps = [
+        { y: 0.52, speed: 0.000065, alpha: 0.08, phase: 0.0  },
+        { y: 0.68, speed: 0.000048, alpha: 0.07, phase: 1.4  },
+        { y: 0.80, speed: 0.000088, alpha: 0.09, phase: 2.8  },
+        { y: 0.91, speed: 0.000058, alpha: 0.06, phase: 4.5  }
+    ];
 
-// Detect low-end / mobile devices so we scale down particle counts.
-// Uses navigator.hardwareConcurrency and window width as a proxy.
-const _isMobileDevice = typeof window !== 'undefined' && (
-    window.innerWidth < 768 || (navigator.hardwareConcurrency || 4) <= 4
-);
+    /* ─── Lightning state ─── */
+    let _ltBolts = [];  // active lightning bolts
+    let _ltTimer  = 0;
+    let _ltNextAt = 280 + Math.random() * 480; // frames until next bolt
 
-// Expose render function so SNXPerf can resume it
-window._snxBgRender = function() { if (!_bgPaused && !_bgRafId) render(); };
+    /* ─── Arc sparks ─── */
+    let arcs = [];
 
-function _seedAsh(w, h) {
-    ashPts = [];
-    // Use SNXPerf config if available, else fall back to mobile heuristic
-    const maxAsh = (window._snxPerfCfg ? window._snxPerfCfg.particles : null)
-                    || (_isMobileDevice ? 15 : 35);
-    const count = Math.min(maxAsh, Math.floor((w * h) / 32000));
-    for (let i = 0; i < count; i++) {
-        ashPts.push({
-            x:     Math.random() * w,
-            y:     Math.random() * h,
-            vy:    -(0.18 + Math.random() * 0.32),  // drifts upward
-            vx:    (Math.random() - 0.5) * 0.12,
-            r:     0.6 + Math.random() * 1.1,
-            o:     0.2 + Math.random() * 0.55,
-            life:  Math.random(),                    // phase offset
-            green: Math.random() < 0.25             // ~25% neon green
-        });
+    let _bgRafId  = null;
+    let _bgPaused = false;
+
+    /* Performance tier */
+    const _isMobile = window.innerWidth < 768 || (navigator.hardwareConcurrency || 4) <= 2;
+    const _isLowEnd = (navigator.hardwareConcurrency || 4) <= 2;
+
+    /* Mobile stable height — prevents canvas jump when address bar hides */
+    let _stableH = window.innerHeight;
+    let _stableW = window.innerWidth;
+
+    /* ─────────────────────────────────────────────────────────────
+       RESIZE — debounced, ignores tiny height changes (mobile bar)
+       ───────────────────────────────────────────────────────────── */
+    let _resizeTimer = null;
+    let _lastW = 0, _lastH = 0;
+    function _scheduleResize() {
+        clearTimeout(_resizeTimer);
+        _resizeTimer = setTimeout(_doResize, 250);
     }
-}
-
-function _seedGrid(w, h) {
-    points = [];
-    // Mobile: max 25 grid points; desktop: max 50
-    const maxGrid = (window._snxPerfCfg ? window._snxPerfCfg.gridPoints : null)
-                    || (_isMobileDevice ? 25 : 50);
-    const count = Math.min(maxGrid, Math.floor((w * h) / 24000));
-    for (let i = 0; i < count; i++) {
-        points.push({
-            x:     Math.random() * w,
-            y:     Math.random() * h,
-            vx:    (Math.random() - 0.5) * 0.3,
-            vy:    (Math.random() - 0.5) * 0.3,
-            r:     0.9 + Math.random() * 1.4,
-            o:     0.25 + Math.random() * 0.45,
-            green: Math.random() < 0.20             // ~20% neon green
-        });
+    function _doResize() {
+        const newW = window.innerWidth;
+        const newH = window.innerHeight;
+        /* Ignore height-only changes smaller than 80px (mobile address bar) */
+        if (newW === _lastW && Math.abs(newH - _lastH) < 80) return;
+        _lastW = newW; _lastH = newH;
+        _stableW = newW; _stableH = newH;
+        canvas.width  = newW;
+        canvas.height = newH;
+        _seedAll(newW, newH);
     }
-}
+    window.addEventListener("resize", _scheduleResize, { passive: true });
 
-function resize() {
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
-    _seedAsh(canvas.width, canvas.height);
-    _seedGrid(canvas.width, canvas.height);
-    glowOrbs.forEach(o => { o.r = Math.min(canvas.width, canvas.height) * 0.45; });
-}
-window.addEventListener("resize", resize, { passive: true });
-resize();
+    /* ─────────────────────────────────────────────────────────────
+       PUBLIC API
+       ───────────────────────────────────────────────────────────── */
+    window._snxBgRender = function () {
+        if (!_bgPaused && !window._snxBgPauseOverride && !_bgRafId) _startLoop();
+    };
 
-function render() {
-    if (_bgPaused || window._snxBgPauseOverride) { _bgRafId = null; return; }
-
-    // Re-seed if SNXPerf requested it (quality level changed)
-    if (window._snxReseedParticles) {
-        window._snxReseedParticles = false;
-        _seedAsh(canvas.width, canvas.height);
-        _seedGrid(canvas.width, canvas.height);
+    /* ─────────────────────────────────────────────────────────────
+       PARTICLE SEEDING
+       ───────────────────────────────────────────────────────────── */
+    function _seedAsh(w, h) {
+        ashPts = [];
+        const maxAsh = (window._snxPerfCfg ? window._snxPerfCfg.particles : null)
+                        || (_isMobile ? 14 : 38);
+        const count = Math.min(maxAsh, Math.floor((w * h) / 26000));
+        for (let i = 0; i < count; i++) {
+            ashPts.push({
+                x:    Math.random() * w,
+                y:    Math.random() * h,
+                vy:   -(0.12 + Math.random() * 0.32),
+                vx:   (Math.random() - 0.5) * 0.12,
+                r:    0.4 + Math.random() * 1.4,
+                o:    0.18 + Math.random() * 0.58,
+                life: Math.random(),
+                /* particle type: 'blue' | 'glow-blue' | 'green' | 'ember' | 'spark' */
+                type: Math.random() < 0.10 ? 'glow-blue'
+                    : Math.random() < 0.22 ? 'green'
+                    : Math.random() < 0.08 ? 'ember'
+                    : Math.random() < 0.05 ? 'spark' : 'blue'
+            });
+        }
     }
 
-    const W = canvas.width, H = canvas.height;
-    const t = performance.now();
-    const now = t * 0.001;
+    function _seedGrid(w, h) {
+        points = [];
+        const maxGrid = (window._snxPerfCfg ? window._snxPerfCfg.gridPoints : null)
+                        || (_isMobile ? 15 : 40);
+        const count = Math.min(maxGrid, Math.floor((w * h) / 28000));
+        for (let i = 0; i < count; i++) {
+            points.push({
+                x:     Math.random() * w,
+                y:     Math.random() * h,
+                vx:    (Math.random() - 0.5) * 0.24,
+                vy:    (Math.random() - 0.5) * 0.24,
+                r:     0.7 + Math.random() * 1.6,
+                o:     0.20 + Math.random() * 0.48,
+                green: Math.random() < 0.16
+            });
+        }
+    }
 
-    ctx.clearRect(0, 0, W, H);
+    function _seedRainLayer(w, h, count, vyMin, vyMax, lenMin, lenMax, oMin, oMax, glowChance) {
+        const arr = [];
+        for (let i = 0; i < count; i++) {
+            arr.push({
+                x:    Math.random() * w,
+                y:    Math.random() * h,
+                vy:   vyMin + Math.random() * (vyMax - vyMin),
+                len:  lenMin + Math.random() * (lenMax - lenMin),
+                o:    oMin + Math.random() * (oMax - oMin),
+                wx:   (Math.random() - 0.5) * 0.5,  // slight wind drift
+                glow: Math.random() < glowChance
+            });
+        }
+        return arr;
+    }
 
-    if (globalAestheticMode === 'matrix') {
-        /* ── Digital matrix rain — blue with green accent characters ── */
-        ctx.font = "11px monospace";
-        points.forEach(p => {
-            p.y += 1.8;
-            if (p.y > H) { p.y = -14; p.x = Math.random() * W; }
-            // ~20% of chars are neon green (energy signal), rest electric blue
-            if (p.green) {
-                ctx.fillStyle = `rgba(0,255,136,${0.07 + p.o * 0.08})`;
+    function _seedArcs(w, h) {
+        arcs = [];
+        const cnt = _isMobile ? 2 : 5;
+        for (let i = 0; i < cnt; i++) {
+            arcs.push({
+                x:      Math.random() * w,
+                y:      h * (0.65 + Math.random() * 0.32),
+                len:    20 + Math.random() * 50,
+                timer:  Math.floor(Math.random() * 200),
+                period: 90 + Math.random() * 200,
+                segs:   3 + Math.floor(Math.random() * 5)
+            });
+        }
+    }
+
+    function _seedAll(w, h) {
+        _seedAsh(w, h);
+        _seedGrid(w, h);
+        /* 3 rain layers with different depths */
+        rainFar   = _seedRainLayer(w, h,
+            _isMobile ?  8 : 18,   /* count */
+            2.5, 4.0,              /* vy range */
+            12, 28,                /* len range */
+            0.04, 0.10,            /* opacity range */
+            0.04                   /* glow chance */
+        );
+        rainMid   = _seedRainLayer(w, h,
+            _isMobile ? 10 : 22,
+            4.5, 7.0,
+            28, 55,
+            0.06, 0.16,
+            0.07
+        );
+        rainClose = _seedRainLayer(w, h,
+            _isMobile ?  4 :  8,
+            7.5, 12.0,
+            55, 120,
+            0.05, 0.14,
+            0.12
+        );
+        _seedArcs(w, h);
+    }
+
+    /* Initial setup */
+    canvas.width  = _stableW;
+    canvas.height = _stableH;
+    _lastW = _stableW; _lastH = _stableH;
+    _seedAll(_stableW, _stableH);
+
+    /* ─────────────────────────────────────────────────────────────
+       HELPERS
+       ───────────────────────────────────────────────────────────── */
+    function _getMood() { return window._snxCurrentMood || 'feed'; }
+
+    /* Draw a single rain streak */
+    function _drawRain(arr, alphaMult, windX) {
+        arr.forEach(p => {
+            p.y += p.vy;
+            p.x += p.wx + windX;
+            if (p.y - p.len > _stableH) {
+                p.y = -p.len;
+                p.x = Math.random() * _stableW;
+                p.glow = Math.random() < 0.07;
+            }
+            if (p.x < -20) p.x = _stableW + 20;
+            if (p.x > _stableW + 20) p.x = -20;
+            const alpha = p.o * alphaMult;
+            if (alpha < 0.008) return;
+            ctx.save();
+            if (p.glow) {
+                const gl = ctx.createLinearGradient(p.x, p.y - p.len, p.x, p.y);
+                gl.addColorStop(0, 'rgba(0,0,0,0)');
+                gl.addColorStop(0.4, `rgba(0,180,255,${alpha * 1.6})`);
+                gl.addColorStop(1,   `rgba(0,140,255,${alpha * 0.8})`);
+                ctx.strokeStyle = gl;
+                ctx.lineWidth = 1.2;
+                ctx.shadowColor = 'rgba(0,180,255,0.75)';
+                ctx.shadowBlur  = 5;
             } else {
-                ctx.fillStyle = `rgba(0,190,255,${0.06 + p.o * 0.07})`;
+                const rl = ctx.createLinearGradient(p.x, p.y - p.len, p.x, p.y);
+                rl.addColorStop(0, 'rgba(0,0,0,0)');
+                rl.addColorStop(1, `rgba(0,120,190,${alpha})`);
+                ctx.strokeStyle = rl;
+                ctx.lineWidth = p.len > 60 ? 1.0 : 0.7;
             }
-            ctx.fillText(Math.random() > 0.5 ? "1" : "0", p.x, p.y);
-        });
-        _bgRafId = requestAnimationFrame(render);
-        return;
-    }
-
-    /* ═══════════════════════════════════
-       CYBER / HORROR MODE  (default)
-       ═══════════════════════════════════ */
-
-    /* Layer 1 — Fog wisps */
-    fogWisps.forEach(w => {
-        const cy = w.y * H;
-        const alpha = w.alpha * (0.7 + 0.3 * Math.sin(t * 0.0003 + w.phase));
-        const grd = ctx.createLinearGradient(0, cy - H * 0.12, 0, cy + H * 0.12);
-        grd.addColorStop(0,   'rgba(0,0,0,0)');
-        grd.addColorStop(0.4, `rgba(0,20,70,${alpha})`);
-        grd.addColorStop(0.5, `rgba(0,28,85,${alpha * 1.3})`);
-        grd.addColorStop(0.6, `rgba(0,20,70,${alpha})`);
-        grd.addColorStop(1,   'rgba(0,0,0,0)');
-        // Horizontal offset via transform so the band drifts
-        const offsetX = Math.sin(t * w.speed + w.phase) * W * 0.18;
-        ctx.save();
-        ctx.translate(offsetX, 0);
-        ctx.fillStyle = grd;
-        ctx.fillRect(-W * 0.2, cy - H * 0.12, W * 1.4, H * 0.24);
-        ctx.restore();
-    });
-
-    /* Layer 2 — Cold ambient glow orbs (slow roaming) */
-    glowOrbs.forEach(orb => {
-        const cx = orb.x * W + Math.sin(now * 0.07 + orb.phase) * W * 0.12;
-        const cy = orb.y * H + Math.cos(now * 0.05 + orb.phase) * H * 0.08;
-        const pulse = 0.5 + 0.5 * Math.sin(now * 0.18 + orb.phase);
-        const r = Math.min(W, H) * (0.28 + 0.08 * pulse);
-        const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-        grd.addColorStop(0,   `rgba(0,60,160,${0.04 + 0.02 * pulse})`);
-        grd.addColorStop(0.5, `rgba(0,30,90,${0.02 + 0.01 * pulse})`);
-        grd.addColorStop(1,   'rgba(0,0,0,0)');
-        ctx.fillStyle = grd;
-        ctx.fillRect(0, 0, W, H);
-    });
-
-    /* Layer 3 — Floating energy particles (blue + green mix) */
-    ashPts.forEach(p => {
-        p.x  += p.vx + Math.sin(now * 0.4 + p.life * 6) * 0.08;
-        p.y  += p.vy;
-        p.life += 0.0008;
-
-        // Wrap: when particle leaves top, reset to bottom
-        if (p.y < -4) {
-            p.y  = H + 4;
-            p.x  = Math.random() * W;
-            p.life = Math.random();
-        }
-        if (p.x < -4)  p.x = W + 4;
-        if (p.x > W+4) p.x = -4;
-
-        // Fade based on life cycle — flicker in/out
-        const lifeCycle = (p.life % 1);
-        const fadeAlpha = lifeCycle < 0.15  ? lifeCycle / 0.15 :
-                          lifeCycle > 0.85  ? (1 - lifeCycle) / 0.15 : 1;
-        const alpha = p.o * fadeAlpha * 0.65;
-
-        // ~25% neon green (energy/life), rest #00AEEF bright blue
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.green
-            ? `rgba(57,255,20,${alpha * 0.85})`
-            : `rgba(0,174,239,${alpha})`;
-        ctx.fill();
-
-        // Tiny halo on larger specks
-        if (p.r > 1.2) {
-            const halo = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 5);
-            halo.addColorStop(0, p.green
-                ? `rgba(57,255,20,${alpha * 0.3})`
-                : `rgba(0,174,239,${alpha * 0.35})`);
-            halo.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = halo;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r * 5, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    });
-
-    /* Layer 4 — Cyber particle grid */
-    // Connection lines — blue with green accents
-    ctx.lineWidth = 0.5;
-    for (let i = 0; i < points.length; i++) {
-        for (let j = i + 1; j < points.length; j++) {
-            const dx = points[i].x - points[j].x;
-            const dy = points[i].y - points[j].y;
-            const dist = dx * dx + dy * dy;
-            const maxD = 140;
-            if (dist < maxD * maxD) {
-                const alpha = (1 - Math.sqrt(dist) / maxD) * 0.09;
-                // Every ~7th pair glows neon green for energy pulse effect
-                const useGreen = (i + j) % 7 === 0;
-                ctx.strokeStyle = useGreen
-                    ? `rgba(57,255,20,${alpha * 0.8})`
-                    : `rgba(0,174,239,${alpha})`;
-                ctx.beginPath();
-                ctx.moveTo(points[i].x, points[i].y);
-                ctx.lineTo(points[j].x, points[j].y);
-                ctx.stroke();
-            }
-        }
+            ctx.moveTo(p.x, p.y - p.len);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+            ctx.restore();
+        });
     }
 
-    // Grid particles — mostly blue, ~20% green
-    points.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0 || p.x > W) p.vx *= -1;
-        if (p.y < 0 || p.y > H) p.vy *= -1;
-
-        const pulse = 0.55 + 0.45 * Math.sin(now * 1.1 + p.x * 0.012);
-        const alpha = p.o * pulse * 0.55;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.green
-            ? `rgba(57,255,20,${alpha * 0.8})`
-            : `rgba(0,174,239,${alpha})`;
-        ctx.fill();
-    });
-
-    /* Layer 5 — Electric bottom edge glow + lightning bolts */
-    const edgeGrd = ctx.createLinearGradient(0, H * 0.75, 0, H);
-    const edgePulse = 0.5 + 0.5 * Math.sin(now * 0.12);
-    edgeGrd.addColorStop(0,    'rgba(0,0,0,0)');
-    edgeGrd.addColorStop(0.5,  `rgba(0,60,140,${0.06 + 0.03 * edgePulse})`);
-    edgeGrd.addColorStop(0.85, `rgba(0,40,100,${0.09 + 0.03 * edgePulse})`);
-    edgeGrd.addColorStop(1,    `rgba(0,20,60,${0.12 + 0.04 * edgePulse})`);
-    ctx.fillStyle = edgeGrd;
-    ctx.fillRect(0, 0, W, H);
-
-    /* Layer 6 — Blue lightning bolt flashes (only when quality allows) */
-    const ltPhase = (now * 0.07) % 1;
-    const _ltOn = !window._snxPerfCfg || window._snxPerfCfg.lightningOn;
-    if (_ltOn && ltPhase > 0.88 && ltPhase < 0.96) {
-        const ltAlpha = ltPhase < 0.92
-            ? (ltPhase - 0.88) / 0.04
-            : 1 - (ltPhase - 0.92) / 0.04;
-        // Pick a random-ish bolt x based on now — gives varied positions
-        const boltX = W * (0.2 + 0.6 * ((Math.sin(now * 3.7) + 1) / 2));
-        const segments = 6 + Math.floor(Math.abs(Math.sin(now * 5)) * 4);
+    /* Draw one lightning bolt from (bx,by) going down segCount segments */
+    function _drawBolt(bx, startY, endY, segs, alpha, blueGreen) {
+        const segH = (endY - startY) / segs;
         ctx.save();
-        ctx.lineWidth   = 1.5 + Math.sin(now * 11) * 0.8;
-        ctx.strokeStyle = `rgba(0,174,239,${ltAlpha * 0.75})`;
-        ctx.shadowColor  = '#00AEEF';
+        ctx.lineWidth   = 1.0 + Math.random() * 0.8;
+        ctx.strokeStyle = blueGreen
+            ? `rgba(57,255,20,${alpha * 0.65})`
+            : `rgba(0,174,239,${alpha * 0.80})`;
+        ctx.shadowColor  = blueGreen ? '#39FF14' : '#00AEEF';
         ctx.shadowBlur   = 18;
         ctx.beginPath();
-        let bx = boltX, by = 0;
-        ctx.moveTo(bx, by);
-        const segH = (H * 0.55) / segments;
-        for (let s = 0; s < segments; s++) {
-            bx += (Math.random() - 0.5) * 60;
-            by += segH;
-            ctx.lineTo(bx, by);
+        ctx.moveTo(bx, startY);
+        let cx = bx;
+        for (let s = 0; s < segs; s++) {
+            cx += (Math.random() - 0.5) * 52;
+            ctx.lineTo(cx, startY + segH * (s + 1));
         }
         ctx.stroke();
-        // Glow pass
-        ctx.lineWidth   = 4;
-        ctx.strokeStyle = `rgba(0,174,239,${ltAlpha * 0.22})`;
-        ctx.shadowBlur   = 40;
+        /* Wide glow halo */
+        ctx.lineWidth   = 6;
+        ctx.strokeStyle = blueGreen
+            ? `rgba(57,255,20,${alpha * 0.14})`
+            : `rgba(0,174,239,${alpha * 0.18})`;
+        ctx.shadowBlur   = 55;
         ctx.stroke();
-        // Green tip flash at 20% probability
-        if (Math.sin(now * 13) > 0.6) {
-            ctx.lineWidth   = 2;
-            ctx.strokeStyle = `rgba(57,255,20,${ltAlpha * 0.55})`;
-            ctx.shadowColor  = '#39FF14';
-            ctx.shadowBlur   = 24;
-            ctx.stroke();
-        }
         ctx.restore();
     }
 
-    /* Layer 7 — Blue flame orbs at bottom corners (only when quality allows) */
-    const _flOn = !window._snxPerfCfg || window._snxPerfCfg.flameOrbs;
-    const flamePhase = now * 1.4;
-    if (_flOn) [[W * 0.05, H], [W * 0.95, H], [W * 0.5, H]].forEach(([fx, fy], fi) => {
-        const fp = flamePhase + fi * 2.1;
-        const fh = (60 + Math.sin(fp) * 20) * edgePulse;
-        const fg = ctx.createRadialGradient(fx, fy, 0, fx, fy - fh * 0.4, fh);
-        fg.addColorStop(0,   `rgba(0,174,239,${0.22 + 0.10 * Math.sin(fp)})`);
-        fg.addColorStop(0.4, `rgba(0,100,220,${0.12 + 0.06 * Math.sin(fp + 1)})`);
-        fg.addColorStop(0.7, `rgba(0,50,140,${0.06})`);
-        fg.addColorStop(1,   'rgba(0,0,0,0)');
-        ctx.fillStyle = fg;
-        ctx.beginPath();
-        ctx.ellipse(fx, fy, fh * 0.7, fh, 0, 0, Math.PI * 2);
-        ctx.fill();
-        // ~20% chance: neon green tip on flame
-        if (fi === 1) {
-            const gg = ctx.createRadialGradient(fx, fy - fh * 0.6, 0, fx, fy - fh * 0.6, fh * 0.25);
-            gg.addColorStop(0,   `rgba(57,255,20,${0.10 + 0.06 * Math.sin(fp * 1.3)})`);
-            gg.addColorStop(1,   'rgba(0,0,0,0)');
+    /* ─────────────────────────────────────────────────────────────
+       MAIN RENDER LOOP
+       ───────────────────────────────────────────────────────────── */
+    function render() {
+        if (_bgPaused || window._snxBgPauseOverride) { _bgRafId = null; return; }
+
+        /* Re-seed if quality level changed */
+        if (window._snxReseedParticles) {
+            window._snxReseedParticles = false;
+            _seedAll(_stableW, _stableH);
+        }
+
+        const W = _stableW, H = _stableH;
+        const t   = performance.now();
+        const now = t * 0.001;
+        const mood = _getMood();
+        const musicOn = !!window._snxMusicActive;
+
+        ctx.clearRect(0, 0, W, H);
+
+        /* ──────────────────────────────────────────
+           MATRIX MODE (aesthetic override)
+           ────────────────────────────────────────── */
+        if (typeof globalAestheticMode !== 'undefined' && globalAestheticMode === 'matrix') {
+            ctx.font = "11px monospace";
+            points.forEach(p => {
+                p.y += 1.8;
+                if (p.y > H) { p.y = -14; p.x = Math.random() * W; }
+                ctx.fillStyle = p.green
+                    ? `rgba(0,255,136,${0.07 + p.o * 0.08})`
+                    : `rgba(0,190,255,${0.06 + p.o * 0.07})`;
+                ctx.fillText(Math.random() > 0.5 ? "1" : "0", p.x, p.y);
+            });
+            _bgRafId = requestAnimationFrame(render);
+            return;
+        }
+
+        /* ──────────────────────────────────────────
+           LAYER 1 — Atmospheric sky tint
+           ────────────────────────────────────────── */
+        const skyGrd = ctx.createLinearGradient(0, 0, 0, H * 0.55);
+        skyGrd.addColorStop(0,   'rgba(1,4,14,0.62)');
+        skyGrd.addColorStop(0.3, 'rgba(0,3,10,0.38)');
+        skyGrd.addColorStop(1,   'rgba(0,0,0,0)');
+        ctx.fillStyle = skyGrd;
+        ctx.fillRect(0, 0, W, H);
+
+        /* ──────────────────────────────────────────
+           LAYER 2 — Deep fog wisps
+           ────────────────────────────────────────── */
+        const fogMult = mood === 'messages' ? 0.70
+                      : mood === 'profile'  ? 0.82
+                      : musicOn ? 1.12 : 1.0;
+        fogWisps.forEach(w => {
+            const cy    = w.y * H;
+            const alpha = w.alpha * fogMult * (0.6 + 0.4 * Math.sin(t * 0.00022 + w.phase));
+            const grd = ctx.createLinearGradient(0, cy - H * 0.12, 0, cy + H * 0.12);
+            grd.addColorStop(0,   'rgba(0,0,0,0)');
+            grd.addColorStop(0.4, `rgba(0,16,58,${alpha})`);
+            grd.addColorStop(0.5, `rgba(0,24,76,${alpha * 1.42})`);
+            grd.addColorStop(0.6, `rgba(0,16,58,${alpha})`);
+            grd.addColorStop(1,   'rgba(0,0,0,0)');
+            const offX = Math.sin(t * w.speed + w.phase) * W * 0.22;
+            ctx.save();
+            ctx.translate(offX, 0);
+            ctx.fillStyle = grd;
+            ctx.fillRect(-W * 0.28, cy - H * 0.12, W * 1.56, H * 0.24);
+            ctx.restore();
+        });
+
+        /* ──────────────────────────────────────────
+           LAYER 3 — Cold ambient glow orbs
+           ────────────────────────────────────────── */
+        glowOrbs.forEach(orb => {
+            const cx = orb.x * W + Math.sin(now * orb.spd + orb.phase) * W * 0.15;
+            const cy = orb.y * H + Math.cos(now * orb.spd * 0.72 + orb.phase) * H * 0.10;
+            const pulse = 0.5 + 0.5 * Math.sin(now * 0.14 + orb.phase);
+            const r = Math.min(W, H) * (0.28 + 0.10 * pulse);
+            const baseA = mood === 'live' ? 0.065
+                        : mood === 'music' ? 0.058
+                        : musicOn ? 0.055 : 0.040;
+            const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+            grd.addColorStop(0,   `rgba(0,52,148,${baseA + 0.022 * pulse})`);
+            grd.addColorStop(0.5, `rgba(0,26,80,${(baseA * 0.5) + 0.010 * pulse})`);
+            grd.addColorStop(1,   'rgba(0,0,0,0)');
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, W, H);
+        });
+
+        /* ──────────────────────────────────────────
+           LAYER 4 — Rain (3 depth layers)
+           ────────────────────────────────────────── */
+        const _rainOn = !window._snxPerfCfg || window._snxPerfCfg.lightningOn !== false;
+        if (_rainOn) {
+            const rainMult = mood === 'messages' ? 0.42
+                           : mood === 'profile'  ? 0.52 : 1.0;
+            const windX = Math.sin(now * 0.085) * 0.18;
+            /* Distant rain first (drawn behind everything) */
+            _drawRain(rainFar,   rainMult * 0.55, windX * 0.5);
+            _drawRain(rainMid,   rainMult * 0.85, windX * 0.8);
+            _drawRain(rainClose, rainMult * 0.65, windX);
+        }
+
+        /* ──────────────────────────────────────────
+           LAYER 5 — Energy particles (pooled)
+           ────────────────────────────────────────── */
+        ashPts.forEach(p => {
+            p.x  += p.vx + Math.sin(now * 0.36 + p.life * 6.3) * 0.08;
+            p.y  += p.vy;
+            p.life += 0.00072;
+
+            /* Recycle — wrap around edges */
+            if (p.y < -8) { p.y = H + 8; p.x = Math.random() * W; p.life = Math.random(); }
+            if (p.x < -8)  p.x = W + 8;
+            if (p.x > W+8) p.x = -8;
+
+            const lc = p.life % 1;
+            const fadeA = lc < 0.14 ? lc / 0.14 : lc > 0.86 ? (1 - lc) / 0.14 : 1;
+            const alpha = p.o * fadeA * 0.65;
+            if (alpha < 0.01) return;
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+
+            switch (p.type) {
+                case 'glow-blue':
+                    ctx.fillStyle = `rgba(0,200,255,${alpha * 1.5})`;
+                    ctx.fill();
+                    ctx.save();
+                    ctx.shadowColor = 'rgba(0,200,255,0.9)';
+                    ctx.shadowBlur  = 9;
+                    ctx.fill();
+                    ctx.restore();
+                    break;
+                case 'green':
+                    ctx.fillStyle = `rgba(57,255,20,${alpha * 0.85})`;
+                    ctx.fill();
+                    break;
+                case 'ember':
+                    ctx.fillStyle = `rgba(0,145,255,${alpha * 0.92})`;
+                    ctx.fill();
+                    break;
+                case 'spark':
+                    /* Tiny bright white-blue electric spark */
+                    ctx.fillStyle = `rgba(180,230,255,${alpha * 1.2})`;
+                    ctx.fill();
+                    break;
+                default:
+                    ctx.fillStyle = `rgba(0,174,239,${alpha})`;
+                    ctx.fill();
+            }
+
+            /* Soft halo on larger particles */
+            if (p.r > 1.0) {
+                const halo = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 5.5);
+                const hColor = p.type === 'green'     ? `rgba(57,255,20,${alpha * 0.30})`
+                             : p.type === 'glow-blue' ? `rgba(0,200,255,${alpha * 0.42})`
+                             :                          `rgba(0,174,239,${alpha * 0.32})`;
+                halo.addColorStop(0, hColor);
+                halo.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = halo;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r * 5.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        /* ──────────────────────────────────────────
+           LAYER 6 — Cyber grid + connection lines
+           ────────────────────────────────────────── */
+        if (!_isMobile) {
+            ctx.lineWidth = 0.42;
+            for (let i = 0; i < points.length; i++) {
+                for (let j = i + 1; j < points.length; j++) {
+                    const dx = points[i].x - points[j].x;
+                    const dy = points[i].y - points[j].y;
+                    const d2 = dx * dx + dy * dy;
+                    if (d2 < 130 * 130) {
+                        const alpha = (1 - Math.sqrt(d2) / 130) * 0.075;
+                        ctx.strokeStyle = (i + j) % 7 === 0
+                            ? `rgba(57,255,20,${alpha * 0.7})`
+                            : `rgba(0,174,239,${alpha})`;
+                        ctx.beginPath();
+                        ctx.moveTo(points[i].x, points[i].y);
+                        ctx.lineTo(points[j].x, points[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        points.forEach(p => {
+            p.x += p.vx; p.y += p.vy;
+            if (p.x < 0 || p.x > W) p.vx *= -1;
+            if (p.y < 0 || p.y > H) p.vy *= -1;
+            const pulse = 0.5 + 0.5 * Math.sin(now * 1.05 + p.x * 0.013);
+            const alpha = p.o * pulse * 0.50;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = p.green
+                ? `rgba(57,255,20,${alpha * 0.75})`
+                : `rgba(0,174,239,${alpha})`;
+            ctx.fill();
+        });
+
+        /* ──────────────────────────────────────────
+           LAYER 7 — Arc sparks (electrical)
+           ────────────────────────────────────────── */
+        const _ltOn = !window._snxPerfCfg || window._snxPerfCfg.lightningOn;
+        if (_ltOn) {
+            arcs.forEach(arc => {
+                arc.timer++;
+                if (arc.timer % arc.period < arc.segs + 2) {
+                    const prog = (arc.timer % arc.period) / (arc.segs + 2);
+                    const a = prog < 0.4 ? prog / 0.4 : 1 - (prog - 0.4) / 0.6;
+                    ctx.save();
+                    ctx.lineWidth   = 0.7;
+                    ctx.strokeStyle = `rgba(0,200,255,${a * 0.42})`;
+                    ctx.shadowColor  = 'rgba(0,200,255,0.65)';
+                    ctx.shadowBlur   = 7;
+                    ctx.beginPath();
+                    let ax = arc.x, ay = arc.y;
+                    ctx.moveTo(ax, ay);
+                    for (let s = 0; s < arc.segs; s++) {
+                        ax += (Math.random() - 0.5) * 24;
+                        ay += (Math.random() - 0.5) * 16;
+                        ctx.lineTo(ax, ay);
+                    }
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            });
+        }
+
+        /* ──────────────────────────────────────────
+           LAYER 8 — Cinematic lightning bolts
+           Unpredictable timing — feels natural, not metronome.
+           ────────────────────────────────────────── */
+        if (_ltOn) {
+            _ltTimer++;
+
+            /* Trigger new bolt */
+            if (_ltTimer >= _ltNextAt) {
+                _ltTimer = 0;
+                const _liveMult = mood === 'live' ? 0.55 : 1.0;
+                _ltNextAt = (200 + Math.random() * 520) * _liveMult;
+
+                /* Decide bolt type */
+                const boltType = Math.random();
+                const bx = W * (0.10 + Math.random() * 0.80);
+                if (boltType < 0.55) {
+                    /* Short distant flash — no visible bolt, just ambient light */
+                    _ltBolts.push({
+                        type: 'ambient',
+                        x: bx,
+                        lifetime: 0,
+                        maxLife: 6 + Math.floor(Math.random() * 8),
+                        alpha: 0.025 + Math.random() * 0.028,
+                        green: Math.random() < 0.12
+                    });
+                } else if (boltType < 0.85) {
+                    /* Standard bolt */
+                    _ltBolts.push({
+                        type: 'bolt',
+                        x: bx,
+                        segs: 6 + Math.floor(Math.random() * 6),
+                        endY: H * (0.45 + Math.random() * 0.40),
+                        lifetime: 0,
+                        maxLife: 5 + Math.floor(Math.random() * 7),
+                        green: Math.random() < 0.18
+                    });
+                } else {
+                    /* Double bolt — main + branch */
+                    _ltBolts.push({
+                        type: 'double',
+                        x: bx,
+                        segs: 8 + Math.floor(Math.random() * 5),
+                        endY: H * (0.50 + Math.random() * 0.35),
+                        lifetime: 0,
+                        maxLife: 4 + Math.floor(Math.random() * 5),
+                        green: false
+                    });
+                }
+
+                /* Cloud illumination flash via CSS layer */
+                const flashEl = document.getElementById('snx-lightning-flash');
+                if (flashEl) {
+                    flashEl.classList.add('snx-flash-active');
+                    setTimeout(() => {
+                        if (flashEl) flashEl.classList.remove('snx-flash-active');
+                    }, boltType < 0.55 ? 80 : 140);
+                }
+            }
+
+            /* Draw and age bolts */
+            _ltBolts = _ltBolts.filter(bolt => {
+                const prog = bolt.lifetime / bolt.maxLife;
+                const alpha = prog < 0.3
+                    ? prog / 0.3
+                    : 1 - (prog - 0.3) / 0.7;
+
+                if (bolt.type === 'ambient') {
+                    const ambGrd = ctx.createRadialGradient(bolt.x, 0, 0, bolt.x, H * 0.3, W * 0.45);
+                    ambGrd.addColorStop(0, bolt.green
+                        ? `rgba(30,180,60,${bolt.alpha * alpha})`
+                        : `rgba(0,80,200,${bolt.alpha * alpha})`);
+                    ambGrd.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = ambGrd;
+                    ctx.fillRect(0, 0, W, H);
+                } else if (bolt.type === 'bolt') {
+                    _drawBolt(bolt.x, 0, bolt.endY, bolt.segs, alpha, bolt.green);
+                } else if (bolt.type === 'double') {
+                    _drawBolt(bolt.x, 0, bolt.endY, bolt.segs, alpha, false);
+                    /* Branch bolt slightly offset */
+                    _drawBolt(bolt.x + (Math.random() - 0.5) * 80,
+                              bolt.endY * 0.3, bolt.endY * 0.95,
+                              Math.max(3, bolt.segs - 3), alpha * 0.6, Math.random() < 0.3);
+                }
+
+                bolt.lifetime++;
+                return bolt.lifetime < bolt.maxLife;
+            });
+        }
+
+        /* ──────────────────────────────────────────
+           LAYER 9 — Electric bottom-edge glow
+           ────────────────────────────────────────── */
+        const edgePulse = 0.5 + 0.5 * Math.sin(now * 0.105);
+        const musicBoost = musicOn ? 0.018 : 0;
+        const edgeGrd = ctx.createLinearGradient(0, H * 0.70, 0, H);
+        edgeGrd.addColorStop(0,    'rgba(0,0,0,0)');
+        edgeGrd.addColorStop(0.45, `rgba(0,52,125,${0.05 + 0.032 * edgePulse + musicBoost})`);
+        edgeGrd.addColorStop(0.80, `rgba(0,36,90,${0.08 + 0.030 * edgePulse + musicBoost})`);
+        edgeGrd.addColorStop(1,    `rgba(0,18,55,${0.11 + 0.042 * edgePulse + musicBoost})`);
+        ctx.fillStyle = edgeGrd;
+        ctx.fillRect(0, 0, W, H);
+
+        /* ──────────────────────────────────────────
+           LAYER 10 — Blue flame orbs at bottom corners
+           ────────────────────────────────────────── */
+        const _flOn = !window._snxPerfCfg || window._snxPerfCfg.flameOrbs;
+        if (_flOn) {
+            const fp = now * 1.38;
+            [[W * 0.04, H, 0], [W * 0.96, H, 2.1], [W * 0.50, H, 4.2]].forEach(([fx, fy, fi]) => {
+                const fph = fp + fi;
+                const fh = (52 + Math.sin(fph) * 20) * edgePulse;
+                const fg = ctx.createRadialGradient(fx, fy, 0, fx, fy - fh * 0.42, fh);
+                fg.addColorStop(0,   `rgba(0,174,239,${0.18 + 0.09 * Math.sin(fph)})`);
+                fg.addColorStop(0.4, `rgba(0,90,210,${0.10 + 0.05 * Math.sin(fph + 1)})`);
+                fg.addColorStop(0.7, 'rgba(0,45,125,0.050)');
+                fg.addColorStop(1,   'rgba(0,0,0,0)');
+                ctx.fillStyle = fg;
+                ctx.beginPath();
+                ctx.ellipse(fx, fy, fh * 0.70, fh, 0, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            /* Centre orb gets a green accent ember */
+            const fph2 = fp + 4.2;
+            const fh2  = (52 + Math.sin(fph2) * 20) * edgePulse;
+            const gg = ctx.createRadialGradient(W * 0.5, H - fh2 * 0.62, 0,
+                                                W * 0.5, H - fh2 * 0.62, fh2 * 0.26);
+            gg.addColorStop(0, `rgba(57,255,20,${0.08 + 0.045 * Math.sin(fph2 * 1.3)})`);
+            gg.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = gg;
             ctx.beginPath();
-            ctx.ellipse(fx, fy - fh * 0.6, fh * 0.22, fh * 0.28, 0, 0, Math.PI * 2);
+            ctx.ellipse(W * 0.5, H - fh2 * 0.62, fh2 * 0.24, fh2 * 0.30, 0, 0, Math.PI * 2);
             ctx.fill();
+        }
+
+        /* ──────────────────────────────────────────
+           LAYER 11 — Section mood energy pulse
+           ────────────────────────────────────────── */
+        if (mood === 'music' || musicOn) {
+            const mPulse = 0.5 + 0.5 * Math.sin(now * (musicOn ? 2.2 : 1.8));
+            const mgrd = ctx.createLinearGradient(0, H * 0.78, 0, H);
+            mgrd.addColorStop(0, 'rgba(0,0,0,0)');
+            mgrd.addColorStop(1, `rgba(0,115,255,${0.06 + 0.046 * mPulse})`);
+            ctx.fillStyle = mgrd;
+            ctx.fillRect(0, 0, W, H);
+        }
+        if (mood === 'live') {
+            const lvP = 0.5 + 0.5 * Math.sin(now * 2.4);
+            const lg = ctx.createLinearGradient(0, 0, W * 0.045, 0);
+            lg.addColorStop(0, `rgba(255,28,55,${0.05 + 0.040 * lvP})`);
+            lg.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = lg;
+            ctx.fillRect(0, 0, W * 0.09, H);
+            const rg = ctx.createLinearGradient(W, 0, W * 0.955, 0);
+            rg.addColorStop(0, `rgba(255,28,55,${0.05 + 0.040 * lvP})`);
+            rg.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = rg;
+            ctx.fillRect(W * 0.91, 0, W * 0.09, H);
+        }
+
+        /* ──────────────────────────────────────────
+           LAYER 12 — Music reaction: glow breathing
+           ────────────────────────────────────────── */
+        if (musicOn) {
+            const musicPulse = 0.5 + 0.5 * Math.sin(now * 1.9);
+            /* Side edge blue glow breathing */
+            const mlg = ctx.createLinearGradient(0, 0, W * 0.06, 0);
+            mlg.addColorStop(0, `rgba(0,120,255,${0.04 + 0.028 * musicPulse})`);
+            mlg.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = mlg;
+            ctx.fillRect(0, 0, W * 0.12, H);
+            const mrg = ctx.createLinearGradient(W, 0, W * 0.94, 0);
+            mrg.addColorStop(0, `rgba(0,120,255,${0.04 + 0.028 * musicPulse})`);
+            mrg.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = mrg;
+            ctx.fillRect(W * 0.88, 0, W * 0.12, H);
+        }
+
+        _bgRafId = requestAnimationFrame(render);
+    }
+
+    function _startLoop() {
+        if (_bgRafId) return;
+        render();
+    }
+
+    /* ── Pause RAF when tab is hidden ── */
+    document.addEventListener("visibilitychange", function () {
+        if (document.hidden) {
+            _bgPaused = true;
+            if (_bgRafId) { cancelAnimationFrame(_bgRafId); _bgRafId = null; }
+        } else {
+            _bgPaused = false;
+            if (!_bgRafId && !window._snxBgPauseOverride) render();
         }
     });
 
-    _bgRafId = requestAnimationFrame(render);
-}
+    /* ── Kick off ── */
+    _startLoop();
 
-/* Pause canvas RAF when the tab is hidden — saves CPU/battery */
-document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
-        _bgPaused = true;
-        if (_bgRafId) { cancelAnimationFrame(_bgRafId); _bgRafId = null; }
-    } else {
-        _bgPaused = false;
-        if (!_bgRafId) render();
-    }
-});
-
-/* ── DOM ash particle spawner ──
-   Spawns lightweight CSS-animated `.ash-particle` divs.
-   These are layered ABOVE the canvas but BELOW UI (z-index: 9996).
-   We keep total count very low (max 14) to avoid performance issues.
-*/
-(function spawnDomAsh() {
-    let domAshCount = 0;
-
-    function _maxDomAsh() {
-        // Use SNXPerf if available, otherwise fall back to mobile heuristic
-        if (window._snxPerfCfg && typeof window._snxPerfCfg.domAsh === 'number') {
-            return window._snxPerfCfg.domAsh;
-        }
-        return _isMobileDevice ? 7 : 14;
-    }
-
-    function spawnOne() {
-        // Don't spawn new particles while the tab is hidden
-        if (document.hidden) { domAshCount = Math.max(0, domAshCount - 1); return; }
-        const MAX_DOM_ASH = _maxDomAsh();
-        if (MAX_DOM_ASH === 0) { domAshCount = 0; return; } // MINIMAL/LITE mode
-        if (domAshCount >= MAX_DOM_ASH) return;
-        domAshCount++;
-        const el = document.createElement('div');
-        // ~25% of DOM particles are neon green, rest electric blue
-        el.className = 'ash-particle' + (Math.random() < 0.25 ? ' green' : '');
-        const dur   = (9 + Math.random() * 10).toFixed(1) + 's';
-        const delay = (Math.random() * 8).toFixed(1) + 's';
-        const left  = (Math.random() * 96 + 2).toFixed(1) + 'vw';
-        const drift = ((Math.random() - 0.5) * 60).toFixed(0) + 'px';
-        el.style.cssText = `
-            left: ${left};
-            bottom: -6px;
-            --ash-dur: ${dur};
-            --ash-delay: -${delay};
-            width:  ${(1.2 + Math.random() * 2).toFixed(1)}px;
-            height: ${(1.2 + Math.random() * 2).toFixed(1)}px;
-            opacity: ${(0.3 + Math.random() * 0.5).toFixed(2)};
-            --ash-drift: ${drift};
-        `;
-        el.style.animationTimingFunction = 'linear';
-        document.body.appendChild(el);
-        setTimeout(() => {
-            el.remove();
-            domAshCount--;
-            spawnOne();
-        }, (parseFloat(dur) + 0.5) * 1000);
-    }
-
-    // Stagger initial spawns across 3 seconds
-    const _initCount = _maxDomAsh();
-    for (let i = 0; i < _initCount; i++) {
-        setTimeout(spawnOne, i * 220);
-    }
-})();
-
-render();
+})(); /* end _eclipseEngine IIFE */
 
 /* ═══════════════════════════════════════════════════════════
    NOTIFICATION SETTINGS & PUSH PERMISSION HELPERS
@@ -30856,15 +31194,22 @@ document.getElementById('gp-messages')?.addEventListener('touchmove', (e) => {
     var ctx = canvas.getContext('2d');
     var stars = [];
     var W, H;
+    var _rafId = null;
+    var _paused = false;
 
+    /* Debounced resize — prevents canvas pop on orientation change */
+    var _resizeTimer = null;
     function resize() {
-        W = canvas.width  = window.innerWidth;
-        H = canvas.height = window.innerHeight;
+        clearTimeout(_resizeTimer);
+        _resizeTimer = setTimeout(function() {
+            W = canvas.width  = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+        }, 120);
     }
-    resize();
-    window.addEventListener('resize', resize);
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    window.addEventListener('resize', resize, { passive: true });
 
-    // Create stars
     for (var i = 0; i < 200; i++) {
         stars.push({
             x: Math.random(),
@@ -30877,82 +31222,44 @@ document.getElementById('gp-messages')?.addEventListener('touchmove', (e) => {
     }
 
     function tick() {
+        if (_paused) { _rafId = null; return; }
         ctx.clearRect(0, 0, W, H);
         stars.forEach(function(s) {
             s.a += s.da;
-            if (s.a > 1) { s.a = 1; s.da = -Math.abs(s.da); }
-            if (s.a < 0.1) { s.a = 0.1; s.da = Math.abs(s.da); }
+            if (s.a > 1)   { s.a = 1;   s.da = -Math.abs(s.da); }
+            if (s.a < 0.1) { s.a = 0.1; s.da =  Math.abs(s.da); }
             ctx.beginPath();
             ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
-            if (s.blue) {
-                ctx.fillStyle = 'rgba(0,180,255,' + (s.a * 0.7) + ')';
-            } else {
-                ctx.fillStyle = 'rgba(255,255,255,' + (s.a * 0.55) + ')';
-            }
+            ctx.fillStyle = s.blue
+                ? 'rgba(0,180,255,' + (s.a * 0.7) + ')'
+                : 'rgba(255,255,255,' + (s.a * 0.55) + ')';
             ctx.fill();
         });
-        requestAnimationFrame(tick);
+        _rafId = requestAnimationFrame(tick);
     }
+
+    /* Pause when tab hidden; resume on return */
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            _paused = true;
+            if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+        } else {
+            _paused = false;
+            if (!_rafId) tick();
+        }
+    });
+
     tick();
 })();
 
 /* ═══════════════════════════════════════════════════════
-   3. BLUE RAIN — particle rain effect
+   3. BLUE RAIN — DISABLED (canvas engine handles rain)
+   DOM rain and energy waves removed — replaced by ECLIPSE
+   STORM ENGINE canvas layers which are the single authority
+   for rain, particles, energy arcs and lightning.
    ═══════════════════════════════════════════════════════ */
-(function initRain() {
-    var COUNT = window.innerWidth < 768 ? 18 : 35;
-    for (var i = 0; i < COUNT; i++) {
-        (function(idx) {
-            var drop = document.createElement('div');
-            drop.className = 'rain-drop';
-            var left = Math.random() * 100;
-            var height = Math.random() * 60 + 40;
-            var dur = Math.random() * 1.5 + 0.8;
-            var delay = Math.random() * 3;
-            drop.style.cssText = [
-                'left:' + left + 'vw',
-                'height:' + height + 'px',
-                'animation-duration:' + dur + 's',
-                'animation-delay:-' + (delay) + 's',
-                'opacity:' + (Math.random() * 0.25 + 0.1)
-            ].join(';');
-            document.body.appendChild(drop);
-        })(i);
-    }
-})();
-
-/* ═══════════════════════════════════════════════════════
-   4. ENERGY WAVES — periodic pulse from center
-   ═══════════════════════════════════════════════════════ */
-(function initEnergyWaves() {
-    var colors = [
-        'rgba(0,174,239,0.12) 0%, transparent 70%',
-        'rgba(57,255,20,0.07) 0%, transparent 70%',
-        'rgba(0,240,255,0.08) 0%, transparent 70%'
-    ];
-    var idx = 0;
-    function spawnWave() {
-        var wave = document.createElement('div');
-        wave.className = 'realm-energy-wave';
-        var size = Math.random() * 200 + 100;
-        var x = Math.random() * 80 + 10;
-        var y = Math.random() * 80 + 10;
-        wave.style.cssText = [
-            'width:' + size + 'px',
-            'height:' + size + 'px',
-            'left:' + x + 'vw',
-            'top:' + y + 'vh',
-            'background:radial-gradient(' + colors[idx % colors.length] + ')',
-            'animation-duration:' + (Math.random() * 3 + 4) + 's',
-            'animation-delay:0s'
-        ].join(';');
-        idx++;
-        document.body.appendChild(wave);
-        setTimeout(function() { wave.remove(); }, 8000);
-    }
-    spawnWave();
-    setInterval(spawnWave, 3500);
-})();
+/* initRain() → removed: canvas handles all rain */
+/* initEnergyWaves() → removed: canvas handles energy */
 
 /* ═══════════════════════════════════════════════════════
    5. SHADOW CORE — orb expand/collapse
@@ -31086,6 +31393,8 @@ function openMobileDrawer() {
     if (side)    { side.classList.add('active'); }
     if (overlay) { overlay.classList.add('visible'); }
     if (btn)     { btn.classList.add('menu-open'); btn.setAttribute('aria-expanded', 'true'); }
+    /* Environmental reaction — small blue energy sweep */
+    if (window.SNXLivingBg && window.SNXLivingBg.react) window.SNXLivingBg.react('nav-open');
 }
 window.openMobileDrawer = openMobileDrawer;
 
@@ -33238,7 +33547,7 @@ window.snxFounderPanelCleanup = (function() {
      SNX CINEMATIC EXPANSION — Living Backgrounds
      Loaded after main app so Firebase is already initialized.
      ═══════════════════════════════════════════════════════════ -->
-<script src="snx-living-bg.js?v=SNS-2026-CINEMATIC-001"></script>
+<script src="snx-living-bg.js?v=SNS-2026-WORLD-ENV-001"></script>
 <script>
 /* ── Sync Living Backgrounds toggle with saved preference ── */
 (function() {
@@ -33246,6 +33555,39 @@ window.snxFounderPanelCleanup = (function() {
     var cb = document.getElementById('settingsLivingBg');
     if (!cb) return;
     cb.checked = SNXLivingBg.isEnabled();
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   ENVIRONMENTAL MUSIC REACTION WATCHER
+   Polls the primary SNX music audio elements and reports
+   play/stop to SNXLivingBg without touching any music logic.
+   ═══════════════════════════════════════════════════════════ */
+(function _snxMusicWatcher() {
+    var _lastPlaying = false;
+    var _watchInterval = null;
+
+    function _isAnyAudioPlaying() {
+        /* Check all visible audio elements on the page */
+        var audios = document.querySelectorAll('audio');
+        for (var i = 0; i < audios.length; i++) {
+            if (!audios[i].paused && !audios[i].muted && audios[i].readyState >= 2) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function _checkMusic() {
+        if (!window.SNXLivingBg) return;
+        var playing = _isAnyAudioPlaying();
+        if (playing !== _lastPlaying) {
+            _lastPlaying = playing;
+            window.SNXLivingBg.setMusicReaction(playing);
+        }
+    }
+
+    /* Check every 2 seconds — very low cost */
+    _watchInterval = setInterval(_checkMusic, 2000);
 })();
 </script>
 
