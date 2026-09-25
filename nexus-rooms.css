@@ -150,7 +150,132 @@
     color: #2a4a6a;
 }
 .nxr-empty-icon { font-size: 48px; margin-bottom: 14px; }
+.nxr-empty-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #1a3a5a;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
 .nxr-empty-text { font-size: 14px; color: #3a6a9a; line-height: 1.6; }
+
+/* Retry button (shown on load error) */
+.nxr-retry-btn {
+    display: inline-block;
+    margin-top: 18px;
+    padding: 9px 22px;
+    background: transparent;
+    border: 1px solid rgba(0,174,239,0.45);
+    border-radius: 6px;
+    color: #00aeef;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+.nxr-retry-btn:hover {
+    background: rgba(0,174,239,0.12);
+    border-color: rgba(0,174,239,0.75);
+}
+
+/* ═══════════════════════════════════════════════════
+   SHADOW NEXUS PORTAL LOADER
+   Dark circular portal with electric-blue rotating ring
+   and neon-green centre pulse. CSS-only, no images.
+   ═══════════════════════════════════════════════════ */
+.nxr-loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 24px;
+}
+
+.nxr-portal-loader {
+    position: relative;
+    width: 64px;
+    height: 64px;
+}
+
+/* Rotating electric-blue energy ring */
+.nxr-portal-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: #00aeef;
+    border-right-color: rgba(0,174,239,0.25);
+    animation: nxrRingSpin 1.2s linear infinite;
+}
+
+/* Inner ring — slower, opposite direction */
+.nxr-portal-ring::after {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    border-bottom-color: rgba(0,230,130,0.55);
+    border-left-color: rgba(0,230,130,0.20);
+    animation: nxrRingSpin 2s linear infinite reverse;
+}
+
+/* Neon-green centre pulse */
+.nxr-portal-core {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    margin: -5px 0 0 -5px;
+    border-radius: 50%;
+    background: rgba(0,230,130,0.85);
+    box-shadow: 0 0 8px rgba(0,230,130,0.7), 0 0 16px rgba(0,230,130,0.3);
+    animation: nxrCorePulse 1.8s ease-in-out infinite;
+}
+
+/* Soft outer glow behind the whole loader */
+.nxr-portal-loader::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,174,239,0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+@keyframes nxrRingSpin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes nxrCorePulse {
+    0%, 100% { opacity: 0.6; transform: scale(0.85); }
+    50%       { opacity: 1;   transform: scale(1.15); }
+}
+
+/* Loading label under the portal */
+.nxr-loading-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: #1e4060;
+    text-transform: uppercase;
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .nxr-portal-ring,
+    .nxr-portal-ring::after,
+    .nxr-portal-core {
+        animation: none;
+    }
+    .nxr-portal-core {
+        opacity: 0.8;
+    }
+}
 
 /* ═══════════════════════════════════════════════════
    CREATE ROOM MODAL

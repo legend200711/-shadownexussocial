@@ -1,6 +1,6 @@
 /**
  * Shadow Nexus Social — Nexus Rooms + Watch Together
- * nexus-rooms.js  v1.0.0  (SNS-2026-CINEMATIC-001)
+ * nexus-rooms.js  v1.1.0  (SNS-2026-CINEMATIC-002)
  *
  * Architecture:
  *   Firestore: /nexusRooms/{roomId}                — room metadata
@@ -14,6 +14,12 @@
  *   Host ends room by setting status:'ended'.
  *   Abandoned-room cleanup: rooms with lastActivityAt > 6h and no active
  *   participants are marked ended on the client of the last person to leave.
+ *
+ * AUTH FIX (v1.1.0):
+ *   Uses window._snxAuth (Firebase modular Auth instance) and
+ *   window._snxFirestore (modular Firestore helpers) exposed by the main app
+ *   at index.html line ~12000.  No longer relies on legacy compat shims
+ *   (window.firebase.auth(), window.firebase.firestore.FieldValue, window.db).
  */
 
 'use strict';
@@ -23,29 +29,37 @@
 /* ══════════════════════════════════════════════════════
    CONSTANTS
 ══════════════════════════════════════════════════════ */
-var ROOMS_COLLECTION   = 'nexusRooms';
-var CHAT_SUBCOLLECTION = 'messages';
-var PARTS_SUBCOLLECTION= 'participants';
-var MAX_CHAT_MSGS       = 120;   // max to keep in live view
+var ROOMS_COLLECTION    = 'nexusRooms';
+var CHAT_SUBCOLLECTION  = 'messages';
+var PARTS_SUBCOLLECTION = 'participants';
+var MAX_CHAT_MSGS        = 120;   // max to keep in live view
 var SYNC_DEBOUNCE_MS    = 800;   // min ms between seek writes
 var SEEK_TOLERANCE_S    = 3;     // seconds of drift before hard-sync
 var INACTIVITY_MS       = 6 * 60 * 60 * 1000; // 6h for abandoned cleanup
+var LOAD_TIMEOUT_MS     = 9000;  // safeguard: stop spinner after 9 s
 
 /* ══════════════════════════════════════════════════════
    STATE
 ══════════════════════════════════════════════════════ */
-var _db         = null;
+var _db         = null;  // Firestore instance
+var _fs         = null;  // Firestore modular helpers (from window._snxFirestore)
 var _user       = null;
 var _userData   = null;
 var _roomId     = null;
 var _roomData   = null;
 var _isHost     = false;
 
+// Auth state: 'checking' | 'signed-in' | 'signed-out'
+var _authState  = 'checking';
+
 // Listeners — tracked for clean unsubscription
 var _unsubRoom  = null;
 var _unsubChat  = null;
 var _unsubParts = null;
 var _unsubList  = null;  // room list listener
+
+// Loading safeguard timer
+var _loadTimer  = null;
 
 // Video sync
 var _player     = null;
@@ -88,98 +102,302 @@ function _userHandle() {
 }
 
 /* ══════════════════════════════════════════════════════
-   FIREBASE ACCESS
+   FIREBASE ACCESS — modular SDK via window._snxFirestore
+   Exposed by the main app in index.html (~line 11985).
+   Falls back gracefully if called before the module loads.
 ══════════════════════════════════════════════════════ */
+function _getFS() {
+    if (_fs) return _fs;
+    if (window._snxFirestore) {
+        _fs = window._snxFirestore;
+        return _fs;
+    }
+    return null;
+}
+
 function _getDB() {
     if (_db) return _db;
-    // Borrow from main app firebase instance
-    if (window.db) { _db = window.db; return _db; }
-    if (window.firebase && window.firebase.firestore) {
-        _db = window.firebase.firestore();
+    var fs = _getFS();
+    if (fs && fs.db) {
+        _db = fs.db;
+        return _db;
+    }
+    // Final fallback: legacy compat path (older deployments)
+    if (window._snxDb) {
+        _db = window._snxDb;
         return _db;
     }
     return null;
 }
 
-function _getField() {
-    if (window.firebase && window.firebase.firestore && window.firebase.firestore.FieldValue)
-        return window.firebase.firestore.FieldValue;
-    if (window.FieldValue) return window.FieldValue;
-    return null;
-}
-
 function _serverTS() {
-    var FV = _getField();
-    if (FV) return FV.serverTimestamp();
+    var fs = _getFS();
+    if (fs && fs.serverTimestamp) return fs.serverTimestamp();
     return new Date();
 }
 
 function _arrayUnion(val) {
-    var FV = _getField();
-    if (FV) return FV.arrayUnion(val);
+    var fs = _getFS();
+    if (fs && fs.arrayUnion) return fs.arrayUnion(val);
     return [val];
 }
 
 function _arrayRemove(val) {
-    var FV = _getField();
-    if (FV) return FV.arrayRemove(val);
+    var fs = _getFS();
+    if (fs && fs.arrayRemove) return fs.arrayRemove(val);
     return [];
 }
 
+// Build a Firestore collection reference (modular-safe)
+function _col(path) {
+    var fs = _getFS(); var db = _getDB();
+    if (!fs || !db) return null;
+    return fs.collection(db, path);
+}
+
+// Build a Firestore doc reference (modular-safe)
+function _docRef(path) {
+    var fs = _getFS(); var db = _getDB();
+    if (!fs || !db) return null;
+    // path is like 'nexusRooms/roomId' or 'nexusRooms/roomId/messages/msgId'
+    var parts = path.split('/');
+    return fs.doc.apply(null, [db].concat(parts));
+}
+
+// Build a Firestore sub-collection reference
+function _subCol(roomId, sub) {
+    var fs = _getFS(); var db = _getDB();
+    if (!fs || !db) return null;
+    return fs.collection(db, ROOMS_COLLECTION, roomId, sub);
+}
+
+// Build a Firestore sub-doc reference
+function _subDocRef(roomId, sub, docId) {
+    var fs = _getFS(); var db = _getDB();
+    if (!fs || !db) return null;
+    return fs.doc(db, ROOMS_COLLECTION, roomId, sub, docId);
+}
+
 /* ══════════════════════════════════════════════════════
-   INIT — called once after auth resolves
+   LOADING STATE UI
+══════════════════════════════════════════════════════ */
+function _showLoading() {
+    var grid = _el('nxrRoomsGrid');
+    if (!grid) return;
+    grid.innerHTML =
+        '<div class="nxr-loading-state" id="nxrLoadingState">' +
+            '<div class="nxr-portal-loader">' +
+                '<div class="nxr-portal-ring"></div>' +
+                '<div class="nxr-portal-core"></div>' +
+            '</div>' +
+            '<div class="nxr-loading-label">LOADING NEXUS ROOMS…</div>' +
+        '</div>';
+}
+
+function _showEmpty() {
+    var grid = _el('nxrRoomsGrid');
+    if (!grid) return;
+    grid.innerHTML =
+        '<div class="nxr-empty">' +
+            '<div class="nxr-empty-icon">🌌</div>' +
+            '<div class="nxr-empty-title">NO ACTIVE NEXUS ROOMS</div>' +
+            '<div class="nxr-empty-text">The Nexus is quiet. Open the first room.</div>' +
+        '</div>';
+}
+
+function _showAuthChecking() {
+    var grid = _el('nxrRoomsGrid');
+    if (!grid) return;
+    grid.innerHTML =
+        '<div class="nxr-loading-state">' +
+            '<div class="nxr-portal-loader">' +
+                '<div class="nxr-portal-ring"></div>' +
+                '<div class="nxr-portal-core"></div>' +
+            '</div>' +
+            '<div class="nxr-loading-label">VERIFYING SESSION…</div>' +
+        '</div>';
+    // Hide create button until auth is confirmed
+    var btn = _el('nxrCreateBtnWrapper');
+    if (btn) btn.style.visibility = 'hidden';
+}
+
+function _showSignedOut() {
+    var grid = _el('nxrRoomsGrid');
+    if (!grid) return;
+    grid.innerHTML =
+        '<div class="nxr-empty">' +
+            '<div class="nxr-empty-icon">🔒</div>' +
+            '<div class="nxr-empty-title">SIGN IN TO THE NEXUS</div>' +
+            '<div class="nxr-empty-text">Sign in to Shadow Nexus Social to view and create Nexus Rooms.</div>' +
+        '</div>';
+    var btn = _el('nxrCreateBtnWrapper');
+    if (btn) btn.style.visibility = 'hidden';
+}
+
+function _showError(errMsg) {
+    var grid = _el('nxrRoomsGrid');
+    if (!grid) return;
+    grid.innerHTML =
+        '<div class="nxr-empty">' +
+            '<div class="nxr-empty-icon">⚠️</div>' +
+            '<div class="nxr-empty-title">UNABLE TO LOAD NEXUS ROOMS</div>' +
+            '<div class="nxr-empty-text">' + _esc(errMsg || 'Connection error. Please try again.') + '</div>' +
+            '<button class="nxr-retry-btn" onclick="NexusRooms._retryLoad()">↺ RETRY</button>' +
+        '</div>';
+}
+
+function _showAuthOnPage() {
+    // Once auth is confirmed, make the Create button visible
+    var btn = _el('nxrCreateBtnWrapper');
+    if (btn) btn.style.visibility = 'visible';
+}
+
+/* ══════════════════════════════════════════════════════
+   INIT — called once after auth resolves with a user
 ══════════════════════════════════════════════════════ */
 function init(user, userData) {
     _user     = user;
     _userData = userData;
+    _authState = 'signed-in';
     _db       = _getDB();
-    // Start room list subscription once (detaches when user logs out)
+    _showAuthOnPage();
+    // Start room list subscription (detaches when user logs out)
     _subscribeRoomList();
 }
 
 function onLogout() {
-    _unsubscribeAll();
+    _authState = 'signed-out';
+    _unsubAll();
+    if (_unsubList) { _unsubList(); _unsubList = null; }
     _leaveCurrentRoom(true /* silent */);
     _user = null;
     _userData = null;
     _db = null;
+    _fs = null;
+    _showSignedOut();
+}
+
+/* public retry hook */
+function _retryLoad() {
+    if (_authState !== 'signed-in') return;
+    _subscribeRoomList();
 }
 
 /* ══════════════════════════════════════════════════════
    ROOM LIST PAGE
 ══════════════════════════════════════════════════════ */
 function _subscribeRoomList() {
+    // Cancel existing listener + timeout before re-subscribing
     if (_unsubList) { _unsubList(); _unsubList = null; }
+    if (_loadTimer) { clearTimeout(_loadTimer); _loadTimer = null; }
+
     var db = _getDB();
-    if (!db || !_user) return;
+    var fs = _getFS();
+    if (!db || !fs || !_user) {
+        _showError('Could not connect to the Nexus database.');
+        return;
+    }
+
+    _showLoading();
+
+    // Safeguard: stop the spinner after LOAD_TIMEOUT_MS
+    _loadTimer = setTimeout(function() {
+        _loadTimer = null;
+        // Only show timeout error if the grid still shows the loader
+        var loader = _el('nxrLoadingState');
+        if (loader) {
+            console.warn('[NXR] Room list load timed out after ' + (LOAD_TIMEOUT_MS/1000) + 's');
+            _showError('Unable to load Nexus Rooms (connection timed out).');
+        }
+    }, LOAD_TIMEOUT_MS);
+
     try {
-        _unsubList = db.collection(ROOMS_COLLECTION)
-            .where('status', '==', 'active')
-            .orderBy('createdAt', 'desc')
-            .limit(40)
-            .onSnapshot(function(snap) {
+        var colRef = fs.collection(db, ROOMS_COLLECTION);
+        var q = fs.query(
+            colRef,
+            fs.where('status', '==', 'active'),
+            fs.orderBy('createdAt', 'desc'),
+            fs.limit(40)
+        );
+        _unsubList = fs.onSnapshot(q,
+            function(snap) {
+                if (_loadTimer) { clearTimeout(_loadTimer); _loadTimer = null; }
                 _renderRoomList(snap);
-            }, function(err) {
-                console.warn('[NXR] Room list subscription error:', err);
-            });
-    } catch(e) { console.warn('[NXR] subscribeRoomList:', e); }
+            },
+            function(err) {
+                if (_loadTimer) { clearTimeout(_loadTimer); _loadTimer = null; }
+                console.error('[NXR] Room list subscription error:', err.code, err.message);
+                // If index not ready, fall back to un-ordered simple query
+                if (err.code === 'failed-precondition' || err.code === 'unimplemented') {
+                    console.warn('[NXR] Falling back to simple query (index not ready)');
+                    _subscribeRoomListFallback();
+                } else {
+                    _showError('Could not load rooms: ' + err.message);
+                }
+            }
+        );
+    } catch(e) {
+        if (_loadTimer) { clearTimeout(_loadTimer); _loadTimer = null; }
+        console.error('[NXR] subscribeRoomList exception:', e);
+        _showError('Could not connect to the Nexus: ' + (e.message || e));
+    }
+}
+
+function _subscribeRoomListFallback() {
+    var db = _getDB();
+    var fs = _getFS();
+    if (!db || !fs || !_user) return;
+
+    if (_loadTimer) { clearTimeout(_loadTimer); _loadTimer = null; }
+    _loadTimer = setTimeout(function() {
+        _loadTimer = null;
+        var loader = _el('nxrLoadingState');
+        if (loader) _showError('Unable to load Nexus Rooms (connection timed out).');
+    }, LOAD_TIMEOUT_MS);
+
+    try {
+        var colRef = fs.collection(db, ROOMS_COLLECTION);
+        var q = fs.query(colRef, fs.where('status', '==', 'active'), fs.limit(40));
+        _unsubList = fs.onSnapshot(q,
+            function(snap) {
+                if (_loadTimer) { clearTimeout(_loadTimer); _loadTimer = null; }
+                _renderRoomList(snap);
+            },
+            function(err) {
+                if (_loadTimer) { clearTimeout(_loadTimer); _loadTimer = null; }
+                console.error('[NXR] Fallback room list error:', err.code, err.message);
+                _showError('Could not load rooms: ' + err.message);
+            }
+        );
+    } catch(e) {
+        if (_loadTimer) { clearTimeout(_loadTimer); _loadTimer = null; }
+        _showError('Could not connect to the Nexus: ' + (e.message || e));
+    }
 }
 
 function _renderRoomList(snap) {
     var grid = _el('nxrRoomsGrid');
     if (!grid) return;
+
+    // Snapshot returned — always stop the loading timeout
+    if (_loadTimer) { clearTimeout(_loadTimer); _loadTimer = null; }
+
     if (!snap || snap.empty) {
-        grid.innerHTML = '<div class="nxr-empty"><div class="nxr-empty-icon">🌌</div><div class="nxr-empty-text">No Nexus Rooms are open right now.<br>Be the first to create one!</div></div>';
+        _showEmpty();
         return;
     }
+
     var html = '';
     snap.forEach(function(doc) {
         var d = doc.data();
         if (d.status === 'ended') return;
         var count = d.participantCount || 0;
         var hasWatch = d.mediaUrl ? true : false;
-        var statusLabel = hasWatch ? '<span class="nxr-room-status-badge nxr-status-watch">📺 Watch</span>' : '<span class="nxr-room-status-badge nxr-status-active">💬 Chat</span>';
-        html += '<div class="nxr-room-card" onclick="NexusRooms.joinRoom(\'' + doc.id + '\')">' +
+        var statusLabel = hasWatch
+            ? '<span class="nxr-room-status-badge nxr-status-watch">📺 Watch</span>'
+            : '<span class="nxr-room-status-badge nxr-status-active">💬 Chat</span>';
+        html +=
+            '<div class="nxr-room-card" onclick="NexusRooms.joinRoom(\'' + doc.id + '\')">' +
             '<div class="nxr-room-name">' + _esc(d.name || 'Unnamed Room') + '</div>' +
             '<div class="nxr-room-desc">' + _esc(d.description || 'Come hang out in the Nexus') + '</div>' +
             '<div class="nxr-room-meta">' +
@@ -188,10 +406,12 @@ function _renderRoomList(snap) {
                 statusLabel +
             '</div></div>';
     });
+
     if (!html) {
-        html = '<div class="nxr-empty"><div class="nxr-empty-icon">🌌</div><div class="nxr-empty-text">No Nexus Rooms are open right now.<br>Be the first to create one!</div></div>';
+        _showEmpty();
+    } else {
+        grid.innerHTML = html;
     }
-    grid.innerHTML = html;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -200,6 +420,10 @@ function _renderRoomList(snap) {
 function openCreateModal() {
     var modal = _el('nxrCreateModal');
     if (!modal) return;
+    if (_authState !== 'signed-in') {
+        _toast('You must be signed in to create a room.');
+        return;
+    }
     modal.classList.add('open');
     var inp = _el('nxrRoomNameInput');
     if (inp) setTimeout(function() { inp.focus(); }, 80);
@@ -212,17 +436,35 @@ function closeCreateModal() {
 
 function createRoom() {
     var db = _getDB();
-    if (!db || !_user) { _toast('You must be signed in to create a room.'); return; }
-    var name = (_el('nxrRoomNameInput') || {}).value.trim();
-    var desc = (_el('nxrRoomDescInput') || {}).value.trim();
-    var type = (_el('nxrRoomTypeSelect') || { value: 'chat' }).value;
+    var fs = _getFS();
+    if (!db || !fs || !_user) { _toast('You must be signed in to create a room.'); return; }
+
+    var nameEl = _el('nxrRoomNameInput');
+    var descEl = _el('nxrRoomDescInput');
+    var typeEl = _el('nxrRoomTypeSelect');
+
+    var name = (nameEl ? nameEl.value : '').trim();
+    var desc = (descEl ? descEl.value : '').trim();
+    var type = typeEl ? typeEl.value : 'chat';
+
     if (!name) { _toast('Please enter a room name.'); return; }
 
+    // Sanitize
+    name = name.substring(0, 60);
+    desc = desc.substring(0, 200);
+
+    var btn = _el('nxrCreateSubmitBtn');
+    if (btn) {
+        if (btn.disabled) return; // prevent double-submit
+        btn.disabled = true;
+        btn.textContent = 'Creating…';
+    }
+
     var roomData = {
-        name: name.substring(0, 60),
-        description: desc.substring(0, 200),
+        name: name,
+        description: desc,
         type: type,
-        hostUid: _user.uid,
+        hostUid: _user.uid,      // always use authenticated UID — never trust client form
         hostName: _displayName(),
         status: 'active',
         participantCount: 1,
@@ -239,20 +481,19 @@ function createRoom() {
         }
     };
 
-    var btn = _el('nxrCreateSubmitBtn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
-
-    db.collection(ROOMS_COLLECTION).add(roomData)
+    var colRef = fs.collection(db, ROOMS_COLLECTION);
+    fs.addDoc(colRef, roomData)
         .then(function(docRef) {
             closeCreateModal();
-            if (_el('nxrRoomNameInput')) _el('nxrRoomNameInput').value = '';
-            if (_el('nxrRoomDescInput')) _el('nxrRoomDescInput').value = '';
+            if (nameEl) nameEl.value = '';
+            if (descEl) descEl.value = '';
             // Write my presence doc
             _writePresence(docRef.id);
             // Enter the room
             _enterRoom(docRef.id, roomData, true /* isHost */);
         })
         .catch(function(err) {
+            console.error('[NXR] createRoom error:', err.code, err.message);
             _toast('Could not create room: ' + err.message);
         })
         .finally(function() {
@@ -265,16 +506,18 @@ function createRoom() {
 ══════════════════════════════════════════════════════ */
 function joinRoom(roomId) {
     var db = _getDB();
-    if (!db || !_user) { _toast('You must be signed in to join a room.'); return; }
-    var roomRef = db.collection(ROOMS_COLLECTION).doc(roomId);
-    roomRef.get()
+    var fs = _getFS();
+    if (!db || !fs || !_user) { _toast('You must be signed in to join a room.'); return; }
+
+    var roomDocRef = fs.doc(db, ROOMS_COLLECTION, roomId);
+    fs.getDoc(roomDocRef)
         .then(function(snap) {
-            if (!snap.exists) { _toast('Room no longer exists.'); return; }
+            if (!snap.exists()) { _toast('Room no longer exists.'); return; }
             var data = snap.data();
             if (data.status === 'ended') { _toast('This room has ended.'); return; }
             var isHost = data.hostUid === _user.uid;
             // Add self to participants list
-            return roomRef.update({
+            return fs.updateDoc(roomDocRef, {
                 participants: _arrayUnion(_user.uid),
                 participantCount: Math.max((data.participantCount || 0) + 1, (data.participants || []).length + 1),
                 lastActivityAt: _serverTS()
@@ -285,16 +528,17 @@ function joinRoom(roomId) {
             });
         })
         .catch(function(err) {
+            console.error('[NXR] joinRoom error:', err.code, err.message);
             _toast('Could not join room: ' + err.message);
         });
 }
 
 function _writePresence(roomId) {
     var db = _getDB();
-    if (!db || !_user) return;
-    _myPresenceRef = db.collection(ROOMS_COLLECTION).doc(roomId)
-                       .collection(PARTS_SUBCOLLECTION).doc(_user.uid);
-    _myPresenceRef.set({
+    var fs = _getFS();
+    if (!db || !fs || !_user) return;
+    _myPresenceRef = fs.doc(db, ROOMS_COLLECTION, roomId, PARTS_SUBCOLLECTION, _user.uid);
+    fs.setDoc(_myPresenceRef, {
         uid: _user.uid,
         displayName: _displayName(),
         joinedAt: _serverTS()
@@ -360,10 +604,12 @@ function _renderRoomUI(data, isHost) {
 function _subscribeRoom(roomId) {
     if (_unsubRoom) { _unsubRoom(); _unsubRoom = null; }
     var db = _getDB();
-    if (!db) return;
-    _unsubRoom = db.collection(ROOMS_COLLECTION).doc(roomId)
-        .onSnapshot(function(snap) {
-            if (!snap.exists) { _handleRoomEnded(); return; }
+    var fs = _getFS();
+    if (!db || !fs) return;
+    var roomDocRef = fs.doc(db, ROOMS_COLLECTION, roomId);
+    _unsubRoom = fs.onSnapshot(roomDocRef,
+        function(snap) {
+            if (!snap.exists()) { _handleRoomEnded(); return; }
             var d = snap.data();
             if (d.status === 'ended') { _handleRoomEnded(); return; }
             _roomData = d;
@@ -374,18 +620,21 @@ function _subscribeRoom(roomId) {
             // Update count
             var countEl = _el('nxrChatCount');
             if (countEl) countEl.textContent = d.participantCount || 0;
-        }, function(err) { console.warn('[NXR] room sub error:', err); });
+        },
+        function(err) { console.warn('[NXR] room sub error:', err); }
+    );
 }
 
 function _subscribeParticipants(roomId) {
     if (_unsubParts) { _unsubParts(); _unsubParts = null; }
     var db = _getDB();
-    if (!db) return;
-    _unsubParts = db.collection(ROOMS_COLLECTION).doc(roomId)
-        .collection(PARTS_SUBCOLLECTION)
-        .onSnapshot(function(snap) {
-            _renderParticipants(snap);
-        }, function() {});
+    var fs = _getFS();
+    if (!db || !fs) return;
+    var colRef = fs.collection(db, ROOMS_COLLECTION, roomId, PARTS_SUBCOLLECTION);
+    _unsubParts = fs.onSnapshot(colRef,
+        function(snap) { _renderParticipants(snap); },
+        function() {}
+    );
 }
 
 function _renderParticipants(snap) {
@@ -411,12 +660,16 @@ function _renderParticipants(snap) {
 function _subscribeChat(roomId) {
     if (_unsubChat) { _unsubChat(); _unsubChat = null; }
     var db = _getDB();
-    if (!db) return;
-    _unsubChat = db.collection(ROOMS_COLLECTION).doc(roomId)
-        .collection(CHAT_SUBCOLLECTION)
-        .orderBy('timestamp', 'asc')
-        .limitToLast(MAX_CHAT_MSGS)
-        .onSnapshot(function(snap) {
+    var fs = _getFS();
+    if (!db || !fs) return;
+    var chatColRef = fs.collection(db, ROOMS_COLLECTION, roomId, CHAT_SUBCOLLECTION);
+    var q = fs.query(
+        chatColRef,
+        fs.orderBy('timestamp', 'asc'),
+        fs.limitToLast(MAX_CHAT_MSGS)
+    );
+    _unsubChat = fs.onSnapshot(q,
+        function(snap) {
             snap.docChanges().forEach(function(change) {
                 if (change.type === 'added') {
                     var msgId = change.doc.id;
@@ -425,7 +678,9 @@ function _subscribeChat(roomId) {
                     _appendChatMessage(change.doc.data(), change.doc.id);
                 }
             });
-        }, function(err) { console.warn('[NXR] chat sub error:', err); });
+        },
+        function(err) { console.warn('[NXR] chat sub error:', err); }
+    );
 }
 
 function sendChatMessage() {
@@ -435,12 +690,12 @@ function sendChatMessage() {
     if (!text || !_roomId || !_user) return;
     input.value = '';
     var db = _getDB();
-    if (!db) return;
+    var fs = _getFS();
+    if (!db || !fs) return;
 
     var isHost = _roomData && _roomData.hostUid === _user.uid;
-    db.collection(ROOMS_COLLECTION).doc(_roomId)
-        .collection(CHAT_SUBCOLLECTION)
-        .add({
+    var chatColRef = fs.collection(db, ROOMS_COLLECTION, _roomId, CHAT_SUBCOLLECTION);
+    fs.addDoc(chatColRef, {
             uid: _user.uid,
             displayName: _displayName(),
             text: text.substring(0, 500),
@@ -449,11 +704,10 @@ function sendChatMessage() {
         })
         .then(function() {
             // bump lastActivityAt
-            db.collection(ROOMS_COLLECTION).doc(_roomId)
-                .update({ lastActivityAt: _serverTS() })
-                .catch(function() {});
+            var roomDocRef = fs.doc(db, ROOMS_COLLECTION, _roomId);
+            fs.updateDoc(roomDocRef, { lastActivityAt: _serverTS() }).catch(function() {});
         })
-        .catch(function(err) { _toast('Could not send message.'); });
+        .catch(function() { _toast('Could not send message.'); });
 }
 
 function _appendChatMessage(data, msgId) {
@@ -507,9 +761,11 @@ function hostSetMedia() {
     var url = inp.value.trim();
     if (!url) return;
     var db = _getDB();
-    if (!db || !_roomId) return;
+    var fs = _getFS();
+    if (!db || !fs || !_roomId) return;
     var mediaType = url.match(/\.(mp4|webm|ogg|mov)(\?|$)/i) ? 'video' : 'audio';
-    db.collection(ROOMS_COLLECTION).doc(_roomId).update({
+    var roomDocRef = fs.doc(db, ROOMS_COLLECTION, _roomId);
+    fs.updateDoc(roomDocRef, {
         mediaUrl: url,
         mediaType: mediaType,
         playbackState: {
@@ -533,8 +789,7 @@ function _loadMedia(url, mediaType) {
         _player.load();
     }
     if (!_isHost) {
-        // Remove host controls from player for participants
-        _player.controls = true; // show native controls for UX but we'll sync
+        _player.controls = true; // show native controls for participants
     } else {
         _player.controls = false; // host uses custom controls
         _attachHostPlayerEvents();
@@ -549,12 +804,8 @@ function _attachHostPlayerEvents() {
     _player.addEventListener('seeked', _onHostSeeked);
 }
 
-function _onHostPlay() {
-    _pushPlaybackState(true, _player.currentTime);
-}
-function _onHostPause() {
-    _pushPlaybackState(false, _player.currentTime);
-}
+function _onHostPlay()  { _pushPlaybackState(true,  _player.currentTime); }
+function _onHostPause() { _pushPlaybackState(false, _player.currentTime); }
 function _onHostSeeked() {
     var now = _now();
     if (now - _lastSeekWrite < SYNC_DEBOUNCE_MS) return;
@@ -565,8 +816,10 @@ function _onHostSeeked() {
 function _pushPlaybackState(playing, position) {
     if (!_isHost || !_roomId) return;
     var db = _getDB();
-    if (!db) return;
-    db.collection(ROOMS_COLLECTION).doc(_roomId).update({
+    var fs = _getFS();
+    if (!db || !fs) return;
+    var roomDocRef = fs.doc(db, ROOMS_COLLECTION, _roomId);
+    fs.updateDoc(roomDocRef, {
         'playbackState.playing':   playing,
         'playbackState.position':  position,
         'playbackState.updatedAt': _now(),
@@ -601,14 +854,8 @@ function _applySyncState(state, mediaUrl, mediaType) {
 }
 
 /* Host control buttons (called from HTML onclick) */
-function hostPlay()  {
-    if (!_isHost || !_player) return;
-    _player.play().catch(function() {});
-}
-function hostPause() {
-    if (!_isHost || !_player) return;
-    _player.pause();
-}
+function hostPlay()  { if (!_isHost || !_player) return; _player.play().catch(function() {}); }
+function hostPause() { if (!_isHost || !_player) return; _player.pause(); }
 function hostSeekBack() {
     if (!_isHost || !_player) return;
     _player.currentTime = Math.max(0, _player.currentTime - 10);
@@ -629,17 +876,19 @@ function leaveRoom() {
 function _leaveCurrentRoom(silent) {
     if (!_roomId || !_user) return;
     var db = _getDB();
-    if (!db) { _cleanupRoomState(); return; }
+    var fs = _getFS();
+    if (!db || !fs) { _cleanupRoomState(); return; }
     var roomId = _roomId;
     // Remove presence doc
     if (_myPresenceRef) {
-        _myPresenceRef.delete().catch(function() {});
+        fs.deleteDoc(_myPresenceRef).catch(function() {});
         _myPresenceRef = null;
     }
     // Remove from participants array, decrement count
-    db.collection(ROOMS_COLLECTION).doc(roomId).get()
+    var roomDocRef = fs.doc(db, ROOMS_COLLECTION, roomId);
+    fs.getDoc(roomDocRef)
         .then(function(snap) {
-            if (!snap.exists) return;
+            if (!snap.exists()) return;
             var d = snap.data();
             if (d.status === 'ended') return;
             var newCount = Math.max(0, (d.participantCount || 1) - 1);
@@ -653,7 +902,7 @@ function _leaveCurrentRoom(silent) {
                 lastActivityAt: _serverTS()
             };
             if (isAbandoned) update.status = 'ended';
-            return db.collection(ROOMS_COLLECTION).doc(roomId).update(update);
+            return fs.updateDoc(roomDocRef, update);
         })
         .catch(function() {})
         .finally(function() {
@@ -666,8 +915,10 @@ function endRoom() {
     if (!_isHost || !_roomId) return;
     if (!confirm('End this Nexus Room for everyone?')) return;
     var db = _getDB();
-    if (!db) return;
-    db.collection(ROOMS_COLLECTION).doc(_roomId).update({
+    var fs = _getFS();
+    if (!db || !fs) return;
+    var roomDocRef = fs.doc(db, ROOMS_COLLECTION, _roomId);
+    fs.updateDoc(roomDocRef, {
         status: 'ended',
         endedAt: _serverTS(),
         'playbackState.playing': false
@@ -677,7 +928,7 @@ function endRoom() {
             _cleanupRoomState();
             _goBackToRoomList();
         }, 1200);
-    }).catch(function(err) { _toast('Could not end room.'); });
+    }).catch(function() { _toast('Could not end room.'); });
 }
 
 function _handleRoomEnded() {
@@ -690,7 +941,7 @@ function _handleRoomEnded() {
 }
 
 function _cleanupRoomState() {
-    _unsubscribeAll();
+    _unsubAll();
     _roomId   = null;
     _roomData = null;
     _isHost   = false;
@@ -708,7 +959,7 @@ function _cleanupRoomState() {
     }
 }
 
-function _unsubscribeAll() {
+function _unsubAll() {
     if (_unsubRoom)  { _unsubRoom();  _unsubRoom  = null; }
     if (_unsubChat)  { _unsubChat();  _unsubChat  = null; }
     if (_unsubParts) { _unsubParts(); _unsubParts = null; }
@@ -739,45 +990,102 @@ window.NexusRooms = {
     hostPlay:         hostPlay,
     hostPause:        hostPause,
     hostSeekBack:     hostSeekBack,
-    hostSeekFwd:      hostSeekFwd
+    hostSeekFwd:      hostSeekFwd,
+    _retryLoad:       _retryLoad  // exposed for retry button
 };
 
 /* ══════════════════════════════════════════════════════
-   AUTO-INIT: Hook into existing auth flow
+   AUTO-INIT: Hook into the main app's Firebase Auth
+   ───────────────────────────────────────────────────
+   The main app (index.html) exposes:
+     window._snxAuth          — Firebase Auth instance (modular SDK)
+     window._snxCurrentUser   — most-recent auth user (or null)
+     window._snxUserData      — Firestore user doc data (may lag auth)
+     window._snxFirestore     — modular Firestore helpers
+     window._snxAuthResolved  — true once onAuthStateChanged has fired once
+     window._snxAuthReadyQueue — callbacks run once auth resolves
+
+   THREE AUTH STATES handled correctly:
+     'checking'   — Firebase is restoring the session; show "Verifying..."
+                    NEVER show "You must be signed in" during this state.
+     'signed-in'  — user is authenticated; enable Create Room, load rooms.
+     'signed-out' — user is not authenticated; disable protected actions.
 ══════════════════════════════════════════════════════ */
 (function _autoInit() {
-    // Wait for the main app's auth to broadcast its user state
-    function _tryHook() {
-        if (window.firebase && window.firebase.auth) {
-            window.firebase.auth().onAuthStateChanged(function(user) {
-                if (!user) {
-                    NexusRooms.onLogout();
-                    return;
-                }
+
+    // Show "verifying session…" while we wait for auth
+    _showAuthChecking();
+
+    function _hookAuth(snxAuth) {
+        // Import onAuthStateChanged from the modular SDK (already loaded by main app)
+        // We use the same auth instance so we share the exact same session.
+        snxAuth.onAuthStateChanged(function(user) {
+            if (user) {
+                // ── SIGNED IN ──
                 // Retrieve userData from the main app's global if available
-                function _doInit() {
-                    var ud = window.currentUserData || window._currentUserData || null;
-                    NexusRooms.init(user, ud);
-                }
-                if (window.currentUserData) {
-                    _doInit();
-                } else {
-                    // Fallback — poll briefly
+                var ud = window._snxUserData || window.currentUserData || window._snxCurrentUserData || null;
+                NexusRooms.init(user, ud);
+
+                // If userData hasn't loaded yet, poll briefly and re-init
+                if (!ud) {
                     var attempts = 0;
                     var poll = setInterval(function() {
                         attempts++;
-                        if (window.currentUserData || attempts > 20) {
+                        var latestUd = window._snxUserData || window.currentUserData || null;
+                        if (latestUd || attempts > 30) {
                             clearInterval(poll);
-                            _doInit();
+                            if (latestUd && _user) {
+                                _userData = latestUd;
+                            }
                         }
-                    }, 300);
+                    }, 200);
                 }
-            });
-        } else {
-            setTimeout(_tryHook, 600);
-        }
+            } else {
+                // ── SIGNED OUT ──
+                NexusRooms.onLogout();
+            }
+        });
     }
-    _tryHook();
+
+    function _tryHook() {
+        // window._snxAuth is set by the main module script at line ~12000
+        if (window._snxAuth) {
+            _hookAuth(window._snxAuth);
+            return;
+        }
+
+        // Auth module not yet ready — queue a callback if the mechanism exists
+        if (Array.isArray(window._snxAuthReadyQueue)) {
+            window._snxAuthReadyQueue.push(function() {
+                if (window._snxAuth) _hookAuth(window._snxAuth);
+            });
+            return;
+        }
+
+        // Fallback: poll until the auth instance appears (max ~10 s)
+        var waited = 0;
+        var poll = setInterval(function() {
+            waited += 300;
+            if (window._snxAuth) {
+                clearInterval(poll);
+                _hookAuth(window._snxAuth);
+            } else if (waited >= 10000) {
+                clearInterval(poll);
+                console.error('[NXR] Firebase Auth never became available.');
+                _showError('Could not connect to Shadow Nexus authentication.');
+            }
+        }, 300);
+    }
+
+    // If auth already resolved before this script executed (fast page reload)
+    // call _tryHook immediately so we don't wait for the poll
+    if (window._snxAuth) {
+        _tryHook();
+    } else {
+        // Slight defer so the main module's type="module" script runs first
+        setTimeout(_tryHook, 0);
+    }
+
 })();
 
 })();

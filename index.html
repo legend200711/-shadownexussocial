@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 
 <!-- ── PWA: theme color & manifest ── -->
-<meta name="theme-color" content="#0066FF">
+<meta name="theme-color" content="#050c1c">
 <link rel="manifest" href="manifest.json">
 
 <!-- ── PWA: iOS / Safari ── -->
@@ -17,7 +17,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
 <!-- ── PWA: Windows tiles ── -->
-<meta name="msapplication-TileColor" content="#0066FF">
+<meta name="msapplication-TileColor" content="#050c1c">
 <meta name="msapplication-TileImage" content="icon-192.png">
 
 <!-- ── Favicons ── -->
@@ -44,7 +44,7 @@
 
 <!-- ── Shared stylesheet ── -->
 <link rel="stylesheet" href="snx-living-bg.css?v=SNS-2026-CINEMATIC-001">
-<link rel="stylesheet" href="nexus-rooms.css?v=SNS-2026-CINEMATIC-001">
+<link rel="stylesheet" href="nexus-rooms.css?v=SNS-2026-CINEMATIC-002">
 <link rel="stylesheet" href="style.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <link rel="stylesheet" href="album.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <link rel="stylesheet" href="profile-music.css?v=SNS-2026-GLOBAL-REPAIR-002">
@@ -8812,19 +8812,18 @@ body.arcade-fs-ios body::after { display:none !important; }
 
     <div class="nxr-header-row">
         <h2 class="eclipse-title" style="margin:0;">🌐 Nexus Rooms</h2>
-        <button class="nxr-create-btn" onclick="NexusRooms.openCreateModal()">
-            ＋ Create a Room
-        </button>
+        <span id="nxrCreateBtnWrapper" style="visibility:hidden;">
+            <button class="nxr-create-btn" onclick="NexusRooms.openCreateModal()">
+                ＋ Create a Room
+            </button>
+        </span>
     </div>
     <p style="color:#5a80a8;font-size:13px;margin:-12px 0 20px;line-height:1.5;">
         Temporary social hangout spaces inside Shadow Nexus. Chat, vibe, or watch together.
     </p>
 
     <div class="nxr-rooms-grid" id="nxrRoomsGrid">
-        <div class="nxr-empty">
-            <div class="nxr-empty-icon">🌌</div>
-            <div class="nxr-empty-text">Loading rooms…</div>
-        </div>
+        <!-- Initial state is replaced by nexus-rooms.js based on auth + query result -->
     </div>
 
 </div>
@@ -33378,7 +33377,7 @@ window.snxFounderPanelCleanup = (function() {
      Loaded after main app so Firebase is already initialized.
      ═══════════════════════════════════════════════════════════ -->
 <script src="snx-living-bg.js?v=SNS-2026-CINEMATIC-001"></script>
-<script src="nexus-rooms.js?v=SNS-2026-CINEMATIC-001"></script>
+<script src="nexus-rooms.js?v=SNS-2026-CINEMATIC-002"></script>
 <script>
 /* ── Sync Living Backgrounds toggle with saved preference ── */
 (function() {
