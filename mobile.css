@@ -31,9 +31,13 @@
    UNIVERSAL BASE — applied to every screen size
    ═══════════════════════════════════════════════════════════ */
 
-/* Prevent horizontal overflow on every device */
+/* Prevent horizontal overflow — never vertical.
+   overflow-y must remain auto so page content taller than the
+   viewport causes the body to scroll naturally on every device. */
 html, body {
   overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -130,7 +134,7 @@ canvas:not(#bg-canvas):not(#snxStarsCanvas) {
      mobile.css last and receive an incomplete override.       */
 
   /* ── Body ── */
-  body { overflow-x: hidden; }
+  body { overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
   /* ── Page content area ── */
   .page:not(#inboxPage) {
@@ -772,14 +776,19 @@ canvas:not(#bg-canvas):not(#snxStarsCanvas) {
    ═══════════════════════════════════════════════════════════ */
 
 /* Every .page is constrained to the viewport width.
-   contain:layout limits layout recalc scope — changes inside a .page
-   (e.g. a new post appended to the feed) do not trigger a full-document
-   layout reflow. */
+   NOTE: contain:layout was removed — it prevented the browser from
+   using .page content height to build the document scroll height,
+   which locked main-page vertical scrolling on all devices.
+   contain:style is safe: it prevents CSS counter/style leakage
+   without breaking layout or scroll. */
 .page {
   box-sizing: border-box;
   word-break: break-word;
   overflow-wrap: anywhere;
-  contain: layout;
+  contain: style;
+  /* Never trap content vertically — body scroll must be free */
+  overflow-y: visible;
+  overflow-x: clip;
 }
 
 /* Section cards never overflow their page */
@@ -791,6 +800,48 @@ canvas:not(#bg-canvas):not(#snxStarsCanvas) {
 .friend-card {
   min-width: 0;
   box-sizing: border-box;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANDROID TOUCH-ACTION — vertical scrolling on main areas
+   Ensures Android Chrome allows finger scrolling on content
+   areas and does not confuse vertical drags with gestures.
+   touch-action:pan-y lets the browser scroll the page while
+   still allowing left/right gestures on interactive widgets.
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  /* Main page content — always allow vertical pan */
+  .page {
+    touch-action: pan-y;
+  }
+
+  /* Individual scrollable feed/list containers */
+  .social-list-body,
+  .feed-container,
+  #feedList,
+  .postBox,
+  .section-card {
+    touch-action: pan-y;
+  }
+
+  /* Sidebar drawer — vertical scroll inside the drawer */
+  .sidebar {
+    touch-action: pan-y;
+  }
+
+  /* Full-screen overlays that ARE scrollable */
+  .edit-profile-inner,
+  .delete-modal-inner,
+  .social-list-inner,
+  .fam-req-inner,
+  .snx-confirm-modal-inner,
+  .ipc-modal-card,
+  .inbox-chat-pane,
+  .inbox-list-pane,
+  .storm-room-wrap,
+  .support-room-wrap {
+    touch-action: pan-y;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════

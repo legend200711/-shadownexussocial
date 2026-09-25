@@ -1580,7 +1580,13 @@
   function init() {
     buildDOM();
     positionBubble();
-    window.addEventListener('resize', positionBubble);
+    /* Debounced resize — Android toolbar show/hide fires resize during scrolling;
+       bubble repositioning is cheap but we still avoid doing it mid-scroll. */
+    var _gsbResizeTimer = null;
+    window.addEventListener('resize', function() {
+      clearTimeout(_gsbResizeTimer);
+      _gsbResizeTimer = setTimeout(positionBubble, 350);
+    }, { passive: true });
 
     /* Load founder custom messages into pool */
     getFounderMsgs().forEach(function (m) {

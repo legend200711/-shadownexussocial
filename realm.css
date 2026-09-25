@@ -364,6 +364,32 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   GLOBAL SCROLL ARCHITECTURE
+   Background layers (artwork, rain, fog, particles) are all
+   position:fixed — they never contribute to document height.
+   Pages must NOT be locked: their content height drives the
+   body scroll so users can scroll normally on every page.
+   ═══════════════════════════════════════════════════════════ */
+
+/* html + body: only block horizontal overflow — never vertical */
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  /* MUST NOT have overflow-y:hidden — that traps body scroll */
+  overflow-y: auto;
+}
+body {
+  /* overflow-y must remain auto/visible so content taller than
+     the viewport causes the body to scroll normally.
+     overflow-x:hidden stops background layers causing h-scroll. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Negative-z fixed layers (artwork, fog, rain) are the background;
+     they must NEVER prevent body scroll events from reaching the page. */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ═══════════════════════════════════════════════════════════
    PAGE LAYOUT — full-screen immersive
    ═══════════════════════════════════════════════════════════ */
 
@@ -374,6 +400,12 @@ body {
   margin: 0 auto 0 0 !important;
   position: relative;
   z-index: 10;
+  /* Pages must never clip their own vertical content —
+     body scroll drives page scrolling, not an inner container */
+  overflow-y: visible !important;
+  overflow-x: clip !important;
+  /* min-height ensures taller-than-viewport pages push body height */
+  min-height: 0;
 }
 
 /* Page fade with portal feel */

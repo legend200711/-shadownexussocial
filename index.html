@@ -59,7 +59,7 @@
 <!-- ── Nexus Global Theme Engine ── -->
 <link rel="stylesheet" href="theme-engine.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <!-- ── Shadow Nexus Cinematic Welcome Experience ── -->
-<link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-GLOBAL-REPAIR-002">
+<link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-LOGO-INTRO-004">
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Egyptian/Horror theme ── -->
 <link rel="stylesheet" href="nexus.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
@@ -17026,6 +17026,10 @@ div.snx-gate-logo {
 
   // ── Close / teardown the modal session ──
   function _mClose() {
+      // Always restore body scroll when tearing down the modal — this catches
+      // Android paths where the user closed the modal via back gesture or
+      // navigation without going through ipcModalClose().
+      document.body.style.overflow = '';
       // Stop real-time listeners
       if (_m_msgUnsub)  { _m_msgUnsub();  _m_msgUnsub  = null; }
       if (_m_stUnsub)   { _m_stUnsub();   _m_stUnsub   = null; }
@@ -21241,6 +21245,12 @@ function navTo(pageId) {
         }
     }
     show(pageId);
+    // ── Android scroll-lock safety: any modal that set overflow:hidden on body
+    //    must be cleaned up when the user navigates away.  This is the single
+    //    guaranteed recovery path for all stale scroll-locks on Android Chrome.
+    document.body.style.overflow = '';
+    document.body.style.top      = '';
+    document.body.classList.remove('arcade-open');
     // Scroll to top on every page navigation so Founder Panel content
     // never appears at the scroll position of a previously-visited page
     // (e.g. TCC appearing "below" the Eclipse Feed on mobile).
@@ -31584,6 +31594,26 @@ function closeMobileDrawer() {
     if (side)    { side.classList.remove('active'); }
     if (overlay) { overlay.classList.remove('visible'); }
     if (btn)     { btn.classList.remove('menu-open'); btn.setAttribute('aria-expanded', 'false'); }
+    // Android safety: the sidebar never locks body scroll, but restore it here
+    // as a catch-all in case any stale overflow:hidden was left by a modal
+    // that was open when the menu was triggered.  This is a no-op when scroll
+    // was already unlocked so it is safe to call unconditionally.
+    // NOTE: Only restore if no modal is currently open — check for common modals.
+    var _modalOpen = (
+        document.querySelector('#ipcModal.open') ||
+        document.querySelector('#storyViewerModal.open') ||
+        document.querySelector('#snxMediaViewer.open') ||
+        document.querySelector('#snxMsgNotifModal.open') ||
+        (document.getElementById('snxConfirmModal') &&
+            document.getElementById('snxConfirmModal').style.display === 'flex') ||
+        (document.getElementById('snxReportModal') &&
+            document.getElementById('snxReportModal').style.display === 'flex') ||
+        (document.getElementById('arcadeGameModal') &&
+            document.getElementById('arcadeGameModal').classList.contains('open'))
+    );
+    if (!_modalOpen) {
+        document.body.style.overflow = '';
+    }
 }
 window.closeMobileDrawer = closeMobileDrawer;
 
@@ -33329,6 +33359,7 @@ if (window._snxAuthReadyQueue) {
     if (confirmModal && confirmModal.style.display !== 'none') {
       const cancelBtn = document.getElementById('snxConfirmCancelBtn');
       if (cancelBtn) cancelBtn.click();
+      document.body.style.overflow = ''; // Android safety
       return;
     }
 
@@ -33343,6 +33374,33 @@ if (window._snxAuthReadyQueue) {
     const ipcModal = document.getElementById('ipcModal');
     if (ipcModal && ipcModal.classList.contains('open')) {
       if (typeof window.ipcModalClose === 'function') window.ipcModalClose();
+      return;
+    }
+
+    // 3b. Story viewer
+    const storyModal = document.getElementById('storyViewerModal');
+    if (storyModal && storyModal.classList.contains('open')) {
+      if (typeof window.closeStoryViewer === 'function') window.closeStoryViewer();
+      return;
+    }
+
+    // 3c. Media viewer (post image/video)
+    const mediaViewer = document.getElementById('snxMediaViewer');
+    if (mediaViewer && mediaViewer.classList.contains('open')) {
+      if (typeof window.closeMediaViewer === 'function') window.closeMediaViewer();
+      return;
+    }
+
+    // 3d. Message notification popup
+    const msgNotifModal = document.getElementById('snxMsgNotifModal');
+    if (msgNotifModal && msgNotifModal.classList.contains('open')) {
+      if (typeof window.snxMsgNotifClose === 'function') window.snxMsgNotifClose();
+      return;
+    }
+
+    // 3e. Arcade game modal
+    if (document.body.classList.contains('arcade-open')) {
+      if (typeof window.closeArcadeGame === 'function') window.closeArcadeGame();
       return;
     }
 
@@ -33783,7 +33841,7 @@ window.snxFounderPanelCleanup = (function() {
      SHADOW NEXUS CINEMATIC WELCOME EXPERIENCE
      Loaded last so it never blocks main app init.
      ═══════════════════════════════════════════════════════════ -->
-<script src="nexus-intro.js?v=SNS-2026-GLOBAL-REPAIR-002"></script>
+<script src="nexus-intro.js?v=SNS-2026-LOGO-INTRO-004"></script>
 <script>
   /* ── snxIntroCompleted: called by nexus-intro.js when the user clicks
      "Enter the Nexus" or "Skip Intro".  By this point Firebase auth may

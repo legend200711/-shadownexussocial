@@ -1,6 +1,6 @@
 /**
- * nexus-intro.js  v2
- * Shadow Nexus Social — Cinematic Welcome Experience + Founder Music System
+ * nexus-intro.js  v4
+ * Shadow Nexus Social — Logo-Focused Cinematic Brand Intro + Founder Music System
  *
  * Self-contained. Reads Firestore /siteSettings/welcomeConfig (public read)
  * for music/screen config. All music writes are Founder-only (enforced by
@@ -88,10 +88,10 @@
         el.setAttribute('aria-label', 'Shadow Nexus Social cinematic welcome');
 
         el.innerHTML =
-            // Atmospheric blue glow (emerges slowly)
+            // Atmospheric background glow
             '<div id="snxIntroGlow" aria-hidden="true"></div>' +
             '<div id="snxIntroStars" aria-hidden="true"></div>' +
-            // Lightning (6 bolts for depth) + environmental glow
+            // Lightning (6 bolts — 4 edge, 2 converge toward logo during reveal)
             '<div id="snxIntroLightning" aria-hidden="true">' +
             '<div class="snxi-bolt"></div><div class="snxi-bolt"></div>' +
             '<div class="snxi-bolt"></div><div class="snxi-bolt"></div>' +
@@ -103,20 +103,13 @@
             '<div class="snxi-fog"></div><div class="snxi-fog"></div>' +
             '<div class="snxi-fog"></div><div class="snxi-fog"></div>' +
             '</div>' +
-            // Portal (5 rings: 4 rings + 1 particle ring + core)
-            '<div id="snxIntroPortal" aria-hidden="true">' +
-            '<div class="snxi-pring"></div><div class="snxi-pring"></div>' +
-            '<div class="snxi-pring"></div><div class="snxi-pring"></div>' +
-            '<div class="snxi-pring"></div>' +
-            '<div class="snxi-pcore"></div>' +
-            '</div>' +
-            // Forest
+            // Forest silhouettes (atmospheric, stays below logo z-index)
             '<div id="snxIntroForest" aria-hidden="true">' +
             Array(11).fill('<div class="snxi-tree"></div>').join('') +
             '</div>' +
-            // Wolf
+            // Wolf (distant, barely visible)
             '<div id="snxIntroWolf" aria-hidden="true">' + _wolfSVG() + '</div>' +
-            // Crows
+            // Crows (injected separately)
             '<div id="snxIntroCrows" aria-hidden="true"></div>' +
             // Cat
             '<div id="snxIntroCat" aria-hidden="true">' + _catSVG() + '</div>' +
@@ -125,14 +118,18 @@
             Array(10).fill('<div class="snxi-flame"></div>').join('') +
             '</div>' +
             '<div id="snxIntroFlameGlow" aria-hidden="true"></div>' +
-            // Blue energy burst (enter transition layer)
-            '<div id="snxIntroEnergy" aria-hidden="true"></div>' +
-            // Title (welcome-to animates in separately before main title)
-            '<div id="snxIntroTitle">' +
-            '<div class="snxi-welcome-to">Welcome to</div>' +
-            '<div class="snxi-main-title">SHADOW <span class="snxi-accent">NEXUS</span> SOCIAL</div>' +
-            '<div class="snxi-tagline">Stay Legendary</div>' +
+            // Screen vignette dimmer (edges darken when logo appears)
+            '<div id="snxIntroDimmer" aria-hidden="true"></div>' +
+            // Floating particles container (populated by JS)
+            '<div id="snxIntroParticles" aria-hidden="true"></div>' +
+            // Logo pre-glow (radial bloom that forms before logo appears)
+            '<div id="snxIntroLogoPreGlow" aria-hidden="true"></div>' +
+            // ── LOGO — THE HERO ──
+            '<div id="snxIntroLogoWrap">' +
+            '<img id="snxIntroLogoImg" src="sns-logo.png" alt="Shadow Nexus Social" draggable="false">' +
             '</div>' +
+            // Tagline (below logo, appears after logo)
+            '<div class="snxi-tagline" aria-hidden="true">Stay Legendary</div>' +
             // Now Playing (populated when config loads)
             '<div id="snxIntroNowPlaying" aria-live="polite" aria-label="Now Playing">' +
             '<div class="snxi-np-art" id="snxiNpArt">♪</div>' +
@@ -149,8 +146,10 @@
             '</div>' +
             // Sound + Skip
             '<button id="snxIntroSoundBtn" type="button" aria-pressed="true" aria-label="Mute welcome music">🔊 Sound</button>' +
-            '<button id="snxIntroSkipBtn"  type="button" aria-label="Skip intro">Skip Intro ›</button>' +
-            // Music unavailable
+            '<button id="snxIntroSkipBtn"  type="button" aria-label="Skip Intro ›">Skip Intro ›</button>' +
+            // Blue energy burst (enter transition layer)
+            '<div id="snxIntroEnergy" aria-hidden="true"></div>' +
+            // Music status
             '<div id="snxIntroMusicStatus"></div>';
 
         return el;
@@ -287,59 +286,81 @@
         np.classList.add('snxi-np-visible');
     }
 
+    // ── Scroll / touch unlock — MUST be called on every exit path ────────────
+    function _unlockScroll() {
+        // Restore body/html overflow that may have been locked
+        document.body.style.overflow = '';
+        document.body.style.overflowY = '';
+        document.documentElement.style.overflow = '';
+        document.documentElement.style.overflowY = '';
+        document.body.style.touchAction = '';
+        document.documentElement.style.touchAction = '';
+    }
+
     // ── Exit sequence ─────────────────────────────────────────────────────────
     function _exit(fast) {
         if (_exiting) return;
         _exiting = true;
         sessionStorage.setItem(SESSION_KEY, '1');
 
+        // Always unlock scrolling immediately — critical for Android
+        _unlockScroll();
+
         var ov = document.getElementById('snxIntroOverlay');
-        if (!ov) { if (typeof window.snxIntroCompleted === 'function') window.snxIntroCompleted(); return; }
+        if (!ov) {
+            if (typeof window.snxIntroCompleted === 'function') window.snxIntroCompleted();
+            return;
+        }
+
+        // Immediately disable pointer events on the overlay so touches pass through
+        ov.style.pointerEvents = 'none';
+        ov.style.touchAction = 'none';
 
         if (fast) {
             _stopAudio();
             ov.classList.add('snxi-exit');
-            setTimeout(function(){ ov.classList.add('snxi-gone'); if (typeof window.snxIntroCompleted==='function') window.snxIntroCompleted(); }, 1700);
+            setTimeout(function(){
+                ov.classList.add('snxi-gone');
+                if (ov.parentNode) ov.parentNode.removeChild(ov);
+                if (typeof window.snxIntroCompleted === 'function') window.snxIntroCompleted();
+            }, 600);
             return;
         }
 
-        // Cinematic exit — camera zooms into the portal:
-        // 1. Portal expand
-        var portal = document.getElementById('snxIntroPortal');
-        if (portal) portal.classList.add('snxi-portal-expand');
+        // Cinematic exit:
+        // 1. Logo shrinks toward the header/nav position
+        var logoWrap = document.getElementById('snxIntroLogoWrap');
+        if (logoWrap) logoWrap.classList.add('snxi-logo-exit');
 
-        // 2. Flames react faster (portal is pulling energy)
+        // 2. Flames react faster (energy is releasing)
         document.querySelectorAll('.snxi-flame').forEach(function(f){ f.classList.add('snxi-flame-react'); });
 
-        // 3. Fog bursts outward (portal push)
+        // 3. Fog bursts outward
         document.querySelectorAll('.snxi-fog').forEach(function(f){ f.classList.add('snxi-fog-expand'); });
 
-        // 4. Title dissolves
-        var title = document.getElementById('snxIntroTitle');
-        if (title) title.classList.add('snxi-title-exit');
-
-        // 5. Camera zoom — CSS scale on overlay
+        // 4. Camera slight zoom
         setTimeout(function(){
             if (ov) ov.classList.add('snxi-enter-travel');
-        }, 400);
+        }, 300);
 
-        // 6. Blue energy burst fills screen
+        // 5. Blue energy burst fills screen
         var energy = document.getElementById('snxIntroEnergy');
         if (energy) {
-            setTimeout(function(){ energy.classList.add('snxi-energy-burst'); }, 800);
+            setTimeout(function(){ energy.classList.add('snxi-energy-burst'); }, 700);
         }
 
-        // 7. Fade music
+        // 6. Fade music
         _fadeOutAudio(function(){});
 
-        // 8. Fade overlay
-        setTimeout(function(){ ov.classList.add('snxi-exit'); }, 1000);
+        // 7. Fade overlay
+        setTimeout(function(){ ov.classList.add('snxi-exit'); }, 900);
 
-        // 9. Remove from DOM
+        // 8. Remove from DOM — short enough to feel snappy, long enough for fade
         setTimeout(function(){
             ov.classList.add('snxi-gone');
+            if (ov.parentNode) ov.parentNode.removeChild(ov);
             if (typeof window.snxIntroCompleted === 'function') window.snxIntroCompleted();
-        }, 2800);
+        }, 2400);
     }
 
     // ── Wire buttons ──────────────────────────────────────────────────────────
@@ -411,11 +432,78 @@
         setTimeout(function(){ var s=document.getElementById('snxIntroSkipBtn'); if(s) s.focus(); }, 80);
     }
 
+    // ── Inject small particles around the logo ────────────────────────────────
+    function _injectParticles(container) {
+        // Only 8 particles on mobile, 14 on desktop — all CSS animated (no canvas)
+        var isMobile = window.innerWidth < 640;
+        var count = isMobile ? 8 : 14;
+        // Colours: mostly blue, some green to match logo
+        var colours = [
+            'rgba(80,180,255,.75)', 'rgba(60,140,255,.65)',
+            'rgba(0,200,120,.60)', 'rgba(100,200,255,.70)',
+            'rgba(0,160,255,.80)', 'rgba(0,220,130,.55)',
+        ];
+        for (var i = 0; i < count; i++) {
+            var p = document.createElement('div');
+            p.className = 'snxi-particle';
+            // Position within ±35vw / ±30vh of centre
+            var cx = 50 + (Math.random() - 0.5) * 60;
+            var cy = 45 + (Math.random() - 0.5) * 50;
+            var sz = 2 + Math.random() * 4;
+            var dur = 3 + Math.random() * 4;
+            var delay = 2.2 + Math.random() * 3;
+            var dx = (Math.random() - 0.5) * 120;
+            var dy = -40 - Math.random() * 80;
+            var col = colours[Math.floor(Math.random() * colours.length)];
+            var kf = (Math.random() > 0.5) ? 'snxiParticleA' : 'snxiParticleB';
+            p.style.cssText =
+                'left:' + cx + '%;' +
+                'top:'  + cy + '%;' +
+                'width:' + sz + 'px;height:' + sz + 'px;' +
+                'background:' + col + ';' +
+                '--px:' + dx + 'px;--py:' + dy + 'px;' +
+                'animation:' + kf + ' ' + dur + 's ' + delay + 's ease-out infinite;';
+            container.appendChild(p);
+        }
+    }
+
+    // ── Subtle logo parallax on desktop (mouse) ───────────────────────────────
+    function _setupLogoParallax(logoWrap) {
+        // Very gentle parallax — max ±8px shift. Only on desktop.
+        if (window.innerWidth < 1024 || !window.matchMedia('(hover:hover)').matches) return;
+        var _ticking = false;
+        var _mx = 0, _my = 0;
+        var _bound = function(e) {
+            _mx = (e.clientX / window.innerWidth  - 0.5) * 2;
+            _my = (e.clientY / window.innerHeight - 0.5) * 2;
+            if (!_ticking) {
+                _ticking = true;
+                requestAnimationFrame(function() {
+                    _ticking = false;
+                    if (logoWrap && logoWrap.parentNode) {
+                        logoWrap.style.transform =
+                            'translate(' + (_mx * 8).toFixed(1) + 'px,' +
+                            (_my * 5).toFixed(1) + 'px)';
+                    }
+                });
+            }
+        };
+        document.addEventListener('mousemove', _bound, { passive: true });
+        // Store for cleanup
+        logoWrap._snxiParallaxHandler = _bound;
+    }
+
     // ── Main build + run ──────────────────────────────────────────────────────
     function _buildAndRun() {
         _overlay = _buildOverlay();
         document.body.insertBefore(_overlay, document.body.firstChild);
         _injectCrows(document.getElementById('snxIntroCrows'));
+        _injectParticles(document.getElementById('snxIntroParticles'));
+
+        // Logo parallax (desktop only, very subtle)
+        var logoWrap = document.getElementById('snxIntroLogoWrap');
+        if (logoWrap) _setupLogoParallax(logoWrap);
+
         _wireButtons();
 
         // Load config; show music info when ready
@@ -728,6 +816,7 @@
         var ov = _buildOverlay();
         document.body.insertBefore(ov, document.body.firstChild);
         _injectCrows(document.getElementById('snxIntroCrows'));
+        _injectParticles(document.getElementById('snxIntroParticles'));
 
         // Wire buttons — override _exit so it:
         //  1. Does NOT set the session key (not a real "done")

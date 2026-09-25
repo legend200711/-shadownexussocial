@@ -264,7 +264,13 @@
       _canvas.height = container.offsetHeight;
     }
     resize();
-    window.addEventListener('resize', resize);
+    /* Debounced — Android toolbar resize events during scroll must not
+       trigger pixel buffer rebuilds on every frame. */
+    let _ptResizeTimer = null;
+    window.addEventListener('resize', function() {
+      clearTimeout(_ptResizeTimer);
+      _ptResizeTimer = setTimeout(resize, 350);
+    }, { passive: true });
 
     // Seed particles
     function spawn() {

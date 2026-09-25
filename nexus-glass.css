@@ -76,6 +76,12 @@ body {
      Shown if artwork fails to load (reliable fallback). */
   background: #000608 !important;
   background-attachment: scroll !important;
+  /* SCROLL ARCHITECTURE: body must never have overflow-y:hidden.
+     All fixed background layers (artwork, fog, rain) are z-index<0
+     and must not block body scroll. */
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 /* Desktop: no change needed — artwork is fixed z-index:-3 */
 @media (min-width: 769px) {

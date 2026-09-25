@@ -274,7 +274,7 @@
     var np = gcwParticles();
     while(embers.length > np) embers.pop();
     while(embers.length < np) embers.push(newEmber());
-  });
+  }, { passive: true });
   function newEmber() {
     return {
       x: CW*0.3 + Math.random()*CW*0.4,
@@ -650,11 +650,18 @@
     applySize(CFG.size);
     gcwInitIdleFade();
     ready = true;
-    /* Responsive resize + orientation change (some Android only fires orientationchange) */
-    function onViewportChange() { applySize(CFG.size); }
-    window.addEventListener('resize', onViewportChange);
+    /* Responsive resize + orientation change (some Android only fires orientationchange).
+       Debounced — Android Chrome fires resize during scroll when the address bar
+       moves; we ignore micro-resizes to prevent canvas rebuilds mid-scroll. */
+    var _gcwResizeTimer = null;
+    function onViewportChange() {
+      clearTimeout(_gcwResizeTimer);
+      _gcwResizeTimer = setTimeout(function() { applySize(CFG.size); }, 350);
+    }
+    window.addEventListener('resize', onViewportChange, { passive: true });
     window.addEventListener('orientationchange', function() {
-      setTimeout(onViewportChange, 150);
+      clearTimeout(_gcwResizeTimer);
+      _gcwResizeTimer = setTimeout(function() { applySize(CFG.size); }, 600);
     });
     loop();
   }

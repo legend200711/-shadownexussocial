@@ -158,8 +158,15 @@ function initSceneCanvas(){
            al:Math.random()*.18+.03,phase:Math.random()*Math.PI*2};
   }
   resize();
-  window.addEventListener('resize',resize);
-  window.addEventListener('orientationchange',function(){ setTimeout(resize,150); });
+  /* Debounced resize — Android toolbar show/hide fires resize events during
+     scrolling; we only act on changes larger than 120 px in height to avoid
+     needlessly rebuilding the canvas mid-scroll. */
+  var _sceneResizeTimer=null;
+  window.addEventListener('resize',function(){
+    clearTimeout(_sceneResizeTimer);
+    _sceneResizeTimer=setTimeout(resize,350);
+  },{passive:true});
+  window.addEventListener('orientationchange',function(){ setTimeout(resize,600); });
 
   function frame(){
     t++;
@@ -281,8 +288,14 @@ function initCharCanvas(){
     cv.style.width=(CW*scale)+'px'; cv.style.height=(CH*scale)+'px';
   }
   resize();
-  window.addEventListener('resize',resize);
-  window.addEventListener('orientationchange',function(){ setTimeout(resize,150); });
+  /* Debounced — prevent Android address-bar show/hide from triggering
+     mid-scroll canvas style recalculations. */
+  var _charResizeTimer=null;
+  window.addEventListener('resize',function(){
+    clearTimeout(_charResizeTimer);
+    _charResizeTimer=setTimeout(resize,350);
+  },{passive:true});
+  window.addEventListener('orientationchange',function(){ setTimeout(resize,600); });
 
   var t=0,breathPhase=0,walkPhase=0;
   var isSpeaking=false,speakAmt=0,eyeGlow=0;
@@ -295,12 +308,13 @@ function initCharCanvas(){
   var embers=[];
   for(var i=0;i<PARTICLES;i++) embers.push(newEmber());
 
-  /* On resize recalculate particle budget without rebuilding the whole canvas */
+  /* On resize recalculate particle budget without rebuilding the whole canvas.
+     Uses passive:true so this never blocks scroll on Android. */
   window.addEventListener('resize',function(){
     var newP=gwParticles();
     while(embers.length>newP) embers.pop();
     while(embers.length<newP) embers.push(newEmber());
-  });
+  },{passive:true});
   function newEmber(){
     return{x:CW*.3+Math.random()*CW*.4,y:CH*.55+Math.random()*CH*.35,
            vx:(Math.random()-.5)*.35,vy:-(0.25+Math.random()*.9),
