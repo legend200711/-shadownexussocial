@@ -43,6 +43,8 @@
 <meta name="twitter:image"       content="https://shadownexussocial.online/icon-512.png">
 
 <!-- ── Shared stylesheet ── -->
+<link rel="stylesheet" href="snx-living-bg.css?v=SNS-2026-CINEMATIC-001">
+<link rel="stylesheet" href="nexus-rooms.css?v=SNS-2026-CINEMATIC-001">
 <link rel="stylesheet" href="style.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <link rel="stylesheet" href="album.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <link rel="stylesheet" href="profile-music.css?v=SNS-2026-GLOBAL-REPAIR-002">
@@ -6870,6 +6872,9 @@ body.arcade-fs-ios body::after { display:none !important; }
         <button class="nav-item" id="navSupport" onclick="realmNavTo('supportRoomsPage')">
             <span class="nav-icon">🫂</span> Support Rooms
         </button>
+        <button class="nav-item" id="navNexusRooms" onclick="realmNavTo('nexusRoomsPage')" style="color:#00eeff;border-left:3px solid rgba(0,200,255,0.45);">
+            <span class="nav-icon">🌐</span> Nexus Rooms
+        </button>
 
         <div class="sidebar-divider"></div>
 
@@ -8372,7 +8377,7 @@ body.arcade-fs-ios body::after { display:none !important; }
 
         <div class="settings-section">
             <h4>🎬 Nexus Experience</h4>
-            <div class="settings-row" style="border-bottom:none;">
+            <div class="settings-row">
                 <div class="settings-label">
                     Cinematic Intro
                     <small>Replay the Shadow Nexus welcome experience</small>
@@ -8383,6 +8388,18 @@ body.arcade-fs-ios body::after { display:none !important; }
                     color:#7ac8ff;cursor:pointer;font-weight:600;white-space:nowrap;">
                     ▶ Replay Nexus Intro
                 </button>
+            </div>
+            <div class="settings-row" style="border-bottom:none;">
+                <div class="settings-label">
+                    🌌 Living Backgrounds
+                    <small>Atmospheric fog, particles &amp; energy effects behind the UI</small>
+                </div>
+                <label class="notif-toggle-wrap">
+                    <input type="checkbox" id="settingsLivingBg" class="notif-toggle-cb"
+                           checked
+                           onchange="(function(v){if(window.SNXLivingBg){if(v)SNXLivingBg.enable();else SNXLivingBg.disable();}})(this.checked)">
+                    <span class="notif-toggle-slider"></span>
+                </label>
             </div>
         </div>
 
@@ -8787,6 +8804,138 @@ body.arcade-fs-ios body::after { display:none !important; }
     </div>
 
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     NEXUS ROOMS PAGE — List of active rooms
+     ═══════════════════════════════════════════════════════════ -->
+<div class="page" id="nexusRoomsPage">
+
+    <div class="nxr-header-row">
+        <h2 class="eclipse-title" style="margin:0;">🌐 Nexus Rooms</h2>
+        <button class="nxr-create-btn" onclick="NexusRooms.openCreateModal()">
+            ＋ Create a Room
+        </button>
+    </div>
+    <p style="color:#5a80a8;font-size:13px;margin:-12px 0 20px;line-height:1.5;">
+        Temporary social hangout spaces inside Shadow Nexus. Chat, vibe, or watch together.
+    </p>
+
+    <div class="nxr-rooms-grid" id="nxrRoomsGrid">
+        <div class="nxr-empty">
+            <div class="nxr-empty-icon">🌌</div>
+            <div class="nxr-empty-text">Loading rooms…</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     NEXUS ROOM INTERIOR PAGE
+     ═══════════════════════════════════════════════════════════ -->
+<div class="page" id="nxrRoomPage">
+
+    <!-- Room Header -->
+    <div class="nxr-room-header">
+        <button class="nxr-back-btn" onclick="NexusRooms.leaveRoom()">← Back</button>
+        <div class="nxr-room-header-info">
+            <div class="nxr-room-title" id="nxrRoomTitle">Nexus Room</div>
+            <div class="nxr-room-sub" id="nxrRoomSub">Host: —</div>
+        </div>
+        <div class="nxr-header-actions">
+            <button class="nxr-end-btn" id="nxrEndRoomBtn" onclick="NexusRooms.endRoom()">⏹ End Room</button>
+            <button class="nxr-leave-btn" onclick="NexusRooms.leaveRoom()">🚪 Leave</button>
+        </div>
+    </div>
+
+    <!-- Room Body -->
+    <div class="nxr-body">
+
+        <!-- Media / Video Panel -->
+        <div class="nxr-media-panel">
+            <div class="nxr-video-area">
+                <div class="nxr-video-placeholder" id="nxrVideoPlaceholder">
+                    <div class="nxr-video-placeholder-icon">🎬</div>
+                    <div style="color:#3a6a9a;font-size:13px;">No media loaded yet</div>
+                    <div style="color:#2a4a6a;font-size:11px;margin-top:6px;">Host can load a video or audio URL below</div>
+                </div>
+                <video id="nxrVideoPlayer" playsinline style="display:none;width:100%;height:100%;object-fit:contain;"></video>
+            </div>
+
+            <!-- Host Controls -->
+            <div class="nxr-host-controls" id="nxrHostControls" style="display:none;">
+                <input type="url" class="nxr-media-url-input" id="nxrMediaUrlInput"
+                       placeholder="Paste video/audio URL…"
+                       onkeydown="if(event.key==='Enter')NexusRooms.hostSetMedia()">
+                <button class="nxr-ctrl-btn" onclick="NexusRooms.hostSetMedia()" title="Load Media">📂</button>
+                <button class="nxr-ctrl-btn" onclick="NexusRooms.hostPlay()"     title="Play">▶</button>
+                <button class="nxr-ctrl-btn" onclick="NexusRooms.hostPause()"    title="Pause">⏸</button>
+                <button class="nxr-ctrl-btn" onclick="NexusRooms.hostSeekBack()" title="−10s">⏪</button>
+                <button class="nxr-ctrl-btn" onclick="NexusRooms.hostSeekFwd()"  title="+10s">⏩</button>
+                <div class="nxr-sync-status" id="nxrSyncStatus">
+                    <span class="nxr-sync-dot"></span> SYNC
+                </div>
+            </div>
+
+            <!-- Participant sync indicator -->
+            <div id="nxrPartSyncStatus" style="display:none;padding:8px 14px;background:rgba(5,12,28,0.95);border-top:1px solid rgba(0,60,120,0.3);font-size:11px;color:#3a6a9a;display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                <span class="nxr-sync-dot"></span> Synced to host
+            </div>
+        </div>
+
+        <!-- Chat Panel -->
+        <div class="nxr-chat-panel">
+            <!-- Participants -->
+            <div class="nxr-participants">
+                <div class="nxr-participants-title">In this room</div>
+                <div class="nxr-participants-list" id="nxrParticipantsList"></div>
+            </div>
+            <!-- Chat header -->
+            <div class="nxr-chat-header">
+                Room Chat
+                <span class="nxr-chat-count" id="nxrChatCount">0</span>
+            </div>
+            <!-- Messages -->
+            <div class="nxr-chat-messages" id="nxrChatMessages"></div>
+            <!-- Input -->
+            <div class="nxr-chat-footer">
+                <input type="text" class="nxr-chat-input" id="nxrChatInput"
+                       placeholder="Say something…"
+                       maxlength="500"
+                       onkeydown="if(event.key==='Enter')NexusRooms.sendMessage()">
+                <button class="nxr-chat-send" onclick="NexusRooms.sendMessage()">➤</button>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CREATE ROOM MODAL
+     ═══════════════════════════════════════════════════════════ -->
+<div id="nxrCreateModal">
+    <div class="nxr-create-card">
+        <button class="nxr-modal-close" onclick="NexusRooms.closeCreateModal()">✕</button>
+        <div class="nxr-create-title">🌐 Create a Nexus Room</div>
+        <label class="nxr-form-label">Room Name <span style="color:#ff5577">*</span></label>
+        <input type="text" class="nxr-form-input" id="nxrRoomNameInput"
+               placeholder="e.g. Chill Vibes, Movie Night…" maxlength="60">
+        <label class="nxr-form-label">Description</label>
+        <input type="text" class="nxr-form-input" id="nxrRoomDescInput"
+               placeholder="What's this room about?" maxlength="200">
+        <label class="nxr-form-label">Room Type</label>
+        <select class="nxr-form-input nxr-form-select" id="nxrRoomTypeSelect">
+            <option value="chat">💬 Chat Room</option>
+            <option value="watch">📺 Watch Together</option>
+            <option value="music">🎵 Music Session</option>
+        </select>
+        <div class="nxr-form-row">
+            <button class="nxr-btn-cancel" onclick="NexusRooms.closeCreateModal()">Cancel</button>
+            <button class="nxr-btn-create" id="nxrCreateSubmitBtn" onclick="NexusRooms.createRoom()">Create Room</button>
+        </div>
+    </div>
+</div>
+
 
 <!-- ═══════════════════════════════════════════════════════════
      COMMUNITY HUB PAGE
@@ -21134,7 +21283,8 @@ function navTo(pageId) {
         moderatorPage:'navMod', administratorPage:'navAdminOfficer',
         communityPage:'navCommunity', supportRoomsPage:'navSupport',
         communityRulesPage:'navCommunityRules',
-        liveHubPage:'navLiveHub', inboxPage:'navInbox'
+        liveHubPage:'navLiveHub', inboxPage:'navInbox',
+        nexusRoomsPage:'navNexusRooms', nxrRoomPage:'navNexusRooms'
     };
     const navEl = document.getElementById(map[pageId]);
     if (navEl) navEl.classList.add('active-nav');
@@ -31032,6 +31182,8 @@ function updateShadowCoreActive(pageId) {
         'communityPage':     ['navCommunity', 'scNavCommunity', 'ncmCommunity'],
         'communityRulesPage':['navCommunityRules', 'scNavCommunityRules', 'ncmRules'],
         'friendsPage':       ['navFriends', 'scNavFriends', 'ncmFriends'],
+        'nexusRoomsPage':    ['navNexusRooms'],
+        'nxrRoomPage':       ['navNexusRooms'],
         'stormRoomsPage':    ['navStorm', 'scNavStorm', 'ncmStorm'],
         'supportRoomsPage':  ['navSupport', 'scNavSupport', 'ncmSupport'],
         'liveHubPage':       ['navLiveHub', 'scNavLive', 'ncmLiveHub'],
@@ -33218,6 +33370,22 @@ window.snxFounderPanelCleanup = (function() {
     _trySubscribe();
   })();
 
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SNX CINEMATIC EXPANSION — Living Backgrounds + Nexus Rooms
+     Loaded after main app so Firebase is already initialized.
+     ═══════════════════════════════════════════════════════════ -->
+<script src="snx-living-bg.js?v=SNS-2026-CINEMATIC-001"></script>
+<script src="nexus-rooms.js?v=SNS-2026-CINEMATIC-001"></script>
+<script>
+/* ── Sync Living Backgrounds toggle with saved preference ── */
+(function() {
+    if (typeof window.SNXLivingBg === 'undefined') return;
+    var cb = document.getElementById('settingsLivingBg');
+    if (!cb) return;
+    cb.checked = SNXLivingBg.isEnabled();
 })();
 </script>
 

@@ -1256,5 +1256,63 @@ service cloud.firestore {
       }
     }
 
+    // ── Nexus Rooms ───────────────────────────────────────────────────────────
+    //
+    //   /nexusRooms/{roomId}
+    //     hostUid, status ('active'|'ended'), participants[], playbackState
+    //
+    // Security model:
+    //   - Only auth non-anonymous users can create rooms.
+    //   - Only the host can modify protected fields; users cannot self-grant host.
+    //   - Participants can update only join/leave fields.
+    //   - Chat messages and presence are owner-scoped.
+
+    match /nexusRooms/{roomId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && request.resource.data.hostUid == request.auth.uid
+        && (!('status' in request.resource.data)
+            || request.resource.data.status == 'active');
+
+      allow update: if isSignedIn()
+        && (
+          // Host can update anything except reassigning hostUid
+          (resource.data.hostUid == request.auth.uid
+           && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['hostUid']))
+          // Participants can only update join/leave fields
+          || request.resource.data.diff(resource.data)
+               .affectedKeys().hasOnly(['participants', 'participantCount', 'lastActivityAt'])
+          || isFounder()
+        );
+
+      allow delete: if isSignedIn()
+        && (resource.data.hostUid == request.auth.uid || isFounder());
+
+      // ── Room chat messages ─────────────────────────────────────────────────
+      match /messages/{msgId} {
+        allow read:   if isSignedIn();
+        allow create: if isSignedIn()
+          && request.resource.data.uid == request.auth.uid;
+        allow update: if false;
+        allow delete: if isSignedIn()
+          && (
+            resource.data.uid == request.auth.uid
+            || get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.hostUid == request.auth.uid
+            || isFounder()
+          );
+      }
+
+      // ── Participant presence ───────────────────────────────────────────────
+      match /participants/{uid} {
+        allow read:           if isSignedIn();
+        allow create, update: if isOwner(uid);
+        allow delete: if isOwner(uid)
+          || get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.hostUid == request.auth.uid
+          || isFounder();
+      }
+    }
+
   }
 }

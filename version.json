@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-GLOBAL-REPAIR-002",
-  "swVersion": "v64",
-  "deployedAt": "2025-07-21T00:00:00Z",
+  "buildId": "SNS-2026-CINEMATIC-001",
+  "swVersion": "v65",
+  "deployedAt": "2025-07-22T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
-  "nexusVersion": "1.0.1",
-  "note": "GLOBAL-REPAIR-002: Removed obsolete cohost.js/cohost.css (cohosts/ RTDB namespace rules already removed in REPAIR-001; live.js guest-box system is production replacement). Extracted Moderator/Administrator Panel from index.html into js/moderator.js (825 lines). Service worker bumped to v64."
+  "nexusVersion": "1.1.0",
+  "note": "SNS-2026-CINEMATIC-001: Added Living Backgrounds (snx-living-bg.css/js), Nexus Rooms + Watch Together (nexus-rooms.css/js), Cinematic Page Transitions (integrated into existing firePortalTransition). Firebase rules updated for nexusRooms collection. Service worker bumped to v65."
 }

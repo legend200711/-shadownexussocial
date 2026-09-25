@@ -1,0 +1,214 @@
+/**
+ * Shadow Nexus Social — Living Backgrounds System
+ * snx-living-bg.css  v1.0.0  (SNS-2026-CINEMATIC-001)
+ *
+ * Layered subtle atmospheric effects that sit BEHIND the UI.
+ * All effects are pointer-events:none and do not cover content.
+ */
+
+/* ── Master toggle: .snx-bg-off kills all effects ── */
+.snx-bg-off body::after,
+.snx-bg-off .snx-bg-layer,
+.snx-bg-off .snx-storm-canvas,
+.snx-bg-off .snx-ember-layer {
+    animation: none !important;
+    opacity: 0 !important;
+}
+
+/* ── Reduced motion: collapse to static tinted overlay ── */
+@media (prefers-reduced-motion: reduce) {
+    body::after { animation: none !important; opacity: 0.6 !important; }
+    .snx-bg-layer,
+    .snx-storm-canvas,
+    .snx-ember-layer { animation: none !important; }
+}
+
+/* ─────────────────────────────────────────────
+   LAYER 1 — deep-nebula radial glow (static base)
+   z-index: -2  — below canvas, below fog
+   ───────────────────────────────────────────── */
+.snx-bg-nebula {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -2;
+    background:
+        radial-gradient(ellipse 80% 60% at 15% 25%, rgba(0,40,120,0.22) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 50% at 85% 70%, rgba(0,20,80,0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 100% 80% at 50% 50%, rgba(0,10,40,0.35) 0%, transparent 100%);
+}
+
+/* ─────────────────────────────────────────────
+   LAYER 2 — drifting fog bands (replaces/extends body::after)
+   z-index: 9997  — matches existing fog layer
+   ───────────────────────────────────────────── */
+.snx-bg-fog {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9997;
+    background:
+        radial-gradient(ellipse 130% 55% at 25% 85%, rgba(0,90,200,0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 90%  40% at 75% 90%, rgba(0,50,140,0.08)  0%, transparent 70%),
+        radial-gradient(ellipse 110% 50% at 50% 95%, rgba(0,70,160,0.07)  0%, transparent 70%);
+    animation: snxFogDrift1 22s ease-in-out infinite alternate;
+    will-change: transform, opacity;
+}
+
+.snx-bg-fog2 {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9996;
+    background:
+        radial-gradient(ellipse 100% 45% at 80% 10%, rgba(0,30,100,0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 80%  35% at 20% 20%, rgba(0,20,80,0.06)  0%, transparent 70%);
+    animation: snxFogDrift2 28s ease-in-out infinite alternate;
+    will-change: transform, opacity;
+}
+
+@keyframes snxFogDrift1 {
+    0%   { transform: translateX(-4%) translateY(0)    scale(1.03); opacity: 0.75; }
+    50%  { transform: translateX(2%)  translateY(-2%)  scale(1.05); opacity: 1;    }
+    100% { transform: translateX(5%)  translateY(1%)   scale(1.02); opacity: 0.80; }
+}
+@keyframes snxFogDrift2 {
+    0%   { transform: translateX(3%)  translateY(0)    scale(1.02); opacity: 0.6; }
+    50%  { transform: translateX(-2%) translateY(2%)   scale(1.04); opacity: 0.9; }
+    100% { transform: translateX(-4%) translateY(-1%)  scale(1.01); opacity: 0.65; }
+}
+
+/* ─────────────────────────────────────────────
+   LAYER 3 — distant storm cloud (canvas element)
+   z-index: -1  — above nebula, below fog
+   ───────────────────────────────────────────── */
+.snx-storm-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0;
+    animation: snxStormReveal 4s ease-out 1s forwards;
+}
+@keyframes snxStormReveal {
+    to { opacity: 1; }
+}
+
+/* ─────────────────────────────────────────────
+   LAYER 4 — neon energy sweep (pseudo-element on canvas wrapper)
+   Very slow horizontal sweep across the page bottom
+   ───────────────────────────────────────────── */
+.snx-bg-energy {
+    position: fixed;
+    bottom: 0;
+    left: -30%;
+    width: 160%;
+    height: 35%;
+    pointer-events: none;
+    z-index: 9995;
+    background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(0,80,180,0.04) 40%,
+        rgba(0,120,255,0.07) 65%,
+        rgba(0,60,140,0.05) 85%,
+        transparent 100%
+    );
+    animation: snxEnergySweep 35s ease-in-out infinite alternate;
+    will-change: transform, opacity;
+}
+@keyframes snxEnergySweep {
+    0%   { transform: translateX(-8%) skewX(-1deg); opacity: 0.7; }
+    50%  { transform: translateX(4%)  skewX(0.5deg); opacity: 1; }
+    100% { transform: translateX(10%) skewX(-0.5deg); opacity: 0.75; }
+}
+
+/* Subtle green accent horizon line */
+.snx-bg-green-accent {
+    position: fixed;
+    bottom: 12%;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    pointer-events: none;
+    z-index: 9994;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(57,255,20,0) 15%,
+        rgba(57,255,20,0.12) 35%,
+        rgba(57,255,20,0.18) 50%,
+        rgba(57,255,20,0.12) 65%,
+        rgba(57,255,20,0) 85%,
+        transparent 100%
+    );
+    animation: snxGreenHorizon 12s ease-in-out infinite alternate;
+    will-change: opacity, transform;
+}
+@keyframes snxGreenHorizon {
+    0%   { opacity: 0.5; transform: scaleX(0.85); }
+    50%  { opacity: 1;   transform: scaleX(1.05); }
+    100% { opacity: 0.6; transform: scaleX(0.9); }
+}
+
+/* ─────────────────────────────────────────────
+   LAYER 5 — CSS-only particles (no DOM elements)
+   Uses repeating gradient spots at fixed positions
+   ───────────────────────────────────────────── */
+.snx-bg-stars {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    /* Tiny "star" dots using radial-gradient mosaic */
+    background-image:
+        radial-gradient(1px 1px at 12%  8%,  rgba(0,200,255,0.35) 0%, transparent 100%),
+        radial-gradient(1px 1px at 38%  4%,  rgba(0,180,255,0.25) 0%, transparent 100%),
+        radial-gradient(1px 1px at 65%  11%, rgba(57,255,20,0.2)  0%, transparent 100%),
+        radial-gradient(1px 1px at 82%  6%,  rgba(0,200,255,0.30) 0%, transparent 100%),
+        radial-gradient(1px 1px at 5%   45%, rgba(0,160,255,0.22) 0%, transparent 100%),
+        radial-gradient(1px 1px at 92%  33%, rgba(57,255,20,0.18) 0%, transparent 100%),
+        radial-gradient(1px 1px at 50%  22%, rgba(0,180,255,0.28) 0%, transparent 100%),
+        radial-gradient(1px 1px at 24%  58%, rgba(0,200,255,0.20) 0%, transparent 100%),
+        radial-gradient(1px 1px at 78%  48%, rgba(57,255,20,0.15) 0%, transparent 100%),
+        radial-gradient(1px 1px at 45%  72%, rgba(0,160,255,0.18) 0%, transparent 100%),
+        radial-gradient(1px 1px at 18%  84%, rgba(0,200,255,0.22) 0%, transparent 100%),
+        radial-gradient(1px 1px at 60%  88%, rgba(57,255,20,0.20) 0%, transparent 100%),
+        radial-gradient(1px 1px at 90%  80%, rgba(0,180,255,0.18) 0%, transparent 100%);
+    animation: snxStarsBreathe 8s ease-in-out infinite alternate;
+}
+@keyframes snxStarsBreathe {
+    0%   { opacity: 0.5; }
+    100% { opacity: 1.0; }
+}
+
+/* ─────────────────────────────────────────────
+   CARDS — subtle glass/translucent effect
+   Applied selectively to section-card on main pages
+   Does NOT break readability; darkens bg slightly
+   ───────────────────────────────────────────── */
+body:not(.snx-bg-off) .section-card {
+    background: rgba(9, 25, 50, 0.88);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/* ─────────────────────────────────────────────
+   PAGE-HIDDEN / REDUCED MOTION — pause all animations
+   ───────────────────────────────────────────── */
+.snx-page-hidden .snx-bg-fog,
+.snx-page-hidden .snx-bg-fog2,
+.snx-page-hidden .snx-bg-energy,
+.snx-page-hidden .snx-bg-green-accent,
+.snx-page-hidden .snx-bg-stars {
+    animation-play-state: paused !important;
+}
+
+/* Mobile perf: reduce fog complexity */
+@media (max-width: 768px) {
+    .snx-bg-fog2 { display: none; }
+    .snx-bg-stars { display: none; }
+    .snx-bg-energy { opacity: 0.5; }
+    .snx-bg-green-accent { display: none; }
+}
