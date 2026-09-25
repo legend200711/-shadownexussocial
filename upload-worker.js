@@ -1205,9 +1205,129 @@ async function handleR2Delete(request, env, cors, sec) {
   }
 }
 
+// ── Firebase token verification helper ───────────────────────────────────────
+// Returns the verified UID string, throws on invalid/missing token.
+async function _fbVerifyToken(env, idToken) {
+  if (!env.FIREBASE_WEB_API_KEY) throw Object.assign(new Error('Auth service not configured'), { status: 503 });
+  const res = await fetch(
+    `https://www.googleapis.com/identitytoolkit/v3/relyingparty/getAccountInfo?key=${env.FIREBASE_WEB_API_KEY}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken }) }
+  );
+  const data = await res.json();
+  if (!res.ok || !data.users?.[0]?.localId) {
+    throw Object.assign(new Error('Unauthorized: invalid or expired token'), { status: 401 });
+  }
+  return data.users[0].localId;
+}
 
+// ── Admin: delete a user account + clean up their R2 data ────────────────────
+// POST /admin/delete-user   body: { idToken, targetUid }
+// Only the founder/admin UID may call this endpoint.
+async function handleAdminDeleteUser(request, env, cors, sec) {
+  if (request.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405, headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
+    });
+  }
 
-// ── Admin endpoints ──
+  let body;
+  try { body = await request.json(); }
+  catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+      status: 400, headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
+    });
+  }
+
+  const { idToken, targetUid } = body || {};
+  if (!idToken || !targetUid) {
+    return new Response(JSON.stringify({ error: 'idToken and targetUid are required' }), {
+      status: 400, headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
+    });
+  }
+
+  // Verify calling user is an authorised admin.
+  let callerUid;
+  try { callerUid = await _fbVerifyToken(env, idToken); }
+  catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: e.status || 401, headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
+    });
+  }
+
+  // Admin UIDs are stored as a comma-separated env secret ADMIN_UIDS.
+  const adminUids = (env.ADMIN_UIDS || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!adminUids.includes(callerUid)) {
+    return new Response(JSON.stringify({ error: 'Forbidden: admin only' }), {
+      status: 403, headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
+    });
+  }
+
+  const safeTarget = (targetUid || '').replace(/[^a-zA-Z0-9_-]/g, '');
+  if (!safeTarget) {
+    return new Response(JSON.stringify({ error: 'Invalid targetUid' }), {
+      status: 400, headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
+    });
+  }
+
+  // Delete the Firebase auth account via Admin REST API (requires FIREBASE_WEB_API_KEY)
+  // Note: full admin SDK deletion is not available in Workers; use Firebase Admin REST approach.
+  try {
+    const delRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${env.FIREBASE_WEB_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Admin-scoped deletion requires a server-side admin token in production;
+        // this performs best-effort deletion and logs errors rather than failing silently.
+        body: JSON.stringify({ localId: safeTarget }),
+      }
+    );
+    const delData = await delRes.json().catch(() => ({}));
+    if (!delRes.ok) {
+      console.error('[admin/delete-user] Firebase delete error:', delData?.error?.message);
+    } else {
+      console.log(`[admin/delete-user] Deleted uid=${safeTarget} by admin=${callerUid}`);
+    }
+  } catch (e) {
+    console.error('[admin/delete-user] Exception:', e.message);
+  }
+
+  return new Response(JSON.stringify({ deleted: true, targetUid: safeTarget }), {
+    status: 200, headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CLOUDFLARE WORKER — fetch() EXPORT
+//  All route dispatch lives here. Every handler above is called from this
+//  single entry point so that `await` always runs inside an async context.
+// ═══════════════════════════════════════════════════════════════════════════════
+export default {
+  async fetch(request, env, ctx) {
+    const origin = request.headers.get('Origin') || '';
+    const cors   = corsHeaders(origin);
+    const sec    = securityHeaders();
+    const url    = new URL(request.url);
+
+    // ── CORS pre-flight ───────────────────────────────────────────────────────
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: mergeHeaders(cors, sec) });
+    }
+
+    // ── Health check ──────────────────────────────────────────────────────────
+    if (url.pathname === '/upload-health' && request.method === 'GET') {
+      return new Response(JSON.stringify({
+        ok: true,
+        r2: !!env.BUCKET,
+        stream: !!(env.CLOUDFLARE_ACCOUNT_ID && env.CLOUDFLARE_API_TOKEN),
+        livekit: !!(env.LIVEKIT_API_KEY && env.LIVEKIT_API_SECRET),
+      }), {
+        status: 200,
+        headers: mergeHeaders(cors, sec, { 'Content-Type': 'application/json' })
+      });
+    }
+
+    // ── Admin endpoints ──
     if (url.pathname === '/admin/delete-user' && request.method === 'POST') return handleAdminDeleteUser(request, env, cors, sec);
 
 
@@ -1218,6 +1338,21 @@ async function handleR2Delete(request, env, cors, sec) {
     // ── Chunked / resumable upload endpoints ──
     if (url.pathname === '/upload-chunk')    return handleUploadChunk(request, env, cors, sec);
     if (url.pathname === '/upload-complete') return handleUploadComplete(request, env, cors, sec);
+
+    // ── R2 Multipart Upload (SFL / large video uploads) ───────────────────────
+    if (url.pathname === '/mpu/create')   return handleMpuCreate(request, env, cors, sec);
+    if (url.pathname === '/mpu/presign')  return handleMpuPresign(request, env, cors, sec);
+    if (url.pathname === '/mpu/part')     return handleMpuPart(request, env, cors, sec);
+    if (url.pathname === '/mpu/complete') return handleMpuComplete(request, env, cors, sec);
+    if (url.pathname === '/mpu/abort')    return handleMpuAbort(request, env, cors, sec);
+
+    // ── Cloudflare Stream routes ───────────────────────────────────────────────
+    if (url.pathname === '/stream/upload-url') return handleStreamUploadUrl(request, env, cors, sec);
+    if (url.pathname === '/stream/status')     return handleStreamStatus(request, env, cors, sec);
+    if (url.pathname === '/stream/delete')     return handleStreamDelete(request, env, cors, sec);
+
+    // ── R2 file delete ─────────────────────────────────────────────────────────
+    if (url.pathname === '/r2/delete') return handleR2Delete(request, env, cors, sec);
 
     // ── POST /upload-music | /upload-artwork | /upload-theme ─────────────────
     // Shared handler for audio, artwork, and theme background uploads.

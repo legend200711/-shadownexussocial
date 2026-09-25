@@ -43,30 +43,30 @@
 <meta name="twitter:image"       content="https://shadownexussocial.online/icon-512.png">
 
 <!-- ── Shared stylesheet ── -->
-<link rel="stylesheet" href="style.css?v=SNS-2026-ALBUM-PRIVACY-001">
-<link rel="stylesheet" href="album.css?v=SNS-2026-ALBUM-PRIVACY-001">
-<link rel="stylesheet" href="profile-music.css?v=SNS-2026-ALBUM-PRIVACY-001">
-<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-ALBUM-PRIVACY-001">
+<link rel="stylesheet" href="style.css?v=SNS-2026-GLOBAL-REPAIR-001">
+<link rel="stylesheet" href="album.css?v=SNS-2026-GLOBAL-REPAIR-001">
+<link rel="stylesheet" href="profile-music.css?v=SNS-2026-GLOBAL-REPAIR-001">
+<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-GLOBAL-REPAIR-001">
 <!-- ── Shadow Nexus Social Realm — full immersive redesign ── -->
-<link rel="stylesheet" href="realm.css?v=SNS-2026-ALBUM-PRIVACY-001">
+<link rel="stylesheet" href="realm.css?v=SNS-2026-GLOBAL-REPAIR-001">
 <!-- ── Mobile responsive design layer ── -->
-<link rel="stylesheet" href="mobile.css?v=SNS-2026-ALBUM-PRIVACY-001">
+<link rel="stylesheet" href="mobile.css?v=SNS-2026-GLOBAL-REPAIR-001">
 <!-- cloud-stream.css belongs to the standalone cloud-stream.html page only;
      do NOT load it on the main app — it caused global style pollution. -->
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library / Upload / Playlists / Queue ── -->
-<link rel="stylesheet" href="studio.css?v=SNS-2026-ALBUM-PRIVACY-001">
+<link rel="stylesheet" href="studio.css?v=SNS-2026-GLOBAL-REPAIR-001">
 <!-- ── Nexus Global Theme Engine ── -->
-<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-ALBUM-PRIVACY-001">
+<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-GLOBAL-REPAIR-001">
 <!-- ── Shadow Nexus Cinematic Welcome Experience ── -->
-<link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-FOUNDER-CLEANUP-001">
+<link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-GLOBAL-REPAIR-001">
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Egyptian/Horror theme ── -->
-<link rel="stylesheet" href="nexus.css?v=SNS-2026-ALBUM-PRIVACY-001">
+<link rel="stylesheet" href="nexus.css?v=SNS-2026-GLOBAL-REPAIR-001">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-ALBUM-PRIVACY-001">
+<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-GLOBAL-REPAIR-001">
 <!-- ── Shadow Nexus Adaptive Cinematic Performance System ── -->
-<link rel="stylesheet" href="snx-perf.css?v=SNS-2026-PERF-001">
+<link rel="stylesheet" href="snx-perf.css?v=SNS-2026-GLOBAL-REPAIR-001">
 <!-- ── Nexus Cinematic Glass Visual Upgrade (loads last — overrides land above perf quality gates) ── -->
-<link rel="stylesheet" href="nexus-glass.css?v=SNS-2026-GLASS-001">
+<link rel="stylesheet" href="nexus-glass.css?v=SNS-2026-GLOBAL-REPAIR-001">
 
 <!-- ── Preconnect to Firebase + R2 CDN so first load is faster ── -->
 <link rel="preconnect" href="https://www.gstatic.com">
@@ -24790,15 +24790,15 @@ function _supportStopCanvas() {
      ═══════════════════════════════════════════════════════════ -->
 
 <!-- ── Global Background Internet Manager (must load before script.js) ── -->
-<script src="snx-net.js?v=SNS-2026-ALBUM-PRIVACY-001"></script>
+<script src="snx-net.js?v=SNS-2026-GLOBAL-REPAIR-001"></script>
 
-<script src="script.js?v=SNS-2026-ALBUM-PRIVACY-001"></script>
+<script src="script.js?v=SNS-2026-GLOBAL-REPAIR-001"></script>
 
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library, Upload, Playlists, Queue ── -->
-<script src="studio.js?v=SNS-2026-ALBUM-PRIVACY-001"></script>
+<script src="studio.js?v=SNS-2026-GLOBAL-REPAIR-001"></script>
 
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Eternal Stream + Studio ── -->
-<script src="nexus.js?v=SNS-2026-ALBUM-PRIVACY-001"></script>
+<script src="nexus.js?v=SNS-2026-GLOBAL-REPAIR-001"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════
@@ -30114,16 +30114,16 @@ window.switchAdminTab = function(tab) {
 </script>
 
 <!-- ── Profile Photo Album module (must load after the main IIFE) ── -->
-<script src="album.js?v=SNS-2026-ALBUM-PRIVACY-001"></script>
+<script src="album.js?v=SNS-2026-GLOBAL-REPAIR-001"></script>
 
 <!-- ── Profile Music System (loads after Firebase is initialized) ── -->
-<script src="profile-music.js?v=SNS-2026-ALBUM-PRIVACY-001"></script>
+<script src="profile-music.js?v=SNS-2026-GLOBAL-REPAIR-001"></script>
 
 <!-- ── Profile Theme System (loads after Firebase is initialized) ── -->
-<script src="profile-theme.js?v=SNS-2026-ALBUM-PRIVACY-001"></script>
+<script src="profile-theme.js?v=SNS-2026-GLOBAL-REPAIR-001"></script>
 
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<script src="shadow-nexus-upgrade.js?v=SNS-2026-FOUNDER-CLEANUP-001"></script>
+<script src="shadow-nexus-upgrade.js?v=SNS-2026-GLOBAL-REPAIR-001"></script>
 
 <!-- ═══════════════════ GRIM AI ASSISTANT PANEL ═══════════════════ -->
 
@@ -32093,8 +32093,8 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = 'SNS-2026-FOUNDER-CLEANUP-001';
-  var SW_VER   = 'v61';
+  var BUILD_ID = 'SNS-2026-GLOBAL-REPAIR-001';
+  var SW_VER   = 'v63';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
 
@@ -32246,9 +32246,9 @@ document.addEventListener('click', function(e) {
 (function() {
   'use strict';
 
-  var _SNX_BUILD    = 'SNS-2026-ALBUM-PRIVACY-001';
-  var _SNX_SW_VER   = 'v54';
-  var _SNX_DEPLOY   = '2026-10-03T00:00:00Z';
+  var _SNX_BUILD    = 'SNS-2026-GLOBAL-REPAIR-001';
+  var _SNX_SW_VER   = 'v63';
+  var _SNX_DEPLOY   = '2025-07-20T00:00:00Z';
   var _SNX_PROJECT  = 'horr-a08f4';
 
   function _dRow(label, val, ok) {
@@ -33881,7 +33881,7 @@ window.snxFounderPanelCleanup = (function() {
      Loaded before the Welcome Experience so quality is applied
      before any cinematic assets render.
      ═══════════════════════════════════════════════════════════ -->
-<script src="snx-perf.js?v=SNS-2026-PERF-001"></script>
+<script src="snx-perf.js?v=SNS-2026-GLOBAL-REPAIR-001"></script>
 
 <!-- ═══════════════════════════════════════════════════════════
      PERFORMANCE SETTINGS UI — Settings page + Founder dashboard
@@ -34049,7 +34049,7 @@ window.snxFounderPanelCleanup = (function() {
      SHADOW NEXUS CINEMATIC WELCOME EXPERIENCE
      Loaded last so it never blocks main app init.
      ═══════════════════════════════════════════════════════════ -->
-<script src="nexus-intro.js?v=SNS-2026-FOUNDER-CLEANUP-001"></script>
+<script src="nexus-intro.js?v=SNS-2026-GLOBAL-REPAIR-001"></script>
 <script>
   /* ── snxIntroCompleted: called by nexus-intro.js when the user clicks
      "Enter the Nexus" or "Skip Intro".  By this point Firebase auth may

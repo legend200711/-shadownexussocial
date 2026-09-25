@@ -1,41 +1,10 @@
 {
   "rules": {
 
-    "cohosts": {
-      "$liveId": {
-
-        "settings": {
-          ".read":  "auth != null",
-          ".write": "auth != null"
-        },
-
-        "requests": {
-          ".read": "auth != null",
-          "$uid": {
-            ".write": "auth != null"
-          }
-        },
-
-        "active": {
-          ".read": "auth != null",
-          "$uid": {
-            ".write": "auth != null"
-          }
-        },
-
-        "removed": {
-          ".read": "auth != null",
-          "$uid": {
-            ".write": "auth != null"
-          }
-        }
-      }
-    },
-
     "liveRooms": {
       "$roomId": {
-        ".read":  "auth != null",
-        ".write": "auth != null"
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $roomId"
       }
     },
 
@@ -63,35 +32,43 @@
     "liveConnections": {
       "$hostUid": {
         ".read":  "auth != null",
-        ".write": "auth != null"
+        ".write": "auth != null && auth.uid == $hostUid"
       }
     },
 
     "studioLiveConnections": {
       "$hostUid": {
         ".read":  "auth != null",
-        ".write": "auth != null"
+        ".write": "auth != null && auth.uid == $hostUid"
       }
     },
 
     "guestRequests": {
       "$roomId": {
-        ".read":  "auth != null",
-        ".write": "auth != null"
+        ".read": "auth != null && auth.uid == $roomId",
+        "$guestUid": {
+          ".read":  "auth != null && (auth.uid == $roomId || auth.uid == $guestUid)",
+          ".write": "auth != null && (auth.uid == $guestUid || auth.uid == $roomId)"
+        }
       }
     },
 
     "guestSignaling": {
       "$roomId": {
-        ".read":  "auth != null",
-        ".write": "auth != null"
+        ".read":  "auth != null && auth.uid == $roomId",
+        "$guestUid": {
+          ".read":  "auth != null && (auth.uid == $roomId || auth.uid == $guestUid)",
+          ".write": "auth != null && (auth.uid == $roomId || auth.uid == $guestUid)"
+        }
       }
     },
 
     "liveGuests": {
       "$roomId": {
-        ".read":  "auth != null",
-        ".write": "auth != null"
+        ".read": "auth != null",
+        "$guestUid": {
+          ".write": "auth != null && (auth.uid == $roomId || auth.uid == $guestUid)"
+        }
       }
     },
 
@@ -139,7 +116,6 @@
         }
       }
     },
-
 
     "userLive": {
       "$uid": {
