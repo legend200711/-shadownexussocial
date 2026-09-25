@@ -43,15 +43,15 @@
 <meta name="twitter:image"       content="https://shadownexussocial.online/icon-512.png">
 
 <!-- ── Shared stylesheet ── -->
-<link rel="stylesheet" href="snx-living-bg.css?v=SNS-2026-WORLD-ENV-001">
+<link rel="stylesheet" href="snx-living-bg.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
 <link rel="stylesheet" href="style.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <link rel="stylesheet" href="album.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <link rel="stylesheet" href="profile-music.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <link rel="stylesheet" href="profile-theme.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <!-- ── Shadow Nexus Social Realm — full immersive redesign ── -->
-<link rel="stylesheet" href="realm.css?v=SNS-2026-GLOBAL-REPAIR-002">
+<link rel="stylesheet" href="realm.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
 <!-- ── Mobile responsive design layer ── -->
-<link rel="stylesheet" href="mobile.css?v=SNS-2026-GLOBAL-REPAIR-002">
+<link rel="stylesheet" href="mobile.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
 <!-- cloud-stream.css belongs to the standalone cloud-stream.html page only;
      do NOT load it on the main app — it caused global style pollution. -->
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library / Upload / Playlists / Queue ── -->
@@ -67,7 +67,14 @@
 <!-- ── Shadow Nexus Adaptive Cinematic Performance System ── -->
 <link rel="stylesheet" href="snx-perf.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <!-- ── Nexus Cinematic Glass Visual Upgrade (loads last — overrides land above perf quality gates) ── -->
-<link rel="stylesheet" href="nexus-glass.css?v=SNS-2026-GLOBAL-REPAIR-002">
+<link rel="stylesheet" href="nexus-glass.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
+
+<!-- ── Preload Nexus Realm background artwork — critical resource ── -->
+<link rel="preload" href="nexus-realm-bg.webp" as="image" type="image/webp">
+<!-- Fallback preload for browsers without WebP — loads both but only one is used -->
+<link rel="preload" href="nexus-realm-bg.jpg" as="image" type="image/jpeg">
+<!-- ── Preload SNS official logo ── -->
+<link rel="preload" href="sns-logo.png" as="image" type="image/png">
 
 <!-- ── Preconnect to Firebase + R2 CDN so first load is faster ── -->
 <link rel="preconnect" href="https://www.gstatic.com">
@@ -122,7 +129,9 @@
 body {
     margin: 0;
     font-family: 'Segoe UI', Arial, sans-serif;
-    background: #0B1F3A;
+    /* Dark Nexus blue/black — fallback shown if nexus-realm-bg.webp fails to load.
+       Matches the dominant colour of the artwork so the app is always usable. */
+    background: #000608;
     color: #ffffff;
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
@@ -158,13 +167,34 @@ body::after {
     animation: fogDrift 18s ease-in-out infinite alternate;
     will-change: transform, opacity;
 }
+/* Mobile: drop will-change on body::after — the fog overlay is a large
+   fixed layer and will-change forces an off-screen buffer for the entire
+   screen, costing ~16–32 MB of VRAM on a phone.
+   Also override fogDrift keyframes to remove scale() — scale on a fixed
+   full-viewport layer forces a full GPU repaint on every animation frame. */
+@media (max-width: 768px) {
+    body::after {
+        will-change: auto;
+    }
+    @keyframes fogDrift {
+        0%   { transform: translateX(-3%) translateY(0);    opacity: 0.8;  }
+        33%  { transform: translateX(2%)  translateY(-1%);  opacity: 1;    }
+        66%  { transform: translateX(-1%) translateY(1%);   opacity: 0.9;  }
+        100% { transform: translateX(4%)  translateY(0);    opacity: 0.85; }
+    }
+}
 
 #bg-canvas {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    /* DO NOT use 100vw/100vh here — on iOS Safari and Android Chrome, 100vh
+       changes height by ~56px every time the browser toolbar appears or hides,
+       triggering a CSS reflow that makes the canvas jump and flicker.
+       Use 100% instead: on a fixed element it resolves to the stable layout
+       viewport and is not affected by the mobile browser chrome transitions. */
+    width: 100%;
+    height: 100%;
     z-index: -1;
     pointer-events: none;
 }
@@ -2784,9 +2814,11 @@ img.post-media-preview::before {
    STORM ROOMS — live multiplayer chat
    ════════════════════════════════════════════ */
 
-/* Wolf/storm atmospheric canvas */
+/* Wolf/storm atmospheric canvas — dimensions set by JS (DPR-aware).
+   Use width/height:100% on a fixed element so CSS never reacts to
+   address-bar transitions; JS controls the actual pixel dimensions. */
 #storm-canvas {
-    position: fixed; inset: 0; width: 100vw; height: 100vh;
+    position: fixed; inset: 0; width: 100%; height: 100%;
     pointer-events: none; z-index: 0; display: none;
 }
 #stormRoomsPage.active #storm-canvas { display: block; }
@@ -3036,9 +3068,11 @@ img.post-media-preview::before {
    Uses the site's existing dark-blue theme
    ════════════════════════════════════════════ */
 
-/* Background canvas for support rooms */
+/* Background canvas for support rooms — dimensions set by JS (DPR-aware).
+   Use width/height:100% on a fixed element (resolves to layout viewport,
+   unaffected by mobile address bar transitions). */
 #support-canvas {
-    position: fixed; inset: 0; width: 100vw; height: 100vh;
+    position: fixed; inset: 0; width: 100%; height: 100%;
     pointer-events: none; z-index: 0; display: none;
 }
 #supportRoomsPage.active #support-canvas { display: block; }
@@ -6528,7 +6562,23 @@ body.arcade-fs-ios body::after { display:none !important; }
     visibility: hidden;
     pointer-events: none;
 }
-.snx-gate-logo {
+/* .snx-gate-logo — when used on an <img>, the image IS the logo (no circle box).
+   realm.css overrides this further, but this base rule avoids showing a circle. */
+img.snx-gate-logo {
+    width: auto;
+    height: auto;
+    max-width: 220px;
+    border-radius: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+    display: block;
+    font-size: 0;
+    animation: snsLogoPulse 5s ease-in-out infinite alternate;
+    filter: drop-shadow(0 0 18px rgba(0,174,239,0.35));
+}
+/* Old div-based gate logo — kept for backwards compat */
+div.snx-gate-logo {
     width: 76px;
     height: 76px;
     border-radius: 50%;
@@ -6559,9 +6609,27 @@ body.arcade-fs-ios body::after { display:none !important; }
 
 <body>
 
+<!-- ████ NEXUS REALM ARTWORK — The World (z-index: -3) ████
+     This is the environmental base layer.
+     The REAL interface sits above this.
+     DO NOT place buttons or controls inside this element.
+     Styled by #snx-realm-artwork in snx-living-bg.css.
+     WebP is primary; browsers that don't support WebP get JPEG via @supports. -->
+<div id="snx-realm-artwork" aria-hidden="true" role="presentation"></div>
+
+<!-- ████ READABILITY OVERLAY — subtle dark atmospheric gradient ████
+     Between the artwork and the canvas/UI layers.
+     Improves text legibility without hiding the world. -->
+<div id="snx-readability-overlay" aria-hidden="true" role="presentation"></div>
+
 <!-- Auth gate — rendered before anything else, removed after Firebase resolves -->
 <div id="snx-auth-gate" aria-hidden="true">
-    <div class="snx-gate-logo">🌑</div>
+    <!-- Official SNS logo — CSS in realm.css controls sizing -->
+    <img src="sns-logo.png"
+         alt="Shadow Nexus Social"
+         class="snx-gate-logo sns-logo-img"
+         draggable="false"
+         style="max-width:220px;margin:0 auto 16px;display:block;">
     <div class="snx-gate-spinner"></div>
     <div class="snx-gate-label">Loading…</div>
 </div>
@@ -6581,12 +6649,18 @@ body.arcade-fs-ios body::after { display:none !important; }
 <!-- ████ SHADOW CORE — Full-height Desktop Navigation ████ -->
 <nav id="shadowCore" aria-label="Shadow Core Navigation">
 
-    <!-- Brand header at top of sidebar -->
-    <div class="sc-orb" id="scOrbBtn" aria-label="Shadow Nexus Social">
-        <div class="sc-orb-icon">🌑</div>
-        <div class="sc-orb-text">
+    <!-- Brand header at top of sidebar — Official SNS Logo -->
+    <div class="sc-orb sns-logo-wrap" id="scOrbBtn" aria-label="Shadow Nexus Social">
+        <!-- Official SNS logo — CSS hides the old elements -->
+        <img src="sns-logo.png"
+             alt="Shadow Nexus Social"
+             class="sns-logo-img"
+             draggable="false">
+        <!-- Kept for JS/CSS compat — hidden by realm.css -->
+        <div class="sc-orb-icon" aria-hidden="true">🌑</div>
+        <div class="sc-orb-text" aria-hidden="true">
             <span class="sc-orb-name">Shadow Nexus Social</span>
-            <span class="sc-orb-sub">Stay Legendary 🌑</span>
+            <span class="sc-orb-sub">Stay Legendary</span>
         </div>
     </div>
 
@@ -6695,120 +6769,6 @@ body.arcade-fs-ios body::after { display:none !important; }
     </div>
 </nav>
 
-<!-- ████ NEXUS CORE — Mobile Floating Button ████ -->
-<button id="nexusCoreBtn" aria-label="Open Nexus Core Navigation">🌑</button>
-
-<!-- ████ NEXUS CORE MENU — Full-screen bottom sheet nav (mobile) ████ -->
-<div id="nexusCoreMenu" role="navigation" aria-label="Nexus Core Menu">
-    <div class="ncm-inner">
-
-        <!-- ── MAIN ── -->
-        <span class="ncm-section-label">Main</span>
-
-        <div class="ncm-item" id="ncmFeed" onclick="mobileNavTo('feed')">
-            <div class="ncm-icon-wrap">✦</div>
-            <div class="ncm-label">Eclipse Feed</div>
-        </div>
-        <div class="ncm-item" id="ncmSearch" onclick="mobileNavTo('searchPage')">
-            <div class="ncm-icon-wrap">🔍</div>
-            <div class="ncm-label">Search Realm</div>
-        </div>
-        <div class="ncm-item" id="ncmInbox" onclick="mobileNavTo('inboxPage')">
-            <div class="ncm-icon-wrap">💬</div>
-            <div class="ncm-label">Inbox</div>
-            <span class="ncm-badge" id="ncmInboxBadge"></span>
-        </div>
-        <div class="ncm-item" id="ncmNotifs" onclick="mobileNavTo('notificationsPage')">
-            <div class="ncm-icon-wrap">🔔</div>
-            <div class="ncm-label">Notifications</div>
-            <span class="ncm-badge" id="ncmNotifBadge"></span>
-        </div>
-        <div class="ncm-item" id="ncmProfile" onclick="mobileNavTo('_profile')">
-            <div class="ncm-icon-wrap">👤</div>
-            <div class="ncm-label">My Profile</div>
-        </div>
-        <div class="ncm-divider"></div>
-
-        <!-- ── COMMUNITY ── -->
-        <span class="ncm-section-label">Community</span>
-
-        <div class="ncm-item" id="ncmCommunity" onclick="mobileNavTo('communityPage')">
-            <div class="ncm-icon-wrap">💙</div>
-            <div class="ncm-label">Community Hub</div>
-        </div>
-        <div class="ncm-item" id="ncmRules" onclick="mobileNavTo('communityRulesPage')">
-            <div class="ncm-icon-wrap">📜</div>
-            <div class="ncm-label">Community Rules</div>
-        </div>
-        <div class="ncm-item" id="ncmStorm" onclick="mobileNavTo('stormRoomsPage')">
-            <div class="ncm-icon-wrap">⚡</div>
-            <div class="ncm-label">Storm Rooms</div>
-        </div>
-        <div class="ncm-item" id="ncmSupport" onclick="mobileNavTo('supportRoomsPage')">
-            <div class="ncm-icon-wrap">🫂</div>
-            <div class="ncm-label">Support Rooms</div>
-        </div>
-
-        <div class="ncm-divider"></div>
-
-        <!-- ── CREATOR / LIVE ── -->
-        <span class="ncm-section-label">Creator</span>
-
-        <div class="ncm-item ncm-item-live" id="ncmLiveHub" onclick="mobileNavTo('liveHubPage')" style="display:none;">
-            <div class="ncm-icon-wrap">🔴</div>
-            <div class="ncm-label">Live Hub</div>
-        </div>
-        <div class="ncm-item ncm-item-live" id="ncmGoLive" onclick="mobileNavTo('_golive')" style="display:none;">
-            <div class="ncm-icon-wrap">📡</div>
-            <div class="ncm-label">Go Live</div>
-        </div>
-        <div class="ncm-item" id="ncmNexus" onclick="realmNavTo('nexusPage');mobileNavTo('_close')" style="color:#c5a41d;">
-            <div class="ncm-icon-wrap">𓂀</div>
-            <div class="ncm-label">24-Hour Nexus</div>
-        </div>
-        <div class="ncm-item" id="ncmArcade" onclick="mobileNavTo('_arcade')">
-            <div class="ncm-icon-wrap">🕹️</div>
-            <div class="ncm-label">Arcade</div>
-        </div>
-
-        <div class="ncm-divider"></div>
-
-        <!-- ── SETTINGS / TOOLS ── -->
-        <span class="ncm-section-label">Settings &amp; Tools</span>
-
-        <div class="ncm-item" id="ncmSettings" onclick="mobileNavTo('settingsPage')">
-            <div class="ncm-icon-wrap">⚙️</div>
-            <div class="ncm-label">Settings</div>
-        </div>
-
-        <!-- Role panels — visibility toggled by JS (mirrors sidebar) -->
-        <div class="ncm-item" id="ncmMod" onclick="mobileNavTo('moderatorPage')" style="display:none;color:#cc88ff;">
-            <div class="ncm-icon-wrap">🛡️</div>
-            <div class="ncm-label">Moderator Panel</div>
-        </div>
-        <div class="ncm-item" id="ncmAdm" onclick="mobileNavTo('administratorPage')" style="display:none;color:#66ccff;">
-            <div class="ncm-icon-wrap">⚙️</div>
-            <div class="ncm-label">Admin Panel</div>
-        </div>
-        <div class="ncm-item" id="ncmFounder" onclick="mobileNavTo('adminPage')" style="display:none;color:#00ffee;">
-            <div class="ncm-icon-wrap">🛸</div>
-            <div class="ncm-label">Founder Control</div>
-        </div>
-
-        <div class="ncm-divider"></div>
-
-        <!-- ── EXIT ── -->
-        <div class="ncm-item ncm-item-danger" onclick="handleLogout()">
-            <div class="ncm-icon-wrap" style="border-color:rgba(255,60,80,0.3);">🚪</div>
-            <div class="ncm-label">Log Out</div>
-        </div>
-        <div class="ncm-item ncm-item-danger" onclick="mobileNavTo('_close')">
-            <div class="ncm-icon-wrap" style="border-color:rgba(255,60,80,0.2);">✕</div>
-            <div class="ncm-label">Close Menu</div>
-        </div>
-
-    </div>
-</div>
 
 <!-- Hamburger button (hidden — kept for JS compat) -->
 <button class="menuBtn" id="menuButton" aria-label="Open navigation" aria-expanded="false" style="display:none!important;">☰
@@ -6831,10 +6791,16 @@ body.arcade-fs-ios body::after { display:none !important; }
      ═══════════════════════════════════════════════════════════ -->
 <nav class="sidebar" id="side" aria-label="Main navigation">
 
-    <!-- Brand -->
+    <!-- Brand — Official SNS Logo -->
     <div class="sidebar-brand">
-        <div class="sidebar-brand-icon">🌑</div>
-        <div>
+        <!-- Official SNS logo — transparent PNG, no box behind it -->
+        <img src="sns-logo.png"
+             alt="Shadow Nexus Social"
+             class="sns-logo-img"
+             draggable="false">
+        <!-- Kept for JS/CSS compat — hidden by realm.css -->
+        <div class="sidebar-brand-icon" aria-hidden="true">🌑</div>
+        <div aria-hidden="true">
             <div class="sidebar-brand-name">Shadow Nexus Social</div>
             <span class="sidebar-brand-sub">Stay Legendary 🌑🔥</span>
         </div>
@@ -6921,12 +6887,16 @@ body.arcade-fs-ios body::after { display:none !important; }
 </nav>
 
 <div class="page" id="login">
-    <div class="section-card" style="text-align:center; max-width:400px; margin:0 auto;">
+    <div class="section-card" style="text-align:center; max-width:440px; margin:0 auto;">
 
-        <!-- Logo mark -->
-        <div style="margin:0 auto 18px; width:76px; height:76px; border-radius:50%; background:radial-gradient(circle at 38% 35%, #003d99 0%, #071428 100%); border:2.5px solid rgba(0,174,239,0.72); display:flex; align-items:center; justify-content:center; font-size:36px; box-shadow:0 0 36px rgba(0,174,239,0.58), 0 0 0 1px rgba(0,174,239,0.14); animation:blueFlame 3s infinite;">🌑</div>
+        <!-- Official SNS Logo — transparent PNG, no box behind it -->
+        <div id="loginLogoWrap" class="sns-logo-wrap">
+            <img src="sns-logo.png"
+                 alt="Shadow Nexus Social"
+                 class="sns-logo-img"
+                 draggable="false">
+        </div>
 
-        <h2 class="eclipse-title" style="font-size:24px; margin-bottom:6px; letter-spacing:2px;">SHADOW NEXUS SOCIAL</h2>
         <p style="color:#7aaac8; font-size:12px; margin:0 0 22px; line-height:1.5;">Where we can come and connect in the safe space,<br>no judgment. Stay legendary. 🌑🔥</p>
 
         <!-- Auth loading overlay — shown while Firebase resolves sign-in -->
@@ -6971,6 +6941,16 @@ body.arcade-fs-ios body::after { display:none !important; }
 </div>
 
 <div class="page" id="feed">
+
+    <!-- ── SNS Logo Header — desktop only (hidden on mobile by realm.css) ── -->
+    <div id="snxFeedLogoHeader" class="sns-logo-wrap" aria-hidden="true">
+        <img src="sns-logo.png"
+             alt="Shadow Nexus Social"
+             class="sns-logo-img"
+             draggable="false">
+    </div>
+
+    <!-- ── NEXUS STREAM header ── -->
     <h2 class="eclipse-title"><!-- ⚡ bolt is a Grim AI launcher -->
         <button id="bolt-grim-launcher"
                 onclick="toggleGrimPanel()"
@@ -6978,7 +6958,17 @@ body.arcade-fs-ios body::after { display:none !important; }
                 title="Open Grim AI Assistant">
             <span class="bolt-icon" aria-hidden="true">⚡</span>
             <span class="bolt-label">Click Here</span>
-        </button> Eclipse Feed</h2>
+        </button> Nexus Stream</h2>
+
+    <!-- ══════════════════════════════════════════════════════
+         NEXUS REALM TWO-ZONE LAYOUT
+         Left: Nexus Stream (content)  |  Right: Nexus Pulse
+         On screens <1280px: stream col collapses to full width
+         and Nexus Pulse is hidden.
+         ════════════════════════════════════════════════════ -->
+
+    <!-- ── NEXUS STREAM column ── -->
+    <div class="nexus-stream-col">
 
     <!-- ── Announcements Banner (published announcements shown to users) ── -->
     <div id="snxAnnDisplay" style="margin-bottom:4px;"></div>
@@ -7014,9 +7004,9 @@ body.arcade-fs-ios body::after { display:none !important; }
         </div>
     </div>
 
-    <!-- Post composer -->
+    <!-- ── Nexus Composer — floating creator input ── -->
     <div class="section-card">
-        <h3 style="margin:0 0 12px; font-size:14px; color:#00AEEF; text-shadow:0 0 8px rgba(0,174,239,0.35);">What's on your mind?</h3>
+        <h3 style="margin:0 0 12px; font-size:14px; color:#00AEEF; text-shadow:0 0 8px rgba(0,174,239,0.35);">What's on your mind, Legend?</h3>
         <div class="post-composer-wrap">
         <textarea id="postText" placeholder="Share something with the Nexus… No judgment here 🌑" maxlength="500"></textarea>
         <div class="mention-dropdown" id="mentionDropdown" style="display:none;"></div>
@@ -7076,7 +7066,106 @@ body.arcade-fs-ios body::after { display:none !important; }
 
     <div id="feedPosts"></div>
     <div id="infiniteLoadTrigger" style="text-align:center;padding:20px;color:#334;font-size:12px;"></div>
-</div>
+
+    </div><!-- end .nexus-stream-col -->
+
+    <!-- ══════════════════════════════════════════════════════
+         NEXUS PULSE — ambient activity panel
+         Visible only on wide desktop (≥1280px). Hidden on mobile/tablet.
+         Contains: Now Playing · Online Presence · Quick Portals
+         Data: only real data from existing systems. Empty = hidden item.
+         ════════════════════════════════════════════════════ -->
+    <aside id="nexusPulsePanel" aria-label="Nexus Pulse — ambient activity">
+
+        <!-- ── Now Playing ── -->
+        <div class="nx-pulse-card" id="nxPulseNowPlaying">
+            <div class="nx-pulse-title">
+                <span class="nx-pulse-dot"></span>
+                Now Playing
+            </div>
+            <div class="nx-now-playing-wrap" id="nxNowPlayingWrap">
+                <div class="nx-now-playing-art" id="nxNowPlayingArt">🎵</div>
+                <div class="nx-now-playing-info">
+                    <div class="nx-now-playing-track" id="nxNowPlayingTrack">—</div>
+                    <div class="nx-now-playing-artist" id="nxNowPlayingArtist">Open Studio to play</div>
+                </div>
+                <div class="nx-now-playing-state paused" id="nxNowPlayingState"></div>
+            </div>
+        </div>
+
+        <!-- ── Online Presence ── -->
+        <div class="nx-pulse-card" id="nxPulsePresence">
+            <div class="nx-pulse-title">
+                <span class="nx-pulse-dot"></span>
+                In the Realm
+            </div>
+            <div class="nx-presence-nodes" id="nxPresenceNodes">
+                <div class="nx-presence-empty">Loading…</div>
+            </div>
+        </div>
+
+        <!-- ── Quick Portal Grid ── -->
+        <div class="nx-pulse-card">
+            <div class="nx-pulse-title">
+                <span class="nx-pulse-dot" style="background:rgba(0,174,239,0.7);box-shadow:0 0 5px rgba(0,174,239,0.5);"></span>
+                Quick Portals
+            </div>
+            <div class="nx-portal-grid">
+                <button class="nx-portal-btn" onclick="realmNavTo('studioPage')" aria-label="Music Hub">
+                    <span class="nx-portal-btn-icon">🎵</span>
+                    Music
+                </button>
+                <button class="nx-portal-btn live-portal" onclick="realmNavTo('liveHubPage')" aria-label="Live Hub">
+                    <span class="nx-portal-btn-icon">🔴</span>
+                    Live
+                </button>
+                <button class="nx-portal-btn" onclick="realmNavTo('inboxPage')" aria-label="Messages">
+                    <span class="nx-portal-btn-icon">💬</span>
+                    Messages
+                </button>
+                <button class="nx-portal-btn" onclick="realmNavTo('stormRoomsPage')" aria-label="Storm Rooms">
+                    <span class="nx-portal-btn-icon">⛈</span>
+                    Storm
+                </button>
+                <button class="nx-portal-btn" onclick="realmNavTo('nexusPage')" aria-label="24-Hour Nexus" style="border-color:rgba(197,164,29,0.35);color:rgba(197,164,29,0.8);">
+                    <span class="nx-portal-btn-icon">𓂀</span>
+                    24H Nexus
+                </button>
+                <button class="nx-portal-btn" onclick="realmNavTo('searchPage')" aria-label="Search">
+                    <span class="nx-portal-btn-icon">🔍</span>
+                    Search
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Shadow Activity ── -->
+        <div class="nx-pulse-card" id="nxPulseActivity">
+            <div class="nx-pulse-title">
+                <span class="nx-pulse-dot" style="background:rgba(0,174,239,0.6);box-shadow:0 0 5px rgba(0,174,239,0.5);"></span>
+                Shadow Activity
+            </div>
+            <div class="nx-activity-bar" id="nxActivityBar">
+                <div class="nx-activity-item">
+                    <span class="nx-activity-icon">✦</span>
+                    <span class="nx-activity-label">Stream posts</span>
+                    <span class="nx-activity-val" id="nxActivityPosts">—</span>
+                </div>
+                <div class="nx-activity-item">
+                    <span class="nx-activity-icon">👥</span>
+                    <span class="nx-activity-label">Active now</span>
+                    <span class="nx-activity-val" id="nxActivityOnline">—</span>
+                </div>
+                <div class="nx-activity-item">
+                    <span class="nx-activity-icon">🔴</span>
+                    <span class="nx-activity-label">Live streams</span>
+                    <span class="nx-activity-val" id="nxActivityLive">—</span>
+                </div>
+            </div>
+        </div>
+
+    </aside><!-- end #nexusPulsePanel -->
+
+</div><!-- end #feed -->
 
 <div class="page" id="profile">
 
@@ -11055,9 +11144,6 @@ body.arcade-fs-ios body::after { display:none !important; }
        <div class="csr-subtitle">Music Library · Playlists · Queue</div>
      </div>
    </div>
-   <a href="javascript:void(0)" onclick="realmNavTo('nexusPage')" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(197,164,29,0.12);border:1px solid rgba(197,164,29,0.30);color:#c5a41d;font-size:11px;font-weight:700;text-decoration:none;letter-spacing:0.8px;white-space:nowrap;">
-     𓂀 24-Hour Nexus
-   </a>
  </header>
 
   <!-- ── Studio bottom tab bar ── -->
@@ -14059,14 +14145,20 @@ body.arcade-fs-ios body::after { display:none !important; }
           }
       }
   });
-  // Hide the pill when the user scrolls back to the top manually
+  // Hide the pill when the user scrolls back to the top manually.
+  // RAF-throttled: only checks once per animation frame, not on every scroll tick.
+  let _pillScrollRaf = null;
   window.addEventListener('scroll', function _snxPillScrollWatcher() {
-      if ((window.scrollY || document.documentElement.scrollTop) < 150) {
-          const pill = document.getElementById('snxNewPostPill');
-          if (pill && pill.classList.contains('visible')) {
-              _snxHideNewPostPill();
+      if (_pillScrollRaf) return;
+      _pillScrollRaf = requestAnimationFrame(function() {
+          _pillScrollRaf = null;
+          if ((window.scrollY || document.documentElement.scrollTop) < 150) {
+              const pill = document.getElementById('snxNewPostPill');
+              if (pill && pill.classList.contains('visible')) {
+                  _snxHideNewPostPill();
+              }
           }
-      }
+      });
   }, { passive: true });
 
   // XSS escape for feed content — also exposed globally for non-module scripts
@@ -20273,9 +20365,9 @@ body.arcade-fs-ios body::after { display:none !important; }
       const liveOn    = window._snxLiveEnabled    === true;
       const liveHubOn = window._snxLiveHubEnabled === true;
 
-      // Every nav area — sidebar, shadow core, mobile NCM
-      const liveIds    = ['navLive',    'scNavGoLive', 'ncmGoLive',  'liveSidebarButton'];
-      const liveHubIds = ['navLiveHub', 'scNavLive',   'ncmLiveHub', 'liveHubSidebarButton'];
+      // Every nav area — sidebar, shadow core
+      const liveIds    = ['navLive',    'scNavGoLive', 'liveSidebarButton'];
+      const liveHubIds = ['navLiveHub', 'scNavLive',   'liveHubSidebarButton'];
 
       liveIds.forEach(function(id) {
           const el = document.getElementById(id);
@@ -21448,9 +21540,9 @@ async function snxLoadProfileWall(uid) {
                         return `<div class="post-music-card" style="min-width:100%;"><div class="post-music-icon">🎵</div><div class="post-music-info"><div class="post-music-title">${_fn}</div><audio class="post-music-audio" src="${_esc(mu)}" controls preload="metadata" onerror="console.error('[SNX Wall Audio] Failed:','${_esc(mu)}',this.error)"></audio><div class="post-music-actions"><a class="post-music-dl" href="${_esc(mu)}" download="${_fn}" title="Download audio">⬇ Download</a></div></div></div>`;
                     }
                     if (_kind === 'video') {
-                        return `<video src="${_esc(mu)}" controls playsinline style="max-height:220px;border-radius:10px;flex-shrink:0;scroll-snap-align:start;"></video>`;
+                        return `<video src="${_esc(mu)}" controls playsinline preload="metadata" style="max-height:220px;border-radius:10px;flex-shrink:0;scroll-snap-align:start;"></video>`;
                     }
-                    return `<img src="${_esc(mu)}" alt="media" onclick="openMediaViewer('image','${_esc(mu)}')" style="max-height:220px;cursor:pointer;">`;
+                    return `<img src="${_esc(mu)}" alt="media" loading="lazy" decoding="async" onclick="openMediaViewer('image','${_esc(mu)}')" style="max-height:220px;cursor:pointer;">`;
                 }).join('');
                 const _allAudio = w.mediaUrls.every(u => _wallMediaKind(u, '') === 'audio');
                 mediaHTML = _allAudio
@@ -21465,7 +21557,7 @@ async function snxLoadProfileWall(uid) {
                 } else if (_kind === 'video') {
                     mediaHTML = `<div class="post-video-card"><video class="post-media-video" src="${_esc(mu)}" controls playsinline preload="metadata"></video></div>`;
                 } else {
-                    mediaHTML = `<img class="post-media-preview" src="${_esc(mu)}" alt="photo" onclick="openMediaViewer('image','${_esc(mu)}')" style="margin-top:8px;cursor:pointer;">`;
+                    mediaHTML = `<img class="post-media-preview" src="${_esc(mu)}" alt="photo" loading="lazy" decoding="async" onclick="openMediaViewer('image','${_esc(mu)}')" style="margin-top:8px;cursor:pointer;">`;
                 }
             }
 
@@ -22467,6 +22559,11 @@ window.addEventListener("keydown", (e) => {
     const _isMobile = window.innerWidth < 768 || (navigator.hardwareConcurrency || 4) <= 2;
     const _isLowEnd = (navigator.hardwareConcurrency || 4) <= 2;
 
+    /* Cap devicePixelRatio at 2 to prevent huge canvases on high-DPI phones.
+       A 3x canvas on a modern phone is 3× the memory and draw cost with
+       barely any visible improvement at typical viewing distances. */
+    const _dpr = Math.min(window.devicePixelRatio || 1, 2);
+
     /* Mobile stable height — prevents canvas jump when address bar hides */
     let _stableH = window.innerHeight;
     let _stableW = window.innerWidth;
@@ -22476,22 +22573,38 @@ window.addEventListener("keydown", (e) => {
        ───────────────────────────────────────────────────────────── */
     let _resizeTimer = null;
     let _lastW = 0, _lastH = 0;
-    function _scheduleResize() {
+    function _scheduleResize(delay) {
         clearTimeout(_resizeTimer);
-        _resizeTimer = setTimeout(_doResize, 250);
+        _resizeTimer = setTimeout(_doResize, delay || 350);
     }
     function _doResize() {
         const newW = window.innerWidth;
         const newH = window.innerHeight;
-        /* Ignore height-only changes smaller than 80px (mobile address bar) */
-        if (newW === _lastW && Math.abs(newH - _lastH) < 80) return;
+        /* Ignore height-only changes smaller than 120px (mobile address bar
+           typically moves ~56–80px; we use 120px as a safe threshold so
+           keyboard-open events on large phones are also ignored). */
+        if (newW === _lastW && Math.abs(newH - _lastH) < 120) return;
         _lastW = newW; _lastH = newH;
         _stableW = newW; _stableH = newH;
-        canvas.width  = newW;
-        canvas.height = newH;
+        /* Scale canvas for pixel density — capped at 2x DPR */
+        canvas.width  = newW * _dpr;
+        canvas.height = newH * _dpr;
+        if (_dpr !== 1) {
+            ctx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
+        }
         _seedAll(newW, newH);
     }
     window.addEventListener("resize", _scheduleResize, { passive: true });
+    /* orientationchange fires before the window has finished resizing;
+       wait 600 ms to let the browser settle before we measure dimensions. */
+    window.addEventListener("orientationchange", function() {
+        clearTimeout(_resizeTimer);
+        _resizeTimer = setTimeout(function() {
+            /* Force a real resize on orientation change regardless of threshold */
+            _lastW = 0; _lastH = 0;
+            _doResize();
+        }, 600);
+    }, { passive: true });
 
     /* ─────────────────────────────────────────────────────────────
        PUBLIC API
@@ -22603,9 +22716,12 @@ window.addEventListener("keydown", (e) => {
         _seedArcs(w, h);
     }
 
-    /* Initial setup */
-    canvas.width  = _stableW;
-    canvas.height = _stableH;
+    /* Initial setup — scale for device pixel ratio (capped at 2×) */
+    canvas.width  = _stableW * _dpr;
+    canvas.height = _stableH * _dpr;
+    if (_dpr !== 1) {
+        ctx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
+    }
     _lastW = _stableW; _lastH = _stableH;
     _seedAll(_stableW, _stableH);
 
@@ -24662,9 +24778,18 @@ let _rainDrops = [];
 function _stormStartCanvas() {
     const cv = document.getElementById('storm-canvas');
     if (!cv) return;
-    cv.width  = window.innerWidth;
-    cv.height = window.innerHeight;
+    /* Guard: don't re-register resize listener if already running */
+    if (_stormCanvasRAF) return;
+    /* Cap DPR at 2 to avoid huge canvases on high-DPI phones */
+    const stormDpr = Math.min(window.devicePixelRatio || 1, 2);
+    const stormW = window.innerWidth;
+    const stormH = window.innerHeight;
+    cv.width  = stormW * stormDpr;
+    cv.height = stormH * stormDpr;
+    cv.style.width  = stormW + 'px';
+    cv.style.height = stormH + 'px';
     const ctx = cv.getContext('2d');
+    if (stormDpr !== 1) ctx.setTransform(stormDpr, 0, 0, stormDpr, 0, 0);
 
     // Init rain drops
     _rainDrops = Array.from({length: 140}, () => ({
@@ -24726,13 +24851,31 @@ function _stormStartCanvas() {
     }
     _drawFrame();
 
-    // Resize handler
-    window.addEventListener('resize', _stormResizeCanvas);
+    // Resize handler — debounced with height-threshold to prevent
+    // address-bar show/hide from triggering a canvas reset on mobile.
+    window.addEventListener('resize', _stormResizeCanvas, { passive: true });
 }
 
+let _stormResizeTimer = null;
+let _stormLastW = 0, _stormLastH = 0;
 function _stormResizeCanvas() {
-    const cv = document.getElementById('storm-canvas');
-    if (cv) { cv.width = window.innerWidth; cv.height = window.innerHeight; }
+    clearTimeout(_stormResizeTimer);
+    _stormResizeTimer = setTimeout(function() {
+        const newW = window.innerWidth;
+        const newH = window.innerHeight;
+        /* Match main canvas threshold (120px) to ignore address-bar show/hide */
+        if (newW === _stormLastW && Math.abs(newH - _stormLastH) < 120) return;
+        _stormLastW = newW; _stormLastH = newH;
+        const cv = document.getElementById('storm-canvas');
+        if (!cv) return;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        cv.width  = newW * dpr;
+        cv.height = newH * dpr;
+        cv.style.width  = newW + 'px';
+        cv.style.height = newH + 'px';
+        const ctx2 = cv.getContext('2d');
+        if (dpr !== 1) ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }, 300);
 }
 
 function _stormStopCanvas() {
@@ -25064,10 +25207,17 @@ let _supportCanvasRAF = null;
 function _supportStartCanvas() {
     const cv = document.getElementById('support-canvas');
     if (!cv) return;
-    if (_supportCanvasRAF) return; // already running
-    cv.width  = window.innerWidth;
-    cv.height = window.innerHeight;
+    if (_supportCanvasRAF) return; // already running — guard against duplicate start
+    /* Cap DPR at 2 to avoid huge canvases on high-DPI phones */
+    const suppDpr = Math.min(window.devicePixelRatio || 1, 2);
+    const suppW = window.innerWidth;
+    const suppH = window.innerHeight;
+    cv.width  = suppW * suppDpr;
+    cv.height = suppH * suppDpr;
+    cv.style.width  = suppW + 'px';
+    cv.style.height = suppH + 'px';
     const ctx = cv.getContext('2d');
+    if (suppDpr !== 1) ctx.setTransform(suppDpr, 0, 0, suppDpr, 0, 0);
 
     const orbs = Array.from({ length: 18 }, () => ({
         x: Math.random() * cv.width,
@@ -25103,12 +25253,29 @@ function _supportStartCanvas() {
         _supportCanvasRAF = requestAnimationFrame(_drawFrame);
     }
     _drawFrame();
-    window.addEventListener('resize', _supportResizeCanvas);
+    window.addEventListener('resize', _supportResizeCanvas, { passive: true });
 }
 
+let _supportResizeTimer = null;
+let _supportLastW = 0, _supportLastH = 0;
 function _supportResizeCanvas() {
-    const cv = document.getElementById('support-canvas');
-    if (cv) { cv.width = window.innerWidth; cv.height = window.innerHeight; }
+    clearTimeout(_supportResizeTimer);
+    _supportResizeTimer = setTimeout(function() {
+        const newW = window.innerWidth;
+        const newH = window.innerHeight;
+        /* Match main canvas threshold (120px) to ignore address-bar show/hide */
+        if (newW === _supportLastW && Math.abs(newH - _supportLastH) < 120) return;
+        _supportLastW = newW; _supportLastH = newH;
+        const cv = document.getElementById('support-canvas');
+        if (!cv) return;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        cv.width  = newW * dpr;
+        cv.height = newH * dpr;
+        cv.style.width  = newW + 'px';
+        cv.style.height = newH + 'px';
+        const ctx2 = cv.getContext('2d');
+        if (dpr !== 1) ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }, 300);
 }
 
 function _supportStopCanvas() {
@@ -30157,7 +30324,6 @@ window.switchAdminTab = function(tab) {
         transform: translateX(-50%);
     }
     #grim-panel-header { position: relative; padding-top: 20px; }
-    /* make FAB sit above the bottom nav if one is present */
 }
 
 /* Resize handle (desktop right edge) */
@@ -31196,19 +31362,50 @@ document.getElementById('gp-messages')?.addEventListener('touchmove', (e) => {
     var W, H;
     var _rafId = null;
     var _paused = false;
+    /* Cap DPR at 2 — prevents huge canvas allocations on 3× phones */
+    var _starsDpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    /* Debounced resize — prevents canvas pop on orientation change */
-    var _resizeTimer = null;
+    /* Debounced resize — prevents canvas pop on mobile address-bar transitions.
+       Use 120px threshold (matching the eclipse engine) to ignore address-bar
+       show/hide events on mobile. */
+    var _resizeTimer  = null;
+    var _lastStarsW   = 0;
+    var _lastStarsH   = 0;
+    function _applySize(newW, newH) {
+        W = newW; H = newH;
+        canvas.width  = newW * _starsDpr;
+        canvas.height = newH * _starsDpr;
+        canvas.style.width  = newW + 'px';
+        canvas.style.height = newH + 'px';
+        if (_starsDpr !== 1) ctx.setTransform(_starsDpr, 0, 0, _starsDpr, 0, 0);
+    }
     function resize() {
         clearTimeout(_resizeTimer);
         _resizeTimer = setTimeout(function() {
-            W = canvas.width  = window.innerWidth;
-            H = canvas.height = window.innerHeight;
-        }, 120);
+            var newW = window.innerWidth;
+            var newH = window.innerHeight;
+            /* Skip if only the height changed by a small amount — that is
+               the mobile address bar appearing or disappearing, not a real
+               orientation or window size change. */
+            if (newW === _lastStarsW && Math.abs(newH - _lastStarsH) < 120) return;
+            _lastStarsW = newW;
+            _lastStarsH = newH;
+            _applySize(newW, newH);
+        }, 300);
     }
-    W = canvas.width  = window.innerWidth;
-    H = canvas.height = window.innerHeight;
+    _applySize(window.innerWidth, window.innerHeight);
+    _lastStarsW = window.innerWidth; _lastStarsH = window.innerHeight;
     window.addEventListener('resize', resize, { passive: true });
+    /* On orientation change, force a resize after the browser settles (600ms) */
+    window.addEventListener('orientationchange', function() {
+        clearTimeout(_resizeTimer);
+        _resizeTimer = setTimeout(function() {
+            var newW = window.innerWidth;
+            var newH = window.innerHeight;
+            _lastStarsW = newW; _lastStarsH = newH;
+            _applySize(newW, newH);
+        }, 600);
+    }, { passive: true });
 
     for (var i = 0; i < 200; i++) {
         stars.push({
@@ -31277,9 +31474,17 @@ document.getElementById('gp-messages')?.addEventListener('touchmove', (e) => {
     // Always mark as expanded on desktop
     if (isDesktop()) { core.classList.add('expanded'); }
 
+    // FIX: debounce the resize handler — on mobile the address bar appearing/
+    // disappearing fires resize many times per second. The original unbounced
+    // version called classList.add on every event, triggering layout recalc.
+    var _scResizeTimer = null;
     window.addEventListener('resize', function() {
-        if (isDesktop()) { core.classList.add('expanded'); }
-    });
+        if (_scResizeTimer) return;
+        _scResizeTimer = setTimeout(function() {
+            _scResizeTimer = null;
+            if (isDesktop()) { core.classList.add('expanded'); }
+        }, 200);
+    }, { passive: true });
 
     // Orb click: no-op on desktop
     orb.addEventListener('click', function() {
@@ -31338,28 +31543,25 @@ function updateShadowCoreActive(pageId) {
     document.querySelectorAll('.sc-item').forEach(function(el) {
         el.classList.remove('active-nav');
     });
-    document.querySelectorAll('.ncm-item').forEach(function(el) {
-        el.classList.remove('active-nav');
-    });
 
     var map = {
-        'feed':              ['navFeed', 'scNavFeed', 'ncmFeed'],
-        'searchPage':        ['navSearch', 'scNavSearch', 'ncmSearch'],
-        'inboxPage':         ['navInbox', 'scNavInbox', 'ncmInbox'],
-        'notificationsPage': ['navNotifs', 'scNavNotifs', 'ncmNotifs'],
-        'profile':           ['navProfile', 'scNavProfile', 'ncmProfile'],
-        'settingsPage':      ['navSettings', 'scNavSettings', 'ncmSettings'],
-        'communityPage':     ['navCommunity', 'scNavCommunity', 'ncmCommunity'],
-        'communityRulesPage':['navCommunityRules', 'scNavCommunityRules', 'ncmRules'],
-        'friendsPage':       ['navFriends', 'scNavFriends', 'ncmFriends'],
-        'stormRoomsPage':    ['navStorm', 'scNavStorm', 'ncmStorm'],
-        'supportRoomsPage':  ['navSupport', 'scNavSupport', 'ncmSupport'],
-        'liveHubPage':       ['navLiveHub', 'scNavLive', 'ncmLiveHub'],
-        'moderatorPage':     ['navMod', 'scNavMod', 'ncmMod'],
-        'administratorPage': ['navAdminOfficer', 'scNavAdm', 'ncmAdm'],
-        'adminPage':         ['navAdmin', 'scNavFounder', 'ncmFounder'],
-        'studioPage':        ['navNexus', 'scNavNexus', 'ncmNexus'],
-        'nexusPage':         ['navNexus', 'scNavNexus', 'ncmNexus']
+        'feed':              ['navFeed', 'scNavFeed'],
+        'searchPage':        ['navSearch', 'scNavSearch'],
+        'inboxPage':         ['navInbox', 'scNavInbox'],
+        'notificationsPage': ['navNotifs', 'scNavNotifs'],
+        'profile':           ['navProfile', 'scNavProfile'],
+        'settingsPage':      ['navSettings', 'scNavSettings'],
+        'communityPage':     ['navCommunity', 'scNavCommunity'],
+        'communityRulesPage':['navCommunityRules', 'scNavCommunityRules'],
+        'friendsPage':       ['navFriends', 'scNavFriends'],
+        'stormRoomsPage':    ['navStorm', 'scNavStorm'],
+        'supportRoomsPage':  ['navSupport', 'scNavSupport'],
+        'liveHubPage':       ['navLiveHub', 'scNavLive'],
+        'moderatorPage':     ['navMod', 'scNavMod'],
+        'administratorPage': ['navAdminOfficer', 'scNavAdm'],
+        'adminPage':         ['navAdmin', 'scNavFounder'],
+        'studioPage':        ['navNexus', 'scNavNexus'],
+        'nexusPage':         ['navNexus', 'scNavNexus']
     };
 
     var ids = map[pageId] || [];
@@ -31434,26 +31636,7 @@ window.openMobileDrawer = openMobileDrawer;
     }
 })();
 
-/* ── Legacy radial menu (hidden on mobile, kept for compat) ── */
-(function initMobileNav() {
-    var btn  = document.getElementById('nexusCoreBtn');
-    var menu = document.getElementById('nexusCoreMenu');
-    if (!btn || !menu) return;
-    btn.addEventListener('click', function() {
-        if (menu.classList.contains('open')) {
-            menu.classList.remove('open');
-        } else {
-            menu.classList.add('open');
-        }
-    });
-    menu.addEventListener('click', function(e) {
-        if (e.target === menu) menu.classList.remove('open');
-    });
-})();
-
 window.mobileNavTo = function(pageId) {
-    var menu = document.getElementById('nexusCoreMenu');
-    if (menu) menu.classList.remove('open');
     closeMobileDrawer();
 
     if (pageId === '_close') return;
@@ -31498,9 +31681,6 @@ window.mobileNavTo = function(pageId) {
     }
     mirrorBadge('sidebarNotifBadge', 'scNotifBadge');
     mirrorBadge('sidebarInboxBadge', 'scInboxBadge');
-    // Also mirror to the expanded NCM badges
-    mirrorBadge('sidebarNotifBadge', 'ncmNotifBadge');
-    mirrorBadge('sidebarInboxBadge', 'ncmInboxBadge');
 })();
 
 /* ═══════════════════════════════════════════════════════
@@ -31508,19 +31688,17 @@ window.mobileNavTo = function(pageId) {
    ═══════════════════════════════════════════════════════ */
 (function syncRolePanels() {
     var pairs = [
-        ['navMod',          'scNavMod',    'ncmMod'],
-        ['navAdminOfficer', 'scNavAdm',    'ncmAdm'],
-        ['navAdmin',        'scNavFounder','ncmFounder']
+        ['navMod',          'scNavMod'],
+        ['navAdminOfficer', 'scNavAdm'],
+        ['navAdmin',        'scNavFounder']
     ];
     pairs.forEach(function(pair) {
-        var src   = document.getElementById(pair[0]);
-        var dest  = document.getElementById(pair[1]);
-        var dest2 = document.getElementById(pair[2]);
+        var src  = document.getElementById(pair[0]);
+        var dest = document.getElementById(pair[1]);
         if (!src) return;
         var obs = new MutationObserver(function() {
             var val = src.style.display === 'none' ? 'none' : '';
-            if (dest)  dest.style.display  = val;
-            if (dest2) dest2.style.display = val;
+            if (dest) dest.style.display = val;
         });
         obs.observe(src, { attributes: true });
     });
@@ -33586,8 +33764,18 @@ window.snxFounderPanelCleanup = (function() {
         }
     }
 
-    /* Check every 2 seconds — very low cost */
+    /* Check every 2 seconds — very low cost.
+       FIX: Pause interval when page is hidden to avoid wasting CPU
+       while the app is backgrounded. Resume when page becomes visible. */
     _watchInterval = setInterval(_checkMusic, 2000);
+
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            if (_watchInterval) { clearInterval(_watchInterval); _watchInterval = null; }
+        } else {
+            if (!_watchInterval) _watchInterval = setInterval(_checkMusic, 2000);
+        }
+    });
 })();
 </script>
 
@@ -33609,5 +33797,151 @@ window.snxFounderPanelCleanup = (function() {
       // Kept as a named hook so future integrations can extend it.
   };
 </script>
+
+<!-- ████ NEXUS REALM NOW PLAYING BAR — persistent ambient music indicator ████
+     Shown only when studio.js is actively playing.
+     Bridged to the Studio player via window.SNXRealmNowPlaying API below. -->
+<div id="snxRealmNowPlayingBar" aria-label="Now Playing" role="region">
+    <div class="snxnp-art" id="snxnpArt">🎵</div>
+    <div class="snxnp-info">
+        <div class="snxnp-track" id="snxnpTrack">Nothing playing</div>
+        <div class="snxnp-artist" id="snxnpArtist">Open Studio to play music</div>
+    </div>
+    <div class="snxnp-eq" id="snxnpEq" aria-hidden="true">
+        <div class="snxnp-eq-bar"></div>
+        <div class="snxnp-eq-bar"></div>
+        <div class="snxnp-eq-bar"></div>
+        <div class="snxnp-eq-bar"></div>
+    </div>
+    <button class="snxnp-studio-link" onclick="realmNavTo('studioPage')" aria-label="Open Studio">
+        ▶ Studio
+    </button>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════
+   NEXUS REALM RUNTIME — pulse, now-playing
+   All wired to existing Firebase/JS systems.
+   No new backend calls. Only reads data already loaded.
+   ════════════════════════════════════════════════════════ */
+(function () {
+    'use strict';
+
+    /* ── 1. Nexus Pulse — populate presence nodes from existing online list ── */
+    function _refreshPulsePresence() {
+        var panel = document.getElementById('nxPresenceNodes');
+        if (!panel) return;
+
+        var users = window._snxOnlineUsers || [];
+        if (!users.length) {
+            panel.innerHTML = '<div class="nx-presence-empty">No one online right now</div>';
+            return;
+        }
+
+        var html = '';
+        users.slice(0, 12).forEach(function (u) {
+            var initials = (u.displayName || u.handle || '?').charAt(0).toUpperCase();
+            var avatarStyle = u.photoURL
+                ? 'background-image:url(\'' + u.photoURL.replace(/'/g, "\\'") + '\');background-size:cover;'
+                : '';
+            var isLive = !!u.isLive;
+            html +=
+                '<div class="nx-presence-node" onclick="viewProfile && viewProfile(\'' + (u.uid||'') + '\')" title="' + (u.displayName || u.handle || 'User') + '">' +
+                    '<div class="nx-presence-avatar" style="' + avatarStyle + '">' +
+                        (avatarStyle ? '' : initials) +
+                    '</div>' +
+                    '<div class="nx-presence-ring' + (isLive ? ' live' : '') + '"></div>' +
+                    '<div class="nx-presence-status-dot' + (isLive ? ' live' : '') + '"></div>' +
+                '</div>';
+        });
+        panel.innerHTML = html;
+    }
+
+    /* ── 2. Nexus Pulse — activity counters ── */
+    function _refreshPulseActivity() {
+        var feedPosts = document.getElementById('feedPosts');
+        var postCount = feedPosts ? feedPosts.children.length : 0;
+        var postEl = document.getElementById('nxActivityPosts');
+        if (postEl) postEl.textContent = postCount > 0 ? postCount + '+' : '—';
+
+        var users = window._snxOnlineUsers || [];
+        var onlineEl = document.getElementById('nxActivityOnline');
+        if (onlineEl) onlineEl.textContent = users.length > 0 ? users.length : '—';
+
+        var liveCards = document.getElementById('feedLiveCards');
+        var liveCount = liveCards ? liveCards.children.length : 0;
+        var liveEl = document.getElementById('nxActivityLive');
+        if (liveEl) liveEl.textContent = liveCount > 0 ? liveCount : '—';
+    }
+
+    /* ── 3. Now Playing bar — hook to studio.js playback events ── */
+    var _npBar = document.getElementById('snxRealmNowPlayingBar');
+
+    function _updateNowPlaying(track, artist, artUrl, isPlaying) {
+        if (!_npBar) return;
+        var trackEl  = document.getElementById('snxnpTrack');
+        var artistEl = document.getElementById('snxnpArtist');
+        var artEl    = document.getElementById('snxnpArt');
+        var pulseTrack  = document.getElementById('nxNowPlayingTrack');
+        var pulseArtist = document.getElementById('nxNowPlayingArtist');
+        var pulseState  = document.getElementById('nxNowPlayingState');
+        var pulseArt    = document.getElementById('nxNowPlayingArt');
+
+        if (track) {
+            if (trackEl) trackEl.textContent = track;
+            if (artistEl) artistEl.textContent = artist || '';
+            if (artEl) {
+                if (artUrl) {
+                    artEl.innerHTML = '<img src="' + artUrl + '" alt="artwork" onerror="this.parentElement.textContent=\'🎵\'">';
+                } else {
+                    artEl.textContent = '🎵';
+                }
+            }
+            if (pulseTrack) pulseTrack.textContent = track;
+            if (pulseArtist) pulseArtist.textContent = artist || '';
+            if (pulseArt) {
+                if (artUrl) {
+                    pulseArt.innerHTML = '<img src="' + artUrl + '" alt="artwork" onerror="this.parentElement.textContent=\'🎵\'">';
+                } else {
+                    pulseArt.textContent = '🎵';
+                }
+            }
+
+            _npBar.classList.add('visible');
+            _npBar.classList.toggle('paused', !isPlaying);
+            document.body.classList.add('snx-now-playing-active');
+
+            if (pulseState) {
+                pulseState.classList.toggle('paused', !isPlaying);
+            }
+        } else {
+            _npBar.classList.remove('visible');
+            document.body.classList.remove('snx-now-playing-active');
+        }
+    }
+
+    /* Public API — studio.js can call window.SNXRealmNowPlaying.update(...) */
+    window.SNXRealmNowPlaying = { update: _updateNowPlaying };
+
+    /* ── 4. Periodic refresh ── */
+    function _tick() {
+        _refreshPulsePresence();
+        _refreshPulseActivity();
+    }
+
+    /* ── 5. Boot sequence ── */
+    function _boot() {
+        setInterval(_tick, 5000);
+        setTimeout(_tick, 1000);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', _boot);
+    } else {
+        _boot();
+    }
+}());
+</script>
+
 </body>
 </html>

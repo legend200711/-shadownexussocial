@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-NEXUS-ROOMS-REMOVED",
-  "swVersion": "v66",
-  "deployedAt": "2025-07-23T00:00:00Z",
+  "buildId": "SNS-2026-FINAL-NEXUS-REALM-001",
+  "swVersion": "v69",
+  "deployedAt": "2025-09-25T08:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
-  "nexusVersion": "2.0.0",
-  "note": "SNS-2026-NEXUS-ROOMS-REMOVED: Nexus Rooms feature permanently removed. Deleted nexus-rooms.js, nexus-rooms.css. Removed nexus-rooms pages/modal/nav from index.html. Removed nexusRooms + roomInvites Firebase rules. Removed nexusRooms indexes from firestore.indexes.json. Removed rooms/ path from upload-worker.js. Service worker cache bumped to v66."
+  "nexusVersion": "3.1.0",
+  "note": "SNS-2026-FINAL-NEXUS-REALM-001: Final Nexus Realm Visual Update. New panoramic Nexus Realm artwork (Grim Reaper + castle + waterfalls + wolves + crows + cats). Transparent SNS Grim Reaper logo replaces emoji moon — login page, desktop nav brand, mobile drawer, auth gate. Portal energy ring nav accents. Post type left-border variants (text/photo/video/music/live). Readability overlay tuned for new vivid artwork. Background positioning updated to center panoramic scene. Version bump to v69."
 }

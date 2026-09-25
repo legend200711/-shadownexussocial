@@ -1383,14 +1383,12 @@ body.snx-studio-open .snx-studio-bottom-nav { display: flex; }
 .snx-upload-ctl-btn.danger:hover { background: rgba(255,51,85,0.18); }
 
 /* ── Track Library List ── */
-/* No max-height / overflow-y so the page scrolls naturally — avoids
-   the last few items being unreachable behind the fixed bottom nav.
+/* No max-height / overflow-y so the page scrolls naturally.
    The inline max-height:340px override on snxSQQueueList is intentional. */
 .snx-track-list {
   display: flex; flex-direction: column; gap: 6px;
   padding-right: 2px;
-  /* Extra bottom space so the fixed bottom-nav never covers the last item */
-  padding-bottom: 120px;
+  padding-bottom: 20px;
 }
 .snx-track-item {
   display: flex; align-items: center; gap: 10px;

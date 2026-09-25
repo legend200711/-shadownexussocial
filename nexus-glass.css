@@ -20,9 +20,10 @@
   /* ── Core backgrounds ── */
   --nexus-bg:            #03080f;        /* near-black with blue tinge  */
   --nexus-bg-mid:        #060f1c;        /* deep midnight navy           */
-  --nexus-surface:       rgba(6,15,30,0.88);   /* translucent card surface    */
-  --nexus-surface-raised:rgba(8,20,42,0.94);   /* slightly elevated surface   */
-  --nexus-surface-deep:  rgba(3,8,18,0.97);    /* very dark surface           */
+  /* Slightly more transparent than before — world artwork shows through */
+  --nexus-surface:       rgba(4,12,26,0.80);   /* translucent card surface    */
+  --nexus-surface-raised:rgba(6,16,36,0.86);   /* slightly elevated surface   */
+  --nexus-surface-deep:  rgba(2,6,16,0.93);    /* very dark surface           */
 
   /* ── Brand palette ── */
   --nexus-blue:          #00AEEF;        /* electric blue — primary accent */
@@ -63,16 +64,24 @@
 }
 
 /* ═══════════════════════════════════════════════════════
-   GLOBAL BODY — atmospheric dark gradient
-   Replace the flat #0B1F3A with layered depth.
+   GLOBAL BODY — Nexus Realm world background
+   The body background-color is the FALLBACK colour shown while
+   nexus-realm-bg.webp loads or if it fails.
+   The actual background image is rendered by #snx-realm-artwork
+   (position:fixed, z-index:-3) so the body only needs the dark
+   fallback colour here — no background-image on body itself.
    ═══════════════════════════════════════════════════════ */
 body {
-  background:
-    radial-gradient(ellipse 130% 80% at 15% 0%,  rgba(0,50,120,0.28) 0%,  transparent 55%),
-    radial-gradient(ellipse 90%  60% at 85% 5%,  rgba(0,80,160,0.18) 0%,  transparent 50%),
-    radial-gradient(ellipse 100% 70% at 50% 100%,rgba(0,30,80,0.22)  0%,  transparent 60%),
-    #03080f !important;
-  background-attachment: fixed !important;
+  /* Nexus dark blue/black — matches the artwork's dominant tones.
+     Shown if artwork fails to load (reliable fallback). */
+  background: #000608 !important;
+  background-attachment: scroll !important;
+}
+/* Desktop: no change needed — artwork is fixed z-index:-3 */
+@media (min-width: 769px) {
+  body {
+    background: #000608 !important;
+  }
 }
 
 /* ── Vignette: subtler than before, no animation overhead ── */
@@ -681,7 +690,10 @@ button:active {
   border-radius: var(--nexus-radius-lg) !important;
 }
 
-/* Modal backdrop */
+/* Modal backdrop — blur only on desktop/tablet (≥769px).
+   On mobile the blur is disabled: it forces every modal surface to be
+   GPU-composited separately over the canvas, causing severe jank
+   especially when the virtual keyboard is open. */
 #ipcModal,
 .edit-profile-modal,
 .social-list-modal,
@@ -691,8 +703,19 @@ button:active {
 #inboxNewMsgModal,
 #inboxDelConvModal {
   background: rgba(2,5,14,0.88) !important;
-  backdrop-filter: blur(6px) !important;
-  -webkit-backdrop-filter: blur(6px) !important;
+}
+@media (min-width: 769px) {
+  #ipcModal,
+  .edit-profile-modal,
+  .social-list-modal,
+  .badge-tooltip-modal,
+  #familyReqModal,
+  #deleteAccountModal,
+  #inboxNewMsgModal,
+  #inboxDelConvModal {
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+  }
 }
 
 /* Edit profile modal specifics */
@@ -1095,6 +1118,31 @@ input:focus, textarea:focus, select:focus {
 .snx-quality-minimal body::before,
 .snx-quality-minimal body::after {
   display: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════
+   QUALITY-GATED MODAL BLUR
+   On minimal/lite quality the modal backdrop-filter is an
+   unnecessary expense — disable it entirely.
+   ═══════════════════════════════════════════════════════ */
+.snx-quality-minimal #ipcModal,
+.snx-quality-minimal .edit-profile-modal,
+.snx-quality-minimal .social-list-modal,
+.snx-quality-minimal .badge-tooltip-modal,
+.snx-quality-minimal #familyReqModal,
+.snx-quality-minimal #deleteAccountModal,
+.snx-quality-minimal #inboxNewMsgModal,
+.snx-quality-minimal #inboxDelConvModal,
+.snx-quality-lite #ipcModal,
+.snx-quality-lite .edit-profile-modal,
+.snx-quality-lite .social-list-modal,
+.snx-quality-lite .badge-tooltip-modal,
+.snx-quality-lite #familyReqModal,
+.snx-quality-lite #deleteAccountModal,
+.snx-quality-lite #inboxNewMsgModal,
+.snx-quality-lite #inboxDelConvModal {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════

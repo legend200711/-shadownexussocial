@@ -37,6 +37,20 @@ html, body {
   -webkit-text-size-adjust: 100%;
 }
 
+/* ── NEXUS REALM ARTWORK — universal safety rules ────────
+   These rules ensure the artwork never causes layout issues
+   on any device. The detailed per-breakpoint rules are in
+   snx-living-bg.css which loads before this file. */
+#snx-realm-artwork,
+#snx-readability-overlay {
+  /* Never block touch events or intercept clicks */
+  pointer-events: none !important;
+  user-select: none !important;
+  /* Never create a stacking context that breaks z-index */
+  position: fixed !important;
+  inset: 0 !important;
+}
+
 /* Every interactive element gets a minimum 44 × 44 px touch
    target as required by WCAG 2.5.5 / Apple HIG.  We use
    min-height so desktop buttons are never artificially inflated. */
@@ -54,7 +68,7 @@ img, video, svg, audio {
 /* Canvas elements that are positioned full-screen must
    NOT have height:auto — they are sized explicitly by JavaScript. Only apply fluid
    sizing to canvases that are inline content (not position:fixed/absolute). */
-canvas:not(#bg-canvas) {
+canvas:not(#bg-canvas):not(#snxStarsCanvas) {
   max-width: 100%;
   height: auto;
 }
@@ -100,13 +114,6 @@ canvas:not(#bg-canvas) {
     left: var(--shadow-core-w) !important;
   }
 }
-
-/* ═══════════════════════════════════════════════════════════
-   NEXUS CORE FLOATING MENU — fully hidden on all devices
-   (The slide-out .sidebar drawer is the universal navigation.)
-   ═══════════════════════════════════════════════════════════ */
-#nexusCoreBtn  { display: none !important; }
-#nexusCoreMenu { display: none !important; }
 
 /* ═══════════════════════════════════════════════════════════
    MOBILE / TABLET  (≤ 1024 px)
@@ -604,9 +611,6 @@ canvas:not(#bg-canvas) {
   /* Sidebar occupies full dynamic viewport height */
   .sidebar { height: 100dvh !important; overflow-y: auto !important; }
 
-  /* Radial menu inner — limit height */
-  .ncm-inner { max-height: 90dvh !important; }
-
   /* Reduce top padding so content clears the smaller button */
   .page:not(#inboxPage) { padding-top: 56px !important; }
 
@@ -728,14 +732,54 @@ canvas:not(#bg-canvas) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   MOBILE KEYBOARD + VIEWPORT FIX
+   Prevent the animated background from being recalculated when
+   the virtual keyboard opens/closes on Android & iOS.
+   Key fix: use 100dvh (dynamic viewport) for height-sensitive
+   elements so they shrink with the keyboard automatically,
+   and use min-height:100svh (small viewport) for the body so
+   the full background is always filled regardless of toolbar state.
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  /* Storm and support room chat wraps: use dvh so they shrink
+     when keyboard opens rather than being clipped */
+  .storm-room-wrap {
+    height: calc(100dvh - 120px) !important;
+    min-height: unset !important;
+  }
+  .support-room-wrap {
+    height: calc(100dvh - 120px) !important;
+    min-height: unset !important;
+  }
+
+  /* Ensure body fills full height regardless of browser toolbar */
+  html {
+    height: 100%;
+    min-height: -webkit-fill-available;
+  }
+  body {
+    min-height: 100%;
+    min-height: -webkit-fill-available;
+    /* FIX: contain vertical overscroll on mobile — prevents Android Chrome's
+       rubber-band overscroll from contributing to address-bar show/hide
+       micro-resizes that trigger canvas/animation resets. */
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
    PREVENT HORIZONTAL SCROLL — global safety net
    ═══════════════════════════════════════════════════════════ */
 
-/* Every .page is constrained to the viewport width */
+/* Every .page is constrained to the viewport width.
+   contain:layout limits layout recalc scope — changes inside a .page
+   (e.g. a new post appended to the feed) do not trigger a full-document
+   layout reflow. */
 .page {
   box-sizing: border-box;
   word-break: break-word;
   overflow-wrap: anywhere;
+  contain: layout;
 }
 
 /* Section cards never overflow their page */
@@ -758,8 +802,6 @@ canvas:not(#bg-canvas) {
   #snxMobileMenuBtn,
   #sidebarOverlay,
   .sidebar,
-  #nexusCoreBtn,
-  #nexusCoreMenu,
   #pwa-install-banner,
   #notification-toast,
   #grim-panel,

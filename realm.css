@@ -40,10 +40,13 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   GLOBAL BODY OVERRIDE — deep space background
+   GLOBAL BODY OVERRIDE — artwork world is the background
+   The actual Nexus Realm artwork is rendered by #snx-realm-artwork
+   (position:fixed, z-index:-3). Body only provides fallback colour.
    ═══════════════════════════════════════════════════════════ */
 body {
-  background: var(--realm-bg) !important;
+  /* Dark Nexus blue/black fallback — matches the artwork's sky tones */
+  background: #000608 !important;
   font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
@@ -127,7 +130,9 @@ body {
   #snxMobileMenuBtn { display: none !important; }
 }
 
-/* New floating nav — always expanded on desktop */
+/* New floating nav — always expanded on desktop
+   Semi-transparent with backdrop-filter so the artwork shows through subtly
+   while keeping nav text fully readable. */
 #shadowCore {
   position: fixed;
   left: 0;
@@ -140,10 +145,13 @@ body {
   gap: 0;
   width: var(--shadow-core-w);
   transition: width var(--nav-anim);
-  /* Full-height sidebar panel */
-  background: linear-gradient(180deg, rgba(0,6,16,0.98) 0%, rgba(0,12,28,0.97) 60%, rgba(0,4,12,0.98) 100%);
-  border-right: 1px solid rgba(0,174,239,0.18);
-  box-shadow: 4px 0 32px rgba(0,0,0,0.5), 2px 0 20px rgba(0,80,180,0.12);
+  /* Glassy sidebar — slightly transparent so the Nexus Realm artwork
+     is visible at the left edge of the interface */
+  background: linear-gradient(180deg, rgba(0,4,12,0.93) 0%, rgba(0,8,22,0.92) 60%, rgba(0,3,10,0.94) 100%);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border-right: 1px solid rgba(0,174,239,0.22);
+  box-shadow: 4px 0 32px rgba(0,0,0,0.45), 2px 0 20px rgba(0,80,180,0.15);
   overflow: hidden;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -356,124 +364,6 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   MOBILE NEXUS CORE — floating radial menu
-   ═══════════════════════════════════════════════════════════ */
-#nexusCoreBtn {
-  display: none;
-  position: fixed;
-  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 5000;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, #003366, #000c1a);
-  border: 2px solid var(--realm-blue);
-  font-size: 26px;
-  cursor: pointer;
-  box-shadow:
-    0 0 24px var(--realm-blue),
-    0 0 50px rgba(0,174,239,0.3),
-    inset 0 0 14px rgba(0,174,239,0.2);
-  animation: nexusBtnPulse 2.5s ease-in-out infinite;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-@keyframes nexusBtnPulse {
-  0%,100% { box-shadow: 0 0 24px var(--realm-blue), 0 0 50px rgba(0,174,239,0.3), inset 0 0 14px rgba(0,174,239,0.2); }
-  50%      { box-shadow: 0 0 34px var(--realm-cyan), 0 0 70px rgba(0,240,255,0.4), inset 0 0 20px rgba(0,240,255,0.3); }
-}
-
-/* Mobile radial menu overlay */
-#nexusCoreMenu {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 4900;
-  background: rgba(0,4,12,0.82);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
-  animation: menuBgIn 0.25s ease both;
-}
-#nexusCoreMenu.open { display: flex; }
-@keyframes menuBgIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.ncm-inner {
-  display: grid;
-  grid-template-columns: repeat(3, 80px);
-  gap: 16px;
-  justify-items: center;
-}
-
-.ncm-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  animation: ncmItemIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-.ncm-item:nth-child(1) { animation-delay: 0.03s; }
-.ncm-item:nth-child(2) { animation-delay: 0.07s; }
-.ncm-item:nth-child(3) { animation-delay: 0.11s; }
-.ncm-item:nth-child(4) { animation-delay: 0.15s; }
-.ncm-item:nth-child(5) { animation-delay: 0.19s; }
-.ncm-item:nth-child(6) { animation-delay: 0.23s; }
-.ncm-item:nth-child(7) { animation-delay: 0.27s; }
-
-@keyframes ncmItemIn {
-  from { opacity: 0; transform: scale(0.5) translateY(20px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.ncm-icon-wrap {
-  width: 54px;
-  height: 54px;
-  border-radius: 18px;
-  background: rgba(0,20,50,0.92);
-  border: 1px solid var(--realm-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
-  box-shadow: 0 0 12px rgba(0,174,239,0.2);
-}
-.ncm-item:hover .ncm-icon-wrap,
-.ncm-item:active .ncm-icon-wrap {
-  border-color: var(--realm-cyan);
-  box-shadow: 0 0 22px rgba(0,240,255,0.4);
-  transform: scale(1.1);
-}
-.ncm-item.active-nav .ncm-icon-wrap {
-  background: rgba(0,60,120,0.6);
-  border-color: var(--realm-cyan);
-  box-shadow: 0 0 20px rgba(0,240,255,0.45);
-}
-
-.ncm-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--realm-text-dim);
-  text-align: center;
-  letter-spacing: 0.3px;
-  line-height: 1.2;
-}
-.ncm-item.active-nav .ncm-label { color: var(--realm-cyan); }
-
-/* ═══════════════════════════════════════════════════════════
    PAGE LAYOUT — full-screen immersive
    ═══════════════════════════════════════════════════════════ */
 
@@ -499,13 +389,16 @@ body {
    ECLIPSE FEED — holographic post panels
    ═══════════════════════════════════════════════════════════ */
 
-/* Post composer — energy creation panel */
+/* Post composer — energy creation panel
+   Slightly more transparent than before so the Nexus Realm
+   artwork world shows through behind each content panel.
+   backdrop-filter blur ensures readability regardless. */
 .section-card {
-  background: rgba(0,10,25,0.92) !important;
+  background: rgba(0,8,22,0.82) !important;
   border: 1px solid rgba(0,174,239,0.28) !important;
   border-radius: 18px !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   position: relative;
   overflow: hidden;
 }
@@ -536,9 +429,9 @@ body {
   animation: nexusGlow 3s ease-in-out infinite alternate !important;
 }
 
-/* Holographic post box */
+/* Holographic post box — glassy surface floating in the Realm */
 .postBox {
-  background: linear-gradient(145deg, rgba(0,12,28,0.94) 0%, rgba(0,20,45,0.90) 100%) !important;
+  background: linear-gradient(145deg, rgba(0,8,20,0.86) 0%, rgba(0,16,38,0.82) 100%) !important;
   border: 1px solid rgba(0,174,239,0.30) !important;
   border-radius: 18px !important;
   position: relative !important;
@@ -938,14 +831,14 @@ input::placeholder, textarea::placeholder { color: rgba(0,174,239,0.35) !importa
 /* ═══════════════════════════════════════════════════════════
    GLOBAL BUTTONS — energy controls
    ═══════════════════════════════════════════════════════════ */
-button:not(.sc-item):not(.ncm-item) {
+button:not(.sc-item) {
   background: rgba(0,15,40,0.90) !important;
   border: 1px solid rgba(0,174,239,0.55) !important;
   color: var(--realm-blue) !important;
   border-radius: 8px !important;
   transition: all 0.18s ease !important;
 }
-button:not(.sc-item):not(.ncm-item):hover {
+button:not(.sc-item):hover {
   background: rgba(0,174,239,0.18) !important;
   color: var(--realm-green) !important;
   border-color: rgba(57,255,20,0.62) !important;
@@ -1045,8 +938,6 @@ button:not(.sc-item):not(.ncm-item):hover {
    DESKTOP RESPONSIVE PATCH — shadow core visible on desktop
    ═══════════════════════════════════════════════════════════ */
 @media (min-width: 1025px) {
-  #nexusCoreBtn     { display: none !important; }
-  #nexusCoreMenu    { display: none !important; }
   #snxMobileMenuBtn { display: none !important; }
   #shadowCore       { display: flex !important; }
 
@@ -1091,9 +982,6 @@ button:not(.sc-item):not(.ncm-item):hover {
 @media (max-width: 1024px) {
   /* Hide the floating crystal nav — drawer replaces it */
   #shadowCore    { display: none !important; }
-  /* Hide old radial menu button / menu */
-  #nexusCoreBtn  { display: none !important; }
-  #nexusCoreMenu { display: none !important; }
 
   /* ── Mobile menu toggle button ── */
   #snxMobileMenuBtn {
@@ -1250,3 +1138,1298 @@ button:not(.sc-item):not(.ncm-item):hover {
 .adm-section-title {
   letter-spacing: 1.5px !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   NEXUS REALM TRANSFORMATION — SNS-2026-NEXUS-REALM-TRANSFORM-001
+   Appended to realm.css — no existing rules broken.
+   Implements:
+     1. NEXUS STREAM — flowing content realm (varied card widths)
+     2. NEXUS PULSE — ambient activity panel (right of stream, desktop)
+     3. NOW PLAYING — persistent bottom strip
+     4. NEXUS COMPOSER — floating creator input
+     5. PROFILE → YOUR REALM — identity transformation
+     6. DESKTOP REALM LAYOUT — uses full screen width creatively
+     7. MOBILE REALM — dedicated mobile arrangement
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════
+   NEXUS STREAM TITLE — replace "Eclipse Feed" label
+   ═══════════════════════════════════════════════════════════ */
+#feed .eclipse-title {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 3px !important;
+  text-transform: uppercase !important;
+  color: rgba(0,240,255,0.75) !important;
+  text-shadow: 0 0 12px rgba(0,240,255,0.4) !important;
+  animation: none !important;
+  margin-bottom: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+#feed .eclipse-title::before {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,240,255,0.3));
+}
+#feed .eclipse-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(0,240,255,0.3), transparent);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP REALM LAYOUT — two-zone layout on wide screens
+   Zone A: Nexus Stream (main content, flows left)
+   Zone B: Nexus Pulse (ambient panel, fixed right)
+   ═══════════════════════════════════════════════════════════ */
+
+/* The feed page becomes the realm wrapper */
+@media (min-width: 1280px) {
+  #feed.page {
+    display: grid !important;
+    grid-template-columns: 1fr 280px !important;
+    grid-template-rows: auto !important;
+    gap: 0 24px !important;
+    max-width: calc(1100px + var(--shadow-core-w)) !important;
+    padding-right: 24px !important;
+    align-items: start !important;
+  }
+
+  /* Title row spans both columns */
+  #feed .eclipse-title {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* Nexus Stream takes the left column */
+  .nexus-stream-col {
+    grid-column: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* Nexus Pulse takes the right column — sticky */
+  #nexusPulsePanel {
+    grid-column: 2 !important;
+    position: sticky !important;
+    top: 20px !important;
+    max-height: calc(100vh - 40px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(0,174,239,0.2) transparent !important;
+  }
+  #nexusPulsePanel::-webkit-scrollbar { width: 3px; }
+  #nexusPulsePanel::-webkit-scrollbar-thumb { background: rgba(0,174,239,0.2); border-radius: 3px; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NEXUS STREAM — post card type system
+   Cards vary in width/style by content type.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Base: all posts stay full-width in stream column */
+.postBox {
+  position: relative !important;
+}
+
+/* ── TEXT POST — medium width, centred ──────────────────── */
+.snx-post-type-text {
+  /* Full width — text is the foundation */
+}
+.snx-post-type-text .post-text-content {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #d8eeff;
+}
+
+/* ── PHOTO POST — slightly elevated, wider feel ──────────── */
+.snx-post-type-photo {
+  border-color: rgba(0,174,239,0.38) !important;
+}
+.snx-post-type-photo .post-media-preview,
+.snx-post-type-photo .post-media-carousel {
+  margin-top: 10px;
+  border-radius: 14px !important;
+  border: 1px solid rgba(0,174,239,0.22) !important;
+  box-shadow: 0 0 30px rgba(0,174,239,0.1) !important;
+}
+
+/* ── VIDEO POST — full-width immersive ───────────────────── */
+.snx-post-type-video {
+  border-color: rgba(0,100,200,0.4) !important;
+  background: linear-gradient(145deg, rgba(0,5,15,0.92) 0%, rgba(0,12,30,0.88) 100%) !important;
+}
+.snx-post-type-video .post-media-video,
+.snx-post-type-video .post-video-card {
+  border-radius: 14px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 40px rgba(0,0,0,0.6) !important;
+}
+
+/* ── MUSIC POST — compact horizontal card ────────────────── */
+.snx-post-type-music {
+  border-color: rgba(57,255,20,0.28) !important;
+  background: linear-gradient(145deg, rgba(0,8,18,0.88), rgba(0,20,8,0.72)) !important;
+}
+.snx-post-type-music::before {
+  background: linear-gradient(90deg, transparent, rgba(57,255,20,0.4), rgba(0,174,239,0.3), transparent) !important;
+}
+.snx-post-type-music .post-music-card {
+  border-color: rgba(57,255,20,0.3) !important;
+  background: rgba(0,20,8,0.55) !important;
+}
+
+/* ── LIVE POST — electric, urgent ───────────────────────── */
+.snx-post-type-live {
+  border-color: rgba(255,40,70,0.55) !important;
+  animation: liveCardBreath 2.5s ease-in-out infinite !important;
+}
+@keyframes liveCardBreath {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,40,70,0), 0 0 20px rgba(255,30,60,0.12); }
+  50%     { box-shadow: 0 0 0 2px rgba(255,40,70,0.15), 0 0 35px rgba(255,30,60,0.22); }
+}
+
+/* ── STATUS / SHORT UPDATE — compact, subtle ─────────────── */
+.snx-post-type-status {
+  padding: 12px 16px !important;
+  border-radius: 14px !important;
+  background: rgba(0,6,16,0.75) !important;
+}
+
+/* ── Alternating post entry animation — subtle position stagger ── */
+.postBox:nth-child(odd) {
+  animation-name: postSlideInLeft !important;
+}
+.postBox:nth-child(even) {
+  animation-name: postSlideInRight !important;
+}
+@keyframes postSlideInLeft {
+  from { opacity: 0; transform: translateX(-6px) translateY(8px); }
+  to   { opacity: 1; transform: translateX(0) translateY(0); }
+}
+@keyframes postSlideInRight {
+  from { opacity: 0; transform: translateX(6px) translateY(8px); }
+  to   { opacity: 1; transform: translateX(0) translateY(0); }
+}
+
+/* ── On wide desktop: let wide-content posts use more horizontal space ── */
+@media (min-width: 1280px) {
+  .snx-post-type-photo,
+  .snx-post-type-video {
+    /* Slight negative horizontal margin to breathe into available space */
+    margin-left: -4px;
+    margin-right: -4px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NEXUS COMPOSER — floating creator input
+   ═══════════════════════════════════════════════════════════ */
+#feed .section-card:has(#postText),
+#feed .section-card:has(#btnBroadcast) {
+  background: linear-gradient(160deg, rgba(0,6,18,0.90) 0%, rgba(0,12,28,0.86) 100%) !important;
+  border: 1px solid rgba(0,174,239,0.35) !important;
+  border-radius: 20px !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+/* Composer title — "Nexus" branding */
+#feed .section-card h3:first-child {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: rgba(0,240,255,0.6) !important;
+  text-shadow: none !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  margin-bottom: 8px !important;
+}
+/* Post textarea — Nexus energy field */
+#postText {
+  background: rgba(0,8,22,0.95) !important;
+  border: 1px solid rgba(0,174,239,0.25) !important;
+  border-radius: 14px !important;
+  color: #e8f4ff !important;
+  font-size: 14px !important;
+  line-height: 1.65 !important;
+  padding: 14px 16px !important;
+  min-height: 80px !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+  resize: vertical !important;
+}
+#postText:focus {
+  border-color: rgba(0,240,255,0.55) !important;
+  box-shadow: 0 0 0 1px rgba(0,240,255,0.12), 0 0 20px rgba(0,174,239,0.18) !important;
+}
+#postText::placeholder {
+  color: rgba(106,154,184,0.45) !important;
+  font-style: italic !important;
+}
+/* Post button — Nexus transmit */
+#btnBroadcast {
+  background: linear-gradient(135deg, #002266 0%, #0044bb 50%, #0022aa 100%) !important;
+  border: 1px solid rgba(0,174,239,0.65) !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+  border-radius: 14px !important;
+  padding: 12px !important;
+  box-shadow: 0 0 20px rgba(0,100,255,0.35) !important;
+  transition: all 0.2s ease !important;
+}
+#btnBroadcast:hover {
+  background: linear-gradient(135deg, #003388 0%, #0066dd 50%, #003399 100%) !important;
+  box-shadow: 0 0 30px rgba(0,174,239,0.55), 0 0 10px rgba(57,255,20,0.2) !important;
+  border-color: rgba(57,255,20,0.5) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NEXUS PULSE — ambient activity panel
+   ═══════════════════════════════════════════════════════════ */
+#nexusPulsePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* On smaller screens: hide Pulse panel (no room) */
+@media (max-width: 1279px) {
+  #nexusPulsePanel {
+    display: none !important;
+  }
+}
+
+.nx-pulse-card {
+  background: rgba(0,8,22,0.86);
+  border: 1px solid rgba(0,174,239,0.22);
+  border-radius: 18px;
+  padding: 14px 16px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  position: relative;
+  overflow: hidden;
+}
+.nx-pulse-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,240,255,0.5), transparent);
+  opacity: 0.6;
+}
+.nx-pulse-title {
+  font-size: 9px;
+  font-weight: 800;
+  color: rgba(0,240,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.nx-pulse-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(0,174,239,0.2);
+}
+/* Pulse dot — living heartbeat indicator */
+.nx-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--realm-green);
+  box-shadow: 0 0 6px rgba(57,255,20,0.8);
+  animation: activeEnergy 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* ── Now Playing in Pulse ── */
+.nx-now-playing-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nx-now-playing-art {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(0,20,50,0.8);
+  border: 1px solid rgba(0,174,239,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  overflow: hidden;
+  object-fit: cover;
+}
+.nx-now-playing-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 9px;
+}
+.nx-now-playing-info {
+  flex: 1;
+  min-width: 0;
+}
+.nx-now-playing-track {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e8f4ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nx-now-playing-artist {
+  font-size: 10px;
+  color: rgba(106,154,184,0.75);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nx-now-playing-state {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--realm-green);
+  box-shadow: 0 0 6px rgba(57,255,20,0.8);
+  animation: activeEnergy 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.nx-now-playing-state.paused {
+  background: rgba(106,154,184,0.4);
+  box-shadow: none;
+  animation: none;
+}
+.nx-now-playing-empty {
+  font-size: 11px;
+  color: rgba(106,154,184,0.5);
+  font-style: italic;
+  text-align: center;
+  padding: 6px 0;
+}
+
+/* ── Presence nodes — online users ── */
+.nx-presence-nodes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px 0;
+}
+.nx-presence-node {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.nx-presence-node:hover { transform: scale(1.1); }
+.nx-presence-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0,20,50,0.8) center/cover no-repeat;
+  border: 2px solid rgba(0,174,239,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #00AEEF;
+  overflow: hidden;
+}
+.nx-presence-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0,174,239,0.4);
+  animation: presenceRing 3s ease-in-out infinite;
+  pointer-events: none;
+}
+.nx-presence-ring.live {
+  border-color: rgba(255,40,70,0.7);
+  animation: livePresenceRing 1.5s ease-in-out infinite;
+}
+@keyframes presenceRing {
+  0%,100% { transform: scale(1); opacity: 0.5; }
+  50%     { transform: scale(1.06); opacity: 0.9; }
+}
+@keyframes livePresenceRing {
+  0%,100% { transform: scale(1); opacity: 0.6; border-color: rgba(255,40,70,0.7); }
+  50%     { transform: scale(1.1); opacity: 1; border-color: rgba(255,40,70,1); }
+}
+.nx-presence-status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #00ff88;
+  border: 2px solid #000508;
+  box-shadow: 0 0 5px rgba(0,255,136,0.8);
+}
+.nx-presence-status-dot.live {
+  background: #ff2244;
+  box-shadow: 0 0 5px rgba(255,30,60,0.8);
+  animation: feedLivePulse 1.2s ease-in-out infinite;
+}
+.nx-presence-empty {
+  font-size: 11px;
+  color: rgba(106,154,184,0.45);
+  font-style: italic;
+  text-align: center;
+  width: 100%;
+  padding: 4px 0;
+}
+
+/* ── Shadow Activity (24h post count) ── */
+.nx-activity-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.nx-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: rgba(184,212,240,0.8);
+}
+.nx-activity-icon {
+  font-size: 14px;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.nx-activity-label { flex: 1; }
+.nx-activity-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--realm-cyan);
+  text-shadow: 0 0 6px rgba(0,240,255,0.4);
+}
+
+/* ── Quick Nav portals in Pulse ── */
+.nx-portal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.nx-portal-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 6px;
+  background: rgba(0,12,30,0.85);
+  border: 1px solid rgba(0,174,239,0.2);
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(106,154,184,0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
+  font-family: inherit;
+  touch-action: manipulation;
+}
+.nx-portal-btn-icon {
+  font-size: 18px;
+  filter: drop-shadow(0 0 4px rgba(0,174,239,0.4));
+  transition: filter 0.15s;
+}
+.nx-portal-btn:hover {
+  background: rgba(0,174,239,0.14);
+  border-color: rgba(0,240,255,0.45);
+  color: #fff;
+  transform: translateY(-2px);
+}
+.nx-portal-btn:hover .nx-portal-btn-icon {
+  filter: drop-shadow(0 0 8px var(--realm-cyan));
+}
+.nx-portal-btn:active { transform: scale(0.94); }
+.nx-portal-btn.live-portal {
+  border-color: rgba(255,40,70,0.3) !important;
+  color: rgba(255,100,120,0.8) !important;
+}
+.nx-portal-btn.live-portal .nx-portal-btn-icon {
+  filter: drop-shadow(0 0 4px rgba(255,40,70,0.5)) !important;
+}
+.nx-portal-btn.live-portal:hover {
+  background: rgba(255,40,70,0.1) !important;
+  border-color: rgba(255,40,70,0.7) !important;
+  color: #ff4466 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NEXUS NOW PLAYING BAR — persistent bottom strip
+   Always visible when music is playing. Sits above page content.
+   ═══════════════════════════════════════════════════════════ */
+#snxRealmNowPlayingBar {
+  display: none; /* JS shows when playing */
+  position: fixed;
+  bottom: 0;
+  left: var(--shadow-core-w, 220px);
+  right: 0;
+  z-index: 3500;
+  background: rgba(0,5,15,0.97);
+  border-top: 1px solid rgba(0,174,239,0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 8px 20px;
+  display: none;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 -4px 30px rgba(0,174,239,0.12), 0 -1px 0 rgba(0,240,255,0.08);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  will-change: transform;
+}
+#snxRealmNowPlayingBar.visible {
+  display: flex !important;
+}
+/* When bar is visible, add bottom padding to pages */
+body.snx-now-playing-active .page:not(#inboxPage) {
+  padding-bottom: 72px !important;
+}
+
+.snxnp-art {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(0,20,50,0.8) center/cover no-repeat;
+  border: 1px solid rgba(0,174,239,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.snxnp-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 7px;
+}
+.snxnp-info {
+  flex: 1;
+  min-width: 0;
+}
+.snxnp-track {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e8f4ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.snxnp-artist {
+  font-size: 10px;
+  color: rgba(106,154,184,0.7);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.snxnp-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.snxnp-eq-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--realm-green);
+  box-shadow: 0 0 4px rgba(57,255,20,0.6);
+  animation: eqBounce 0.8s ease-in-out infinite alternate;
+}
+.snxnp-eq-bar:nth-child(1) { height: 8px; animation-delay: 0s; }
+.snxnp-eq-bar:nth-child(2) { height: 14px; animation-delay: 0.15s; }
+.snxnp-eq-bar:nth-child(3) { height: 6px; animation-delay: 0.3s; }
+.snxnp-eq-bar:nth-child(4) { height: 11px; animation-delay: 0.1s; }
+@keyframes eqBounce {
+  from { transform: scaleY(0.4); opacity: 0.7; }
+  to   { transform: scaleY(1);   opacity: 1; }
+}
+#snxRealmNowPlayingBar.paused .snxnp-eq-bar {
+  animation: none;
+  transform: scaleY(0.3);
+  opacity: 0.3;
+}
+.snxnp-studio-link {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(0,174,239,0.7);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border: 1px solid rgba(0,174,239,0.25);
+  border-radius: 20px;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: none;
+  font-family: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.snxnp-studio-link:hover {
+  background: rgba(0,174,239,0.12);
+  border-color: rgba(0,240,255,0.55);
+  color: var(--realm-cyan);
+  text-decoration: none;
+}
+
+/* On mobile: full width, docked to bottom edge */
+@media (max-width: 1024px) {
+  #snxRealmNowPlayingBar {
+    left: 0 !important;
+    bottom: 0 !important;
+    padding: 6px 14px !important;
+    z-index: 4850 !important;
+  }
+  /* When now-playing bar is visible, push page padding up */
+  body.snx-now-playing-active .page {
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROFILE — YOUR REALM transformation
+   ═══════════════════════════════════════════════════════════ */
+/* Profile page title — "Your Realm" branding */
+#profile .eclipse-title {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 3px !important;
+  text-transform: uppercase !important;
+  color: rgba(0,240,255,0.55) !important;
+  text-shadow: none !important;
+  animation: none !important;
+  margin-bottom: 14px !important;
+}
+
+/* Profile header — environment energy field */
+.profile-header {
+  position: relative;
+}
+/* Realm energy scan line on profile */
+.profile-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(0,174,239,0.6) 20%,
+    rgba(0,240,255,0.8) 50%,
+    rgba(57,255,20,0.5) 80%,
+    transparent
+  );
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Avatar — identity orb in the Realm */
+.p-avatar {
+  position: relative;
+}
+/* Realm identity ring pulse */
+@keyframes realmIdentityAura {
+  0%,100% {
+    box-shadow:
+      0 0 30px rgba(0,174,239,0.55),
+      0 0 60px rgba(0,174,239,0.22),
+      0 0 0 4px rgba(0,174,239,0.1),
+      inset 0 0 20px rgba(0,174,239,0.12);
+  }
+  33% {
+    box-shadow:
+      0 0 40px rgba(0,240,255,0.65),
+      0 0 80px rgba(0,240,255,0.3),
+      0 0 0 6px rgba(0,240,255,0.12),
+      inset 0 0 25px rgba(0,240,255,0.18);
+  }
+  66% {
+    box-shadow:
+      0 0 35px rgba(57,255,20,0.4),
+      0 0 70px rgba(57,255,20,0.2),
+      0 0 0 5px rgba(57,255,20,0.08),
+      inset 0 0 22px rgba(57,255,20,0.1);
+  }
+}
+.p-avatar {
+  animation: realmIdentityAura 6s ease-in-out infinite !important;
+}
+
+/* Profile info — realm identity presentation */
+.profile-display-name {
+  letter-spacing: 0.5px !important;
+}
+
+/* Profile bio becomes "Realm Description" */
+.profile-bio-text {
+  color: rgba(138,176,204,0.85) !important;
+  line-height: 1.6 !important;
+}
+
+/* Profile stats — energy counters */
+.stat-num {
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Cover banner — energy field upgrade */
+.cover-banner::after {
+  /* Stronger bottom fade for readability */
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(0,5,15,0.2) 50%,
+    rgba(0,5,15,0.75) 100%
+  ) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION MOOD OVERLAYS — environment reacts to section
+   The SNXLivingBg controller applies snx-mood-* classes to body.
+   ═══════════════════════════════════════════════════════════ */
+
+/* MESSAGES — calmer atmosphere */
+body.snx-mood-messages .rain-drop {
+  opacity: 0.12 !important;
+  animation-duration: 2.4s !important;
+}
+body.snx-mood-messages body::after {
+  opacity: 0.5 !important;
+}
+/* Inbox gets a calmer border palette */
+body.snx-mood-messages .inbox-split {
+  border-color: rgba(0,174,239,0.18) !important;
+}
+
+/* LIVE — heightened energy */
+body.snx-mood-live #snx-readability-overlay {
+  background:
+    linear-gradient(180deg, rgba(0,3,10,0.55) 0%, transparent 50%, rgba(0,3,10,0.70) 100%),
+    radial-gradient(ellipse 70% 60% at 50% 20%, rgba(0,100,200,0.15) 0%, transparent 70%) !important;
+}
+body.snx-mood-live .rain-drop {
+  opacity: 0.55 !important;
+}
+
+/* MUSIC — green accent atmosphere */
+body.snx-mood-music body::after {
+  background:
+    radial-gradient(ellipse 120% 60% at 20% 80%, rgba(30,180,30,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 40% at 80% 90%, rgba(0,60,130,0.07) 0%, transparent 70%) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SHADOW CORE NAV — Portal-style item upgrades
+   ═══════════════════════════════════════════════════════════ */
+/* Active item — stronger portal glow */
+.sc-item.active-nav {
+  background: rgba(0,174,239,0.18) !important;
+  color: var(--realm-cyan) !important;
+  box-shadow:
+    inset 0 0 22px rgba(0,174,239,0.25),
+    0 0 16px rgba(0,174,239,0.18) !important;
+}
+/* Active item left edge — energy beam */
+.sc-item.active-nav::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 2px;
+  background: linear-gradient(180deg, transparent, var(--realm-cyan), rgba(57,255,20,0.6), transparent);
+  border-radius: 2px;
+}
+
+/* Nav branding sub-label — "Nexus Realm" indicator */
+.sc-orb-sub {
+  color: rgba(57,255,20,0.55) !important;
+}
+
+/* ── Nexus Portal section dividers — energy separators ── */
+.sc-divider {
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(0,174,239,0.4) 40%,
+    rgba(57,255,20,0.2) 60%,
+    transparent
+  ) !important;
+  margin: 6px 0 !important;
+  height: 1px !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE CONTENT OPTIMIZATIONS
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Composer — full-width, edge-to-edge feel */
+  #feed .section-card:has(#postText),
+  #feed .section-card:has(#btnBroadcast) {
+    border-radius: 16px !important;
+    margin: 0 !important;
+  }
+
+  /* Posts — edge-to-edge on small phones */
+  .postBox {
+    border-radius: 14px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Profile cover — shorter on small screens but still atmospheric */
+  .cover-banner {
+    min-height: 120px !important;
+  }
+
+  /* Story bar — horizontal scroll */
+  #storyBar {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    display: flex !important;
+    gap: 10px !important;
+    padding-bottom: 4px !important;
+  }
+  #storyBar::-webkit-scrollbar { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE HUB — energetic mode
+   ═══════════════════════════════════════════════════════════ */
+#liveHubPage.active .section-card {
+  border-color: rgba(255,40,70,0.25) !important;
+}
+#liveHubPage.active .section-card::before {
+  background: linear-gradient(90deg, transparent, rgba(255,40,70,0.4), transparent) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MUSIC HUB / STUDIO — music zone
+   ═══════════════════════════════════════════════════════════ */
+#studioPage .section-card {
+  border-color: rgba(57,255,20,0.22) !important;
+}
+#studioPage .section-card::before {
+  background: linear-gradient(90deg, transparent, rgba(57,255,20,0.35), rgba(0,174,239,0.25), transparent) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MESSAGES — calmer atmosphere
+   ═══════════════════════════════════════════════════════════ */
+#inboxPage .inbox-split {
+  border-color: rgba(0,174,239,0.15) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE PRESENCE — stronger visual
+   ═══════════════════════════════════════════════════════════ */
+/* Live avatar ring — more electric */
+.snx-flc-avatar.is-live {
+  box-shadow:
+    0 0 0 2px #ff2244,
+    0 0 0 5px rgba(255,34,68,0.25),
+    0 0 20px rgba(255,30,60,0.4) !important;
+  animation: liveAvatarPulse 1.2s ease-in-out infinite !important;
+}
+@keyframes liveAvatarPulse {
+  0%,100% {
+    box-shadow:
+      0 0 0 2px #ff2244,
+      0 0 0 5px rgba(255,34,68,0.25),
+      0 0 20px rgba(255,30,60,0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px #ff2244,
+      0 0 0 7px rgba(255,34,68,0.2),
+      0 0 35px rgba(255,30,60,0.55);
+  }
+}
+
+/* LIVE NOW label — more atmospheric */
+.feed-live-dot-pulse {
+  box-shadow: 0 0 0 0 rgba(255,51,68,0.8) !important;
+  animation: feedLivePulse 1.2s ease-in-out infinite !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STORIES — shadow portal bubbles
+   ═══════════════════════════════════════════════════════════ */
+.story-ring {
+  border-color: rgba(0,174,239,0.7) !important;
+}
+.story-ring.seen { border-color: rgba(0,174,239,0.25) !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION CARDS — Realm panel upgrade (all sections)
+   ═══════════════════════════════════════════════════════════ */
+/* Add a faint mist effect behind floating panels */
+.section-card {
+  will-change: auto !important; /* prevent GPU layer creation on every card */
+}
+
+/* Realm page headings — consistent uppercase label style */
+.page > h2:not(.eclipse-title):not(.nx-header-title) {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: rgba(0,240,255,0.65);
+  text-shadow: none;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(0,174,239,0.15);
+  padding-bottom: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NEXUS STREAM COLUMN WRAPPER — used when grid is active
+   ═══════════════════════════════════════════════════════════ */
+.nexus-stream-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+/* Hide stream col on small screens (grid collapses) */
+@media (max-width: 1279px) {
+  .nexus-stream-col {
+    display: contents !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP LAYOUT PATCH — ensure Nexus Pulse doesn't break inbox
+   ═══════════════════════════════════════════════════════════ */
+@media (min-width: 1280px) {
+  #inboxPage {
+    /* inbox stays full-screen, not inside the grid */
+    display: block !important;
+    grid-column: unset !important;
+  }
+}
+
+/* END NEXUS REALM TRANSFORMATION */
+
+/* ═══════════════════════════════════════════════════════════════════
+   SHADOW NEXUS SOCIAL — FINAL NEXUS REALM VISUAL UPDATE
+   SNS-2026-FINAL-NEXUS-REALM-001
+   
+   Implements:
+     1. GRIM REAPER LOGO — transparent PNG logo display
+     2. NAV ORB LOGO — nav branding uses real logo
+     3. LOGIN PAGE LOGO — transparent logo on login
+     4. NEXUS PORTAL NAV — energy ring navigation style
+     5. SHADOW CORE LOGIN — logo header
+     6. POST TYPE VISUAL UPGRADES — more distinct content types
+     7. READABILITY OVERLAY TUNING — optimal transparency
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────
+   SNS GRIM REAPER LOGO — shared display rules
+   The transparent PNG logo is used in:
+     - Login page header
+     - Sidebar nav brand (desktop + mobile drawer)
+     - Feed page header (secondary branding)
+   ───────────────────────────────────────────────────────────────── */
+
+/* Logo image element — aspect-ratio preserved, no box, no crop */
+.sns-logo-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 420px;           /* desktop cap */
+  object-fit: contain;        /* NEVER stretch or squash */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  /* Extremely subtle energy pulse — the logo breathes, not flickers */
+  animation: snsLogoPulse 5s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 18px rgba(0,174,239,0.35))
+          drop-shadow(0 0 6px rgba(57,255,20,0.12));
+  will-change: filter;
+  pointer-events: none;
+  user-select: none;
+}
+
+@keyframes snsLogoPulse {
+  0%   { filter: drop-shadow(0 0 14px rgba(0,174,239,0.28)) drop-shadow(0 0 5px rgba(57,255,20,0.10)); }
+  50%  { filter: drop-shadow(0 0 22px rgba(0,174,239,0.45)) drop-shadow(0 0 10px rgba(57,255,20,0.18)); }
+  100% { filter: drop-shadow(0 0 18px rgba(0,174,239,0.35)) drop-shadow(0 0 7px rgba(57,255,20,0.14)); }
+}
+
+/* Logo container — centers the logo, never adds a box behind it */
+.sns-logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   LOGIN PAGE LOGO
+   Shows the full transparent logo above the login form.
+   No box, no container card behind the logo itself.
+   ───────────────────────────────────────────────────────────────── */
+#loginLogoWrap {
+  margin: 0 auto 12px;
+  max-width: 360px;          /* desktop */
+  width: 90%;
+  padding: 0;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+#loginLogoWrap .sns-logo-img {
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   SIDEBAR BRAND — replace emoji orb with real logo in desktop nav
+   ───────────────────────────────────────────────────────────────── */
+#shadowCore .sc-orb {
+  padding: 10px 8px 8px !important;
+  gap: 0 !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 90px;
+  border-bottom: 1px solid rgba(0,174,239,0.18) !important;
+}
+/* Hide the old emoji orb icon in the desktop nav brand */
+#shadowCore .sc-orb-icon {
+  display: none !important;
+}
+/* Hide old text in nav brand when logo image is present */
+#shadowCore .sc-orb-text {
+  display: none !important;
+}
+/* Logo in nav brand area */
+#shadowCore .sc-orb .sns-logo-img {
+  max-width: 195px !important;
+  animation-duration: 7s !important;  /* slower pulse in sidebar */
+  filter: drop-shadow(0 0 12px rgba(0,174,239,0.30)) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   MOBILE SIDEBAR DRAWER BRAND — same logo treatment
+   ───────────────────────────────────────────────────────────────── */
+.sidebar-brand .sns-logo-img {
+  max-width: 220px;
+  margin: 4px auto 0;
+}
+/* Hide old emoji/text in mobile drawer brand when logo is present */
+.sidebar-brand .sidebar-brand-icon,
+.sidebar-brand .sidebar-brand-name,
+.sidebar-brand .sidebar-brand-sub {
+  display: none !important;
+}
+.sidebar-brand {
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px 12px !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   FEED HEADER LOGO SECTION
+   A logo banner above the Nexus Stream on wide desktop.
+   Hidden on mobile/tablet — not enough room.
+   ───────────────────────────────────────────────────────────────── */
+#snxFeedLogoHeader {
+  display: none;           /* hidden by default */
+  align-items: center;
+  justify-content: center;
+  padding: 6px 0 0;
+  grid-column: 1 / -1;    /* spans both grid columns */
+}
+@media (min-width: 1280px) {
+  #snxFeedLogoHeader {
+    display: flex;
+  }
+}
+#snxFeedLogoHeader .sns-logo-img {
+  max-width: 280px;
+  animation-duration: 6s;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   PORTAL NAV — Energy ring accents on nav items
+   Makes key sections visually distinctive.
+   ───────────────────────────────────────────────────────────────── */
+/* Portal ring decoration — subtle border ring on nav icons */
+.sc-item-icon {
+  position: relative;
+}
+
+/* Feed — star portal ring */
+#scNavFeed .sc-item-icon::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,174,239,0.22);
+  transition: border-color 0.18s, box-shadow 0.18s;
+  pointer-events: none;
+}
+#scNavFeed.active-nav .sc-item-icon::after,
+#scNavFeed:hover .sc-item-icon::after {
+  border-color: rgba(0,240,255,0.7);
+  box-shadow: 0 0 8px rgba(0,240,255,0.35);
+}
+
+/* Messages — chat ring */
+#scNavInbox .sc-item-icon::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,174,239,0.20);
+  transition: border-color 0.18s, box-shadow 0.18s;
+  pointer-events: none;
+}
+#scNavInbox.active-nav .sc-item-icon::after,
+#scNavInbox:hover .sc-item-icon::after {
+  border-color: rgba(0,174,239,0.65);
+  box-shadow: 0 0 8px rgba(0,174,239,0.3);
+}
+
+/* Profile nav item — identity ring */
+#scNavProfile .sc-item-icon::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid rgba(57,255,20,0.15);
+  transition: border-color 0.18s, box-shadow 0.18s;
+  pointer-events: none;
+}
+#scNavProfile.active-nav .sc-item-icon::after,
+#scNavProfile:hover .sc-item-icon::after {
+  border-color: rgba(57,255,20,0.6);
+  box-shadow: 0 0 8px rgba(57,255,20,0.3);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   NEXUS STREAM — Improved post type differentiation
+   Text / Photo / Music / Video / Live each get distinct visual cues
+   ───────────────────────────────────────────────────────────────── */
+
+/* Text post — no extra chrome, just clean glass */
+.snx-post-type-text {
+  border-left: 2px solid rgba(0,174,239,0.28) !important;
+}
+
+/* Photo post — blue frame */
+.snx-post-type-photo {
+  border-left: 2px solid rgba(0,174,239,0.45) !important;
+}
+
+/* Music post — green left accent */
+.snx-post-type-music {
+  border-left: 2px solid rgba(57,255,20,0.45) !important;
+}
+
+/* Video post — deeper blue accent */
+.snx-post-type-video {
+  border-left: 2px solid rgba(0,100,220,0.55) !important;
+}
+
+/* Live post — red electric border (existing liveCardBreath handles animation) */
+.snx-post-type-live {
+  border-left: 2px solid rgba(255,40,70,0.6) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   MOBILE LOGO — responsive scaling
+   ───────────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  #loginLogoWrap .sns-logo-img {
+    max-width: 280px !important;
+  }
+  .sidebar-brand .sns-logo-img {
+    max-width: 200px !important;
+  }
+}
+@media (max-width: 640px) {
+  #loginLogoWrap .sns-logo-img {
+    max-width: 240px !important;
+  }
+  .sidebar-brand .sns-logo-img {
+    max-width: 180px !important;
+  }
+}
+@media (max-width: 380px) {
+  #loginLogoWrap .sns-logo-img {
+    max-width: 200px !important;
+  }
+  .sidebar-brand .sns-logo-img {
+    max-width: 160px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   READABILITY OVERLAY — tuned for new artwork brightness
+   The new artwork is vivid (blues/greens). Slightly boost the
+   overlay strength so interface text stays readable.
+   ───────────────────────────────────────────────────────────────── */
+#snx-readability-overlay {
+  background:
+    linear-gradient(180deg,
+      rgba(0,2,8,0.38) 0%,
+      rgba(0,4,12,0.22) 30%,
+      rgba(0,4,12,0.16) 60%,
+      rgba(0,2,8,0.45) 100%
+    ),
+    linear-gradient(90deg,
+      rgba(0,0,8,0.50) 0%,
+      rgba(0,0,8,0.12) 20%,
+      transparent 40%
+    ),
+    radial-gradient(ellipse 100% 40% at 50% 100%,
+      rgba(0,4,16,0.60) 0%,
+      transparent 100%
+    ) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   AUTH GATE — use logo image instead of emoji moon
+   ───────────────────────────────────────────────────────────────── */
+.snx-gate-logo {
+  /* Hide the emoji placeholder — logo image is used instead */
+  font-size: 0 !important;
+  line-height: 0 !important;
+  width: 200px !important;
+  height: auto !important;
+  background-image: url('sns-logo.png') !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  min-height: 100px !important;
+  margin: 0 auto 16px !important;
+}
+
+/* END SNS-2026-FINAL-NEXUS-REALM-001 */

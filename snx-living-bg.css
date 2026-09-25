@@ -1,13 +1,15 @@
 /**
  * Shadow Nexus Social — Living World CSS
- * snx-living-bg.css  v4.0.0  (SNS-2026-WORLD-ENV-001)
+ * snx-living-bg.css  v5.0.0  (SNS-2026-NEXUS-REALM-BG-001)
  *
  * Complete cinematic animated world — CSS layers only.
  * Canvas (rain, particles, lightning, arcs) is handled exclusively
  * by the ECLIPSE STORM ENGINE in index.html.
  *
  * Z-INDEX ARCHITECTURE (back → front):
- *   -2   .snx-bg-nebula          — deep space atmospheric base
+ *   -3   #snx-realm-artwork      — Nexus Realm artwork (THE WORLD)
+ *   -2   .snx-bg-nebula          — dark atmospheric tint over artwork
+ *   -1.5 #snx-readability-overlay— subtle dark gradient for text readability
  *   -1   #bg-canvas              — primary storm canvas (rain/particles/lightning)
  *    0   #snxStarsCanvas         — animated starfield canvas
  *    2   .snx-bg-clouds          — storm cloud layer 1 (slow drift)
@@ -26,7 +28,80 @@
  */
 
 /* ═══════════════════════════════════════════════════════
+   NEXUS REALM ARTWORK — THE WORLD (Layer -3, deepest)
+   The castle/grim reaper artwork is the environmental base.
+   All animation layers live above it.
+   ═══════════════════════════════════════════════════════ */
+
+/* Desktop: full artwork using picture element or background-image */
+#snx-realm-artwork {
+    position: fixed;
+    inset: 0;
+    z-index: -3;
+    pointer-events: none;
+    user-select: none;
+    /* New Nexus Realm artwork — full panoramic scene */
+    background-image: url('nexus-realm-bg.webp');
+    background-size: cover;
+    /* Center keeps the castle/moon focal point visible on all screen sizes.
+       The Grim Reaper on the left remains visible down to ~900px wide. */
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    /* GPU layer — no repaints on scroll */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    /* Fade in gently on first load so the background world 'materialises' */
+    animation: snxArtworkFadeIn 1.8s ease-out both;
+    will-change: auto;
+}
+@keyframes snxArtworkFadeIn {
+    0%   { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+/* JPEG fallback for browsers that don't support WebP (auto-detected at paint time).
+   Modern browsers all support WebP; this keeps older ones working. */
+@supports not (background-image: url('x.webp')) {
+    #snx-realm-artwork {
+        background-image: url('nexus-realm-bg.jpg');
+    }
+}
+
+/* ─── READABILITY OVERLAY (Layer -1.5) ──────────────────
+   Placed between the artwork and the canvas animation layers.
+   Subtle dark gradient — improves UI legibility without hiding
+   the artwork. NOT a giant black rectangle. */
+#snx-readability-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    user-select: none;
+    background:
+        /* Deep top-down gradient — darkens sky slightly */
+        linear-gradient(180deg,
+            rgba(0,2,8,0.30) 0%,
+            rgba(0,4,12,0.18) 30%,
+            rgba(0,4,12,0.12) 60%,
+            rgba(0,2,8,0.38) 100%
+        ),
+        /* Left-edge darkening where grim reaper lives — nav sits here on desktop */
+        linear-gradient(90deg,
+            rgba(0,0,8,0.45) 0%,
+            transparent 30%
+        ),
+        /* Atmospheric bottom dark — merges into interface floor */
+        radial-gradient(ellipse 100% 40% at 50% 100%,
+            rgba(0,4,16,0.55) 0%,
+            transparent 100%
+        );
+    will-change: auto;
+}
+
+/* ═══════════════════════════════════════════════════════
    MASTER TOGGLE — .snx-bg-off kills all atmospheric effects
+   Artwork stays visible for fallback; only animations are off.
    ═══════════════════════════════════════════════════════ */
 .snx-bg-off body::after,
 .snx-bg-off .snx-bg-layer,
@@ -71,9 +146,10 @@
 }
 
 /* ═══════════════════════════════════════════════════════
-   LAYER 1 — NEBULA BASE
-   Deep atmospheric glow. Radial gradients painting the sky.
-   z-index: -2
+   LAYER 1 — NEBULA BASE / ATMOSPHERIC TINT OVER ARTWORK
+   Subtle blue radial gradients that blend with the artwork's
+   natural blues/greens — enhanced, not replaced.
+   z-index: -2 (sits directly above the artwork)
    ═══════════════════════════════════════════════════════ */
 .snx-bg-nebula {
     position: fixed;
@@ -81,24 +157,24 @@
     pointer-events: none;
     z-index: -2;
     background:
-        /* Left deep blue atmospheric light */
-        radial-gradient(ellipse 90% 70% at 5% 20%,  rgba(0,40,140,0.32) 0%, transparent 65%),
-        /* Right cold glow */
-        radial-gradient(ellipse 70% 60% at 95% 30%, rgba(0,20,90,0.24) 0%, transparent 65%),
-        /* Bottom blue glow — atmospheric horizon */
-        radial-gradient(ellipse 120% 55% at 50% 100%, rgba(0,50,160,0.28) 0%, transparent 60%),
-        /* Central subtle blue depth */
-        radial-gradient(ellipse 100% 80% at 50% 50%, rgba(0,10,40,0.50) 0%, transparent 100%),
-        /* Very top darkening */
-        radial-gradient(ellipse 100% 35% at 50% 0%, rgba(0,5,18,0.70) 0%, transparent 80%);
+        /* Subtle blue atmospheric depth — blends with artwork sky */
+        radial-gradient(ellipse 90% 70% at 5% 20%,  rgba(0,40,140,0.18) 0%, transparent 65%),
+        /* Right cold glow — gentle, let artwork show through */
+        radial-gradient(ellipse 70% 60% at 95% 30%, rgba(0,20,90,0.14) 0%, transparent 65%),
+        /* Bottom blue glow — matches artwork's water/mist at bottom */
+        radial-gradient(ellipse 120% 55% at 50% 100%, rgba(0,50,160,0.22) 0%, transparent 60%),
+        /* Central tint — very subtle so artwork remains visible */
+        radial-gradient(ellipse 100% 80% at 50% 50%, rgba(0,10,40,0.22) 0%, transparent 100%),
+        /* Very top — keep dark like the artwork's storm sky */
+        radial-gradient(ellipse 100% 35% at 50% 0%, rgba(0,5,18,0.38) 0%, transparent 80%);
     animation: snxNebulaBreathe 28s ease-in-out infinite alternate;
     will-change: opacity;
 }
 @keyframes snxNebulaBreathe {
-    0%   { opacity: 0.82; }
-    40%  { opacity: 1.00; }
-    70%  { opacity: 0.88; }
-    100% { opacity: 0.92; }
+    0%   { opacity: 0.75; }
+    40%  { opacity: 0.92; }
+    70%  { opacity: 0.80; }
+    100% { opacity: 0.85; }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -107,21 +183,36 @@
    ═══════════════════════════════════════════════════════ */
 #bg-canvas {
     position: fixed !important;
-    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    /* Use 100% on a fixed element — resolves to layout viewport, stable on mobile.
+       Combined with JS pixel dims locked to first innerWidth/Height,
+       the CSS display size never reacts to address-bar show/hide. */
     width: 100% !important;
     height: 100% !important;
     pointer-events: none !important;
     z-index: -1 !important;
     opacity: 1;
+    /* Promote to its own GPU compositor layer on mobile so scrolling
+       and address-bar transitions don't cause a repaint of this canvas. */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 #snxStarsCanvas {
     position: fixed !important;
-    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     width: 100% !important;
     height: 100% !important;
     pointer-events: none !important;
     z-index: 0 !important;
     opacity: 1;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -444,11 +535,18 @@
 
 /* ═══════════════════════════════════════════════════════
    UI GLASS — translucent panels integrated into the world
+   backdrop-filter only on desktop — on mobile it forces every
+   card to be GPU-composited separately over the canvas, causing
+   severe jank during scroll.
    ═══════════════════════════════════════════════════════ */
 body:not(.snx-bg-off) .section-card {
     background: rgba(6, 16, 34, 0.90) !important;
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+}
+@media (min-width: 769px) {
+    body:not(.snx-bg-off) .section-card {
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+    }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -565,7 +663,39 @@ html.snx-music-active .snx-bg-nebula {
    Still animated, just lighter
    ═══════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-    /* Hide most expensive CSS layers */
+    /* ── NEXUS REALM ARTWORK — mobile background fix ──────
+       CRITICAL: background-attachment:fixed causes iOS Safari
+       and Android Chrome to disable GPU compositing, making every
+       scroll trigger a full-page repaint (white flash / jump).
+       On mobile we switch to scroll + a static centered position.
+       The new panoramic artwork centers the castle/moon; centered
+       positioning shows the most impactful part of the scene. */
+    #snx-realm-artwork {
+        background-attachment: scroll !important;
+        /* Center the scene for portrait phone screens.
+           The new artwork is 1774×887 — centering shows the castle/moon/waterfall. */
+        background-position: center 20% !important;
+        /* Remove animation on mobile (saves a compositor layer) */
+        animation: none !important;
+        opacity: 1 !important;
+        will-change: auto !important;
+    }
+    /* Readability overlay — slightly stronger on mobile for smaller text */
+    #snx-readability-overlay {
+        background:
+            linear-gradient(180deg,
+                rgba(0,2,8,0.40) 0%,
+                rgba(0,4,12,0.25) 35%,
+                rgba(0,4,12,0.18) 65%,
+                rgba(0,2,8,0.50) 100%
+            ),
+            radial-gradient(ellipse 100% 40% at 50% 100%,
+                rgba(0,4,16,0.65) 0%,
+                transparent 100%
+            );
+    }
+
+    /* Hide most expensive CSS layers on mobile */
     .snx-bg-fog2         { display: none; }
     .snx-bg-clouds2      { display: none; }
     .snx-bg-clouds3      { display: none; }
@@ -578,16 +708,86 @@ html.snx-music-active .snx-bg-nebula {
     /* Less fog movement */
     .snx-bg-fog          { animation-duration: 40s; }
     .snx-bg-mist         { display: none; }
+
+    /* Remove will-change from ALL animated layers on mobile.
+       will-change: transform on a fixed full-viewport element forces the GPU
+       to allocate a full-screen off-screen buffer per layer — on phones with
+       limited VRAM this causes frame drops and flickering. */
+    .snx-bg-clouds  { will-change: auto; }
+    .snx-bg-fog     { will-change: auto; }
+    .snx-bg-fog2    { will-change: auto; }
+    .snx-bg-nebula  { will-change: auto; }
+    .snx-bg-energy  { will-change: auto; }
+    .snx-bg-green-accent { will-change: auto; }
+    #snx-rain-veil  { will-change: auto; }
+
+    /* FIX: body::after double-animation override for mobile.
+       The visual-upgrades block runs fogDrift + lightningStreak simultaneously
+       on body::after. The lightningStreak animation uses translateX(-110%) which
+       forces a large off-screen paint on mobile — replace both with only fogDrift. */
+    body::after {
+        animation: fogDrift 22s ease-in-out infinite alternate !important;
+        will-change: auto !important;
+    }
+
+    /* Override fog keyframes to remove scale() on mobile.
+       scale() on a fixed full-viewport element causes the GPU to repaint the
+       entire texture every frame — without scale() it can scroll the cached
+       texture cheaply instead. */
+    @keyframes snxFogDrift1 {
+        0%   { transform: translateX(-5%) translateY(0);     opacity: 0.72; }
+        25%  { transform: translateX(1%)  translateY(-1.5%); opacity: 0.96; }
+        50%  { transform: translateX(-2%) translateY(0.8%);  opacity: 0.88; }
+        75%  { transform: translateX(3%)  translateY(-0.5%); opacity: 0.82; }
+        100% { transform: translateX(6%)  translateY(1.2%);  opacity: 0.76; }
+    }
+    @keyframes snxFogDrift2 {
+        0%   { transform: translateX(4%)  translateY(0);     opacity: 0.55; }
+        30%  { transform: translateX(-1%) translateY(2.0%);  opacity: 0.82; }
+        60%  { transform: translateX(-3%) translateY(0.5%);  opacity: 0.70; }
+        100% { transform: translateX(-5%) translateY(-1.0%); opacity: 0.60; }
+    }
+    @keyframes snxMistDrift {
+        0%   { transform: translateX(-3%) translateY(0);    opacity: 0.55; }
+        50%  { transform: translateX(2%)  translateY(-2%);  opacity: 0.80; }
+        100% { transform: translateX(5%)  translateY(0.5%); opacity: 0.45; }
+    }
+    @keyframes snxEnergySweep {
+        0%   { transform: translateX(-10%); opacity: 0.60; }
+        30%  { transform: translateX(-2%);  opacity: 0.95; }
+        65%  { transform: translateX(5%);   opacity: 0.80; }
+        100% { transform: translateX(12%);  opacity: 0.65; }
+    }
 }
 
 /* ═══════════════════════════════════════════════════════
    TABLET — intermediate performance
    ═══════════════════════════════════════════════════════ */
 @media (min-width: 769px) and (max-width: 1024px) {
+    /* Tablet artwork: still fixed attachment — tablets have no address-bar
+       jump issue. Keep full panoramic scene centered. */
+    #snx-realm-artwork {
+        background-position: center center;
+    }
     .snx-bg-clouds3 { display: none; }
     .snx-bg-stars   { opacity: 0.6; }
     .snx-bg-clouds  { animation-duration: 100s; }
     .snx-bg-clouds2 { animation-duration: 135s; }
+}
+
+/* Landscape phone — center the wide panoramic scene */
+@media (max-width: 768px) and (orientation: landscape) {
+    #snx-realm-artwork {
+        background-position: center center !important;
+        background-size: cover !important;
+    }
+}
+
+/* Very small phones (< 380px wide) — keep castle/moon visible */
+@media (max-width: 380px) {
+    #snx-realm-artwork {
+        background-position: 60% 20% !important;
+    }
 }
 
 /* ═══════════════════════════════════════════════════════

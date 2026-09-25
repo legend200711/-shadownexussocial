@@ -82,7 +82,19 @@
         if (_mounted) return;
         _mounted = true;
 
-        /* Nebula base — deepest layer (z: -2) */
+        /* Safety check: ensure the Nexus Realm artwork element exists.
+           It is placed statically in the HTML but inject it here as a
+           fallback in case the HTML version is somehow absent. */
+        if (!document.getElementById('snx-realm-artwork')) {
+            var artwork = _el('div', 'snx-realm-artwork', '');
+            document.body.insertBefore(artwork, document.body.firstChild);
+        }
+        if (!document.getElementById('snx-readability-overlay')) {
+            var readability = _el('div', 'snx-readability-overlay', '');
+            document.body.insertBefore(readability, document.body.firstChild);
+        }
+
+        /* Nebula base — atmospheric tint above artwork (z: -2) */
         var nebula = _el('div', 'snx-nebula-layer', 'snx-bg-nebula snx-bg-layer');
         document.body.insertBefore(nebula, document.body.firstChild);
 
@@ -163,11 +175,14 @@
             var fog = document.getElementById('snx-fog-layer');
             var fog2 = document.getElementById('snx-fog2-layer');
 
-            if (clouds)  clouds.style.marginLeft  = (_parallaxTX * 0.6).toFixed(2) + 'px';
-            if (clouds2) clouds2.style.marginLeft = (_parallaxTX * 0.4).toFixed(2) + 'px';
-            if (clouds3) clouds3.style.marginLeft = (_parallaxTX * 0.25).toFixed(2) + 'px';
-            if (fog)     fog.style.marginLeft     = (_parallaxTX * 0.3).toFixed(2) + 'px';
-            if (fog2)    fog2.style.marginLeft    = (_parallaxTX * 0.2).toFixed(2) + 'px';
+            /* FIX: use transform: translateX() instead of marginLeft.
+               marginLeft triggers layout (reflow) every frame on all affected elements.
+               translateX is GPU-composited and does NOT cause layout recalculation. */
+            if (clouds)  clouds.style.transform  = 'translateX(' + (_parallaxTX * 0.6).toFixed(2) + 'px)';
+            if (clouds2) clouds2.style.transform = 'translateX(' + (_parallaxTX * 0.4).toFixed(2) + 'px)';
+            if (clouds3) clouds3.style.transform = 'translateX(' + (_parallaxTX * 0.25).toFixed(2) + 'px)';
+            if (fog)     fog.style.transform     = 'translateX(' + (_parallaxTX * 0.3).toFixed(2) + 'px)';
+            if (fog2)    fog2.style.transform    = 'translateX(' + (_parallaxTX * 0.2).toFixed(2) + 'px)';
 
             /* Tell the canvas engine about parallax offset */
             window._snxParallaxX = _parallaxTX;

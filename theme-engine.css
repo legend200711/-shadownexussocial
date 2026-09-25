@@ -96,12 +96,18 @@ body {
 
 /* ═══════════════════════════════════════════════════════════════════
    §3  THEME BACKGROUND LAYER
-   Sits below all content. Handles image/gradient/solid backgrounds.
+   Sits below all content including the Nexus Realm artwork.
+   When no custom background-image is set, it shows the fallback
+   dark colour; the Nexus Realm artwork (z-index:-3) sits above it.
    ═══════════════════════════════════════════════════════════════════ */
 #snx-theme-bg {
   position: fixed;
   inset: 0;
-  z-index: -2;
+  /* z-index: -4 — below the Nexus Realm artwork (-3) so the artwork
+     is always the world. If a Founder sets a custom bg, it won't show
+     over the artwork — profile themes are layered via the nexus-intro
+     and profile-theme systems instead. */
+  z-index: -4;
   pointer-events: none;
   background-image: var(--theme-bg-image);
   background-size: var(--theme-bg-size);
