@@ -44,7 +44,7 @@
 
 <!-- ── Shared stylesheet ── -->
 <link rel="stylesheet" href="snx-living-bg.css?v=SNS-2026-CINEMATIC-001">
-<link rel="stylesheet" href="nexus-rooms.css?v=SNS-2026-CINEMATIC-002">
+<link rel="stylesheet" href="nexus-rooms.css?v=SNS-2026-ROOMS-V2">
 <link rel="stylesheet" href="style.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <link rel="stylesheet" href="album.css?v=SNS-2026-GLOBAL-REPAIR-002">
 <link rel="stylesheet" href="profile-music.css?v=SNS-2026-GLOBAL-REPAIR-002">
@@ -8823,7 +8823,7 @@ body.arcade-fs-ios body::after { display:none !important; }
     </p>
 
     <div class="nxr-rooms-grid" id="nxrRoomsGrid">
-        <!-- Initial state is replaced by nexus-rooms.js based on auth + query result -->
+        <!-- Populated by nexus-rooms.js -->
     </div>
 
 </div>
@@ -8841,7 +8841,9 @@ body.arcade-fs-ios body::after { display:none !important; }
             <div class="nxr-room-sub" id="nxrRoomSub">Host: —</div>
         </div>
         <div class="nxr-header-actions">
-            <button class="nxr-end-btn" id="nxrEndRoomBtn" onclick="NexusRooms.endRoom()">⏹ End Room</button>
+            <span class="nxr-lock-badge" id="nxrLockBadge" style="display:none;font-size:11px;color:#ff8833;padding:3px 8px;border:1px solid rgba(255,136,0,0.3);border-radius:6px;"></span>
+            <button class="nxr-end-btn" id="nxrEndRoomBtn" onclick="NexusRooms.endRoom()" style="display:none;">⏹ End Room</button>
+            <button class="nxr-ctrl-btn" id="nxrHostPanelBtn" onclick="NexusRooms.toggleHostPanel()" style="display:none;font-size:12px;padding:7px 12px;" title="Host Controls">⚙ Controls</button>
             <button class="nxr-leave-btn" onclick="NexusRooms.leaveRoom()">🚪 Leave</button>
         </div>
     </div>
@@ -8849,35 +8851,118 @@ body.arcade-fs-ios body::after { display:none !important; }
     <!-- Room Body -->
     <div class="nxr-body">
 
-        <!-- Media / Video Panel -->
+        <!-- Media / Music / Video Panel -->
         <div class="nxr-media-panel">
+
+            <!-- Now Playing bar (always visible when music playing) -->
+            <div class="nxr-now-playing" id="nxrNowPlaying" style="display:none;">
+                <div class="nxr-np-icon">🎵</div>
+                <div class="nxr-np-text">
+                    <div class="nxr-np-title" id="nxrNpTitle"></div>
+                    <div class="nxr-np-artist" id="nxrNpArtist"></div>
+                </div>
+                <div class="nxr-np-status" id="nxrNpStatus">▶ Playing</div>
+                <!-- Local volume for participants -->
+                <input type="range" class="nxr-vol-slider" id="nxrVolSlider" min="0" max="1" step="0.05" value="1"
+                       oninput="var qp=document.getElementById('nxrQueueAudio');if(qp)qp.volume=this.value;"
+                       title="Local volume">
+            </div>
+
+            <!-- Video area (Watch Together) -->
             <div class="nxr-video-area">
                 <div class="nxr-video-placeholder" id="nxrVideoPlaceholder">
                     <div class="nxr-video-placeholder-icon">🎬</div>
-                    <div style="color:#3a6a9a;font-size:13px;">No media loaded yet</div>
-                    <div style="color:#2a4a6a;font-size:11px;margin-top:6px;">Host can load a video or audio URL below</div>
+                    <div style="color:#3a6a9a;font-size:13px;">No media loaded</div>
+                    <div style="color:#2a4a6a;font-size:11px;margin-top:6px;">Host can load a video URL or add music below</div>
                 </div>
                 <video id="nxrVideoPlayer" playsinline style="display:none;width:100%;height:100%;object-fit:contain;"></video>
             </div>
 
-            <!-- Host Controls -->
+            <!-- Hidden audio element for music queue playback -->
+            <audio id="nxrQueueAudio" style="display:none;" preload="none"></audio>
+
+            <!-- TAP TO JOIN AUDIO (autoplay policy) -->
+            <div id="nxrTapAudioBtn" style="display:none;align-items:center;justify-content:center;padding:10px;background:rgba(0,30,70,0.85);border-top:1px solid rgba(0,174,239,0.2);">
+                <button class="nxr-tap-audio-btn" onclick="NexusRooms.tapToJoinAudio()">🔊 TAP TO JOIN AUDIO</button>
+            </div>
+
+            <!-- Watch Together Host Controls (video) -->
             <div class="nxr-host-controls" id="nxrHostControls" style="display:none;">
                 <input type="url" class="nxr-media-url-input" id="nxrMediaUrlInput"
-                       placeholder="Paste video/audio URL…"
+                       placeholder="Paste video URL for Watch Together…"
                        onkeydown="if(event.key==='Enter')NexusRooms.hostSetMedia()">
-                <button class="nxr-ctrl-btn" onclick="NexusRooms.hostSetMedia()" title="Load Media">📂</button>
+                <button class="nxr-ctrl-btn" onclick="NexusRooms.hostSetMedia()" title="Load Video">📺</button>
                 <button class="nxr-ctrl-btn" onclick="NexusRooms.hostPlay()"     title="Play">▶</button>
                 <button class="nxr-ctrl-btn" onclick="NexusRooms.hostPause()"    title="Pause">⏸</button>
                 <button class="nxr-ctrl-btn" onclick="NexusRooms.hostSeekBack()" title="−10s">⏪</button>
                 <button class="nxr-ctrl-btn" onclick="NexusRooms.hostSeekFwd()"  title="+10s">⏩</button>
-                <div class="nxr-sync-status" id="nxrSyncStatus">
-                    <span class="nxr-sync-dot"></span> SYNC
-                </div>
+                <div class="nxr-sync-status" id="nxrSyncStatus"><span class="nxr-sync-dot"></span> SYNC</div>
             </div>
 
-            <!-- Participant sync indicator -->
-            <div id="nxrPartSyncStatus" style="display:none;padding:8px 14px;background:rgba(5,12,28,0.95);border-top:1px solid rgba(0,60,120,0.3);font-size:11px;color:#3a6a9a;display:flex;align-items:center;gap:6px;flex-shrink:0;">
-                <span class="nxr-sync-dot"></span> Synced to host
+            <!-- Host secondary panel (invite, music, lock, privacy) -->
+            <div class="nxr-host-panel" id="nxrHostPanel" style="display:none;">
+
+                <!-- Music Queue Controls -->
+                <div class="nxr-panel-section">
+                    <div class="nxr-panel-section-title">🎵 MUSIC QUEUE</div>
+                    <div class="nxr-queue-controls">
+                        <button class="nxr-ctrl-btn" onclick="NexusRooms.queuePlayPause()" title="Play/Pause">⏯</button>
+                        <button class="nxr-ctrl-btn" onclick="NexusRooms.queueNext()"      title="Next Track">⏭</button>
+                        <button class="nxr-ctrl-btn" onclick="NexusRooms.openAddMusicPanel()" title="Add Music">＋ Add</button>
+                        <button class="nxr-ctrl-btn" onclick="NexusRooms.queueClear()"    title="Clear Queue" style="color:#ff8833!important;">Clear</button>
+                    </div>
+                    <div class="nxr-queue-list" id="nxrQueueList"></div>
+
+                    <!-- Add Music Panel -->
+                    <div id="nxrAddMusicPanel" style="display:none;margin-top:10px;">
+                        <!-- Hidden file input -->
+                        <input type="file" id="nxrAudioFileInput" accept=".mp3,.m4a,.aac,.ogg,.wav,.flac,.opus,.webm,audio/*"
+                               style="display:none;" onchange="NexusRooms.handleAudioFileSelect(this)">
+
+                        <!-- Upload from device -->
+                        <button class="nxr-add-music-btn" onclick="NexusRooms.triggerAudioUpload()">📱 Upload from Device</button>
+                        <!-- Upload progress -->
+                        <div id="nxrUploadBar" style="display:none;margin-top:8px;">
+                            <div class="nxr-upload-track">
+                                <div class="nxr-upload-fill" id="nxrUploadFill" style="width:0%"></div>
+                            </div>
+                            <div class="nxr-upload-label" id="nxrUploadLabel"></div>
+                        </div>
+
+                        <!-- Add by link -->
+                        <div style="margin-top:10px;display:flex;gap:6px;align-items:center;">
+                            <input type="url" class="nxr-form-input" id="nxrMusicLinkInput"
+                                   placeholder="Direct audio URL (MP3, M4A, WAV…)"
+                                   onkeydown="if(event.key==='Enter')NexusRooms.addMusicByLink()"
+                                   style="flex:1;font-size:12px;padding:7px 10px;">
+                            <button class="nxr-ctrl-btn" onclick="NexusRooms.addMusicByLink()" title="Add Link">🔗 Add</button>
+                        </div>
+                        <div id="nxrMusicLinkError" style="display:none;font-size:11px;color:#ff5577;margin-top:4px;font-weight:700;letter-spacing:0.5px;"></div>
+                    </div>
+                </div>
+
+                <!-- Invite Panel -->
+                <div class="nxr-panel-section" id="nxrInviteSection">
+                    <div class="nxr-panel-section-title">👤 INVITE</div>
+                    <button class="nxr-add-music-btn" onclick="NexusRooms.openInvitePanel()">👤 Invite People</button>
+                    <div id="nxrInvitePanel" style="display:none;margin-top:8px;">
+                        <input type="text" class="nxr-form-input" id="nxrInviteSearchInput"
+                               placeholder="Search by username or name…"
+                               oninput="NexusRooms.searchUsersToInvite()"
+                               style="font-size:12px;padding:7px 10px;margin-bottom:8px;">
+                        <div id="nxrInviteResults"></div>
+                    </div>
+                </div>
+
+                <!-- Room Controls -->
+                <div class="nxr-panel-section">
+                    <div class="nxr-panel-section-title">⚙ ROOM CONTROLS</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                        <button class="nxr-ctrl-btn" id="nxrLockBtn" onclick="NexusRooms.toggleLockRoom()" style="font-size:12px;padding:7px 12px;">🔒 Lock Room</button>
+                        <button class="nxr-ctrl-btn" onclick="NexusRooms.toggleRoomPrivacy()" style="font-size:12px;padding:7px 12px;">🌐 Toggle Privacy</button>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -8928,6 +9013,17 @@ body.arcade-fs-ios body::after { display:none !important; }
             <option value="watch">📺 Watch Together</option>
             <option value="music">🎵 Music Session</option>
         </select>
+
+        <!-- ROOM PRIVACY — default: PRIVATE -->
+        <label class="nxr-form-label">Room Privacy</label>
+        <select class="nxr-form-input nxr-form-select" id="nxrRoomPrivacySelect">
+            <option value="private" selected>🔒 Private — Only invited users can enter</option>
+            <option value="public">🌐 Public — Any authenticated user can join</option>
+        </select>
+        <div class="nxr-privacy-hint" id="nxrPrivacyHint">
+            <span class="nxr-privacy-hint-text">🔒 <b>Private</b>: Only users you invite can enter. Enforced by Firebase security — not just hidden in the UI.</span>
+        </div>
+
         <div class="nxr-form-row">
             <button class="nxr-btn-cancel" onclick="NexusRooms.closeCreateModal()">Cancel</button>
             <button class="nxr-btn-create" id="nxrCreateSubmitBtn" onclick="NexusRooms.createRoom()">Create Room</button>
@@ -33377,7 +33473,7 @@ window.snxFounderPanelCleanup = (function() {
      Loaded after main app so Firebase is already initialized.
      ═══════════════════════════════════════════════════════════ -->
 <script src="snx-living-bg.js?v=SNS-2026-CINEMATIC-001"></script>
-<script src="nexus-rooms.js?v=SNS-2026-CINEMATIC-002"></script>
+<script src="nexus-rooms.js?v=SNS-2026-ROOMS-V2"></script>
 <script>
 /* ── Sync Living Backgrounds toggle with saved preference ── */
 (function() {

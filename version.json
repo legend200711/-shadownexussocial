@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-CINEMATIC-001",
-  "swVersion": "v65",
-  "deployedAt": "2025-07-22T00:00:00Z",
+  "buildId": "SNS-2026-ROOMS-V2",
+  "swVersion": "v66",
+  "deployedAt": "2025-07-23T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
-  "nexusVersion": "1.1.0",
-  "note": "SNS-2026-CINEMATIC-001: Added Living Backgrounds (snx-living-bg.css/js), Nexus Rooms + Watch Together (nexus-rooms.css/js), Cinematic Page Transitions (integrated into existing firePortalTransition). Firebase rules updated for nexusRooms collection. Service worker bumped to v65."
+  "nexusVersion": "2.0.0",
+  "note": "SNS-2026-ROOMS-V2: Chat root-cause fix (removed orderBy on subcollection), public/private rooms, Firebase-enforced private room security, invite system (roomInvites collection), music queue with R2 upload, synchronized music playback, host controls panel, lock room, participant kick, TAP TO JOIN AUDIO. Firebase rules + indexes updated. Cloudflare Worker updated for rooms/ path prefix."
 }

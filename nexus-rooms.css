@@ -775,3 +775,285 @@
     .nxr-room-title { font-size: 13px; }
     .nxr-leave-btn, .nxr-end-btn { padding: 6px 10px; font-size: 11px; }
 }
+
+/* ═══════════════════════════════════════════════════
+   NEXUS ROOMS V2 — NEW STYLES
+   ═══════════════════════════════════════════════════ */
+
+/* Privacy badges */
+.nxr-privacy-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    letter-spacing: 0.3px;
+    vertical-align: middle;
+}
+.nxr-priv-private {
+    background: rgba(255,136,0,0.1);
+    border: 1px solid rgba(255,136,0,0.3);
+    color: #ff8833;
+}
+.nxr-priv-public {
+    background: rgba(0,174,239,0.1);
+    border: 1px solid rgba(0,174,239,0.3);
+    color: #00AEEF;
+}
+
+/* Privacy hint in create modal */
+.nxr-privacy-hint {
+    margin: 8px 0 0;
+    padding: 8px 10px;
+    background: rgba(0,30,70,0.6);
+    border: 1px solid rgba(0,174,239,0.15);
+    border-radius: 7px;
+    font-size: 12px;
+    color: #4a8ab0;
+    line-height: 1.5;
+}
+
+/* Now Playing bar */
+.nxr-now-playing {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: rgba(0,20,50,0.97);
+    border-bottom: 1px solid rgba(0,174,239,0.2);
+    flex-shrink: 0;
+    min-height: 46px;
+}
+.nxr-np-icon { font-size: 16px; flex-shrink: 0; }
+.nxr-np-text { flex: 1; min-width: 0; }
+.nxr-np-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #e0f0ff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.nxr-np-artist {
+    font-size: 10px;
+    color: #4a7a9a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.nxr-np-status {
+    font-size: 10px;
+    font-weight: 700;
+    color: #39FF14;
+    flex-shrink: 0;
+    letter-spacing: 0.3px;
+}
+.nxr-vol-slider {
+    width: 60px;
+    flex-shrink: 0;
+    accent-color: #00AEEF;
+    cursor: pointer;
+}
+
+/* TAP TO JOIN AUDIO button */
+.nxr-tap-audio-btn {
+    background: linear-gradient(135deg, #003d88, #0066cc) !important;
+    border: 1px solid rgba(0,180,255,0.6) !important;
+    color: #fff !important;
+    padding: 9px 18px !important;
+    border-radius: 20px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    letter-spacing: 0.5px !important;
+    animation: nxrCorePulse 1.8s ease-in-out infinite;
+}
+
+/* Host secondary panel */
+.nxr-host-panel {
+    background: rgba(3, 8, 22, 0.98);
+    border-top: 1px solid rgba(0,60,120,0.3);
+    overflow-y: auto;
+    max-height: 340px;
+    flex-shrink: 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,100,220,0.2) transparent;
+}
+.nxr-panel-section {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(0,40,80,0.4);
+}
+.nxr-panel-section:last-child { border-bottom: none; }
+.nxr-panel-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #2a5a7a;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    margin-bottom: 8px;
+}
+
+/* Queue */
+.nxr-queue-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.nxr-queue-list {
+    max-height: 100px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,100,200,0.2) transparent;
+}
+.nxr-queue-empty {
+    font-size: 11px;
+    color: #2a4a6a;
+    font-style: italic;
+    padding: 4px 0;
+}
+.nxr-queue-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 6px;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+.nxr-queue-item:hover { background: rgba(0,40,100,0.3); }
+.nxr-queue-item.nxr-queue-current {
+    background: rgba(0,174,239,0.08);
+    border: 1px solid rgba(0,174,239,0.2);
+}
+.nxr-queue-info { flex: 1; min-width: 0; }
+.nxr-queue-title {
+    font-size: 12px;
+    color: #c0d8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.nxr-queue-artist {
+    font-size: 10px;
+    color: #3a6a9a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.nxr-queue-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.nxr-q-btn {
+    background: rgba(0,40,100,0.5) !important;
+    border: 1px solid rgba(0,174,239,0.3) !important;
+    color: #00AEEF !important;
+    font-size: 11px !important;
+    padding: 3px 7px !important;
+    border-radius: 5px !important;
+    cursor: pointer !important;
+    transition: all 0.15s !important;
+    line-height: 1;
+}
+.nxr-q-btn:hover { background: rgba(0,80,200,0.3) !important; }
+.nxr-q-remove { color: #ff6655 !important; border-color: rgba(255,80,60,0.3) !important; }
+.nxr-q-remove:hover { background: rgba(200,40,30,0.2) !important; }
+
+/* Add music button */
+.nxr-add-music-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    background: rgba(0,40,100,0.5) !important;
+    border: 1px solid rgba(0,174,239,0.35) !important;
+    color: #00AEEF !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.15s !important;
+    letter-spacing: 0.3px;
+    margin-bottom: 6px;
+}
+.nxr-add-music-btn:hover { background: rgba(0,80,200,0.3) !important; border-color: rgba(0,174,239,0.7) !important; }
+
+/* Upload progress bar */
+.nxr-upload-track {
+    height: 4px;
+    background: rgba(0,60,120,0.4);
+    border-radius: 2px;
+    overflow: hidden;
+}
+.nxr-upload-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00aeef, #39FF14);
+    border-radius: 2px;
+    transition: width 0.2s ease;
+}
+.nxr-upload-label {
+    font-size: 10px;
+    color: #39FF14;
+    margin-top: 3px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+/* Room list Now Playing */
+.nxr-room-np {
+    font-size: 11px;
+    color: #2a6a9a;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Invite results */
+.nxr-invite-result-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 7px;
+    border: 1px solid rgba(0,60,120,0.3);
+    margin-bottom: 4px;
+    background: rgba(0,20,50,0.5);
+}
+.nxr-invite-user-info { flex: 1; min-width: 0; }
+.nxr-invite-user-name { font-size: 12px; color: #c0d8f0; font-weight: 600; }
+.nxr-invite-user-handle { font-size: 10px; color: #3a6a9a; }
+.nxr-invite-send-btn {
+    padding: 5px 10px;
+    background: linear-gradient(135deg, #003388, #0066cc) !important;
+    border: 1px solid rgba(0,180,255,0.5) !important;
+    color: #fff !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+.nxr-invite-send-btn:disabled { opacity: 0.5; cursor: default !important; }
+.nxr-invite-no-results { font-size: 11px; color: #3a5a7a; font-style: italic; padding: 4px 0; }
+
+/* Kick button on participant chip */
+.nxr-kick-btn {
+    color: #ff6655;
+    cursor: pointer;
+    font-size: 10px;
+    margin-left: 2px;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+}
+.nxr-kick-btn:hover { opacity: 1; }
+
+/* Mobile: host panel below chat on small screens */
+@media (max-width: 768px) {
+    .nxr-host-panel { max-height: 260px; }
+    .nxr-now-playing { padding: 6px 10px; }
+    .nxr-vol-slider { width: 50px; }
+}
+
+@media (max-width: 480px) {
+    .nxr-queue-controls { gap: 4px; }
+    .nxr-ctrl-btn { font-size: 13px !important; padding: 7px 10px !important; }
+}

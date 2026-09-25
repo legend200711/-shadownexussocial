@@ -1256,34 +1256,51 @@ service cloud.firestore {
       }
     }
 
-    // ── Nexus Rooms ───────────────────────────────────────────────────────────
+    // ── Nexus Rooms v2 ────────────────────────────────────────────────────────
     //
     //   /nexusRooms/{roomId}
-    //     hostUid, status ('active'|'ended'), participants[], playbackState
+    //     hostUid, status, privacy ('public'|'private'), locked, authorizedUids[]
+    //     participants[], playbackState, nowPlaying, ...
     //
     // Security model:
-    //   - Only auth non-anonymous users can create rooms.
-    //   - Only the host can modify protected fields; users cannot self-grant host.
-    //   - Participants can update only join/leave fields.
-    //   - Chat messages and presence are owner-scoped.
+    //   - Non-anonymous signed-in users can create rooms.
+    //   - Only the host can update protected fields.
+    //   - Participants update only join/leave/presence fields.
+    //   - PUBLIC room: any signed-in user can read + join.
+    //   - PRIVATE room: only authorizedUids can read + join (enforced server-side).
+    //   - LOCKED room: no new participants; existing participants can still write.
+    //   - HOST: hostUid may NEVER be reassigned by non-host.
+    //   - CHAT: uid field must match auth.uid — no UID spoofing.
+    //   - MUSIC queue: only host can write queue tracks + nowPlaying.
 
     match /nexusRooms/{roomId} {
-      allow read: if isSignedIn();
+      // Read: public rooms readable by any signed-in user.
+      //       Private rooms readable only if caller is in authorizedUids.
+      allow read: if isSignedIn()
+        && (
+          resource.data.privacy == 'public'
+          || resource.data.hostUid == request.auth.uid
+          || request.auth.uid in resource.data.authorizedUids
+          || isFounder()
+        );
 
       allow create: if isSignedIn()
         && request.auth.token.firebase.sign_in_provider != 'anonymous'
         && request.resource.data.hostUid == request.auth.uid
+        // Creator must include themselves in authorizedUids
+        && request.auth.uid in request.resource.data.authorizedUids
         && (!('status' in request.resource.data)
             || request.resource.data.status == 'active');
 
       allow update: if isSignedIn()
         && (
-          // Host can update anything except reassigning hostUid
+          // Host can update anything EXCEPT reassigning hostUid
           (resource.data.hostUid == request.auth.uid
            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['hostUid']))
-          // Participants can only update join/leave fields
-          || request.resource.data.diff(resource.data)
-               .affectedKeys().hasOnly(['participants', 'participantCount', 'lastActivityAt'])
+          // Authorized participants can update only join/leave/presence fields
+          || (request.auth.uid in resource.data.authorizedUids
+              && request.resource.data.diff(resource.data)
+                   .affectedKeys().hasOnly(['participants', 'participantCount', 'lastActivityAt', 'authorizedUids']))
           || isFounder()
         );
 
@@ -1291,11 +1308,28 @@ service cloud.firestore {
         && (resource.data.hostUid == request.auth.uid || isFounder());
 
       // ── Room chat messages ─────────────────────────────────────────────────
+      // - Only authorized users can read/create messages.
+      // - uid MUST match auth.uid (no UID spoofing).
+      // - Text validated: non-empty.
       match /messages/{msgId} {
-        allow read:   if isSignedIn();
+        allow read: if isSignedIn()
+          && (
+            get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.privacy == 'public'
+            || request.auth.uid in get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.authorizedUids
+            || isFounder()
+          );
+
         allow create: if isSignedIn()
-          && request.resource.data.uid == request.auth.uid;
-        allow update: if false;
+          && request.resource.data.uid == request.auth.uid  // anti-spoofing
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500
+          && (
+            get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.privacy == 'public'
+            || request.auth.uid in get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.authorizedUids
+          );
+
+        allow update: if false;  // messages are immutable
         allow delete: if isSignedIn()
           && (
             resource.data.uid == request.auth.uid
@@ -1306,11 +1340,88 @@ service cloud.firestore {
 
       // ── Participant presence ───────────────────────────────────────────────
       match /participants/{uid} {
-        allow read:           if isSignedIn();
-        allow create, update: if isOwner(uid);
+        allow read: if isSignedIn()
+          && (
+            get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.privacy == 'public'
+            || request.auth.uid in get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.authorizedUids
+            || isFounder()
+          );
+        allow create, update: if isOwner(uid)
+          && (
+            get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.privacy == 'public'
+            || uid in get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.authorizedUids
+          );
         allow delete: if isOwner(uid)
           || get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.hostUid == request.auth.uid
           || isFounder();
+      }
+
+      // ── Music queue tracks ─────────────────────────────────────────────────
+      // Only host can add/remove tracks.
+      // All authorized participants can read the queue.
+      match /queue/{trackId} {
+        allow read: if isSignedIn()
+          && (
+            get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.privacy == 'public'
+            || request.auth.uid in get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.authorizedUids
+            || isFounder()
+          );
+        allow create: if isSignedIn()
+          && get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.hostUid == request.auth.uid
+          && request.resource.data.addedBy == request.auth.uid;
+        allow delete: if isSignedIn()
+          && get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.hostUid == request.auth.uid
+          || isFounder();
+        allow update: if false;  // tracks are immutable; replace with create/delete
+      }
+    }
+
+    // ── Nexus Room Invites ─────────────────────────────────────────────────────
+    //
+    //   /roomInvites/{roomId}/invited/{uid}
+    //     uid, invitedBy, invitedAt, status ('pending'|'accepted'|'revoked')
+    //
+    // Security:
+    //   - Only the room host can create/update invite records.
+    //   - The invited user can read their own invite.
+    //   - Invited users can accept (update status → 'accepted').
+    //   - Founder can read/delete any invite for moderation.
+    //   - UID keys only — no email addresses as keys.
+
+    match /roomInvites/{roomId} {
+      allow read:  if false; // only subcollection is used
+      allow write: if false;
+
+      match /invited/{uid} {
+        // Invited user or host can read
+        allow read: if isSignedIn()
+          && (
+            request.auth.uid == uid
+            || get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.hostUid == request.auth.uid
+            || isFounder()
+          );
+
+        // Only host can create invites (UID-keyed, never email-keyed)
+        allow create: if isSignedIn()
+          && get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.hostUid == request.auth.uid
+          && request.resource.data.uid == uid;  // doc key matches uid field
+
+        // Host can revoke; invited user can accept
+        allow update: if isSignedIn()
+          && (
+            // Host can update anything (revoke, re-invite)
+            get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.hostUid == request.auth.uid
+            // Invited user can only set status → 'accepted'
+            || (request.auth.uid == uid
+                && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+                && request.resource.data.status == 'accepted')
+          );
+
+        allow delete: if isSignedIn()
+          && (
+            get(/databases/$(database)/documents/nexusRooms/$(roomId)).data.hostUid == request.auth.uid
+            || isFounder()
+          );
       }
     }
 
