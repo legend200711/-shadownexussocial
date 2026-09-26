@@ -1086,7 +1086,8 @@
         if (ssBar) ssBar.style.display = 'flex';
 
         viewer.classList.add('open');
-        document.body.style.overflow = 'hidden';
+        if (typeof window.snxLockScroll === 'function') window.snxLockScroll();
+        else document.body.style.overflow = 'hidden';
         renderViewerPhoto();
     }
 
@@ -1094,7 +1095,8 @@
         stopSlideshow();
         const viewer = document.getElementById('snxAlbumViewer');
         if (viewer) viewer.classList.remove('open');
-        document.body.style.overflow = '';
+        if (typeof window.snxUnlockScroll === 'function') window.snxUnlockScroll();
+        else document.body.style.overflow = '';
         const img = document.getElementById('snxAvImg');
         if (img) img.style.transform = '';
     }

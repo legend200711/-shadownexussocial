@@ -6568,6 +6568,17 @@ body.arcade-fs-ios body::after { display:none !important; }
     visibility: hidden;
     pointer-events: none;
 }
+/* While the cinematic intro overlay is present the auth gate must be
+   completely invisible — the intro IS the visual loading experience.
+   nexus-intro.js adds .resolved to the gate synchronously before the
+   overlay paints, but this CSS rule acts as a belt-and-suspenders
+   guard so the gate can never be seen behind the intro. */
+body:has(#snxIntroOverlay:not(.snxi-gone)) #snx-auth-gate {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: none !important;
+}
 /* .snx-gate-logo — when used on an <img>, the image IS the logo (no circle box).
    realm.css overrides this further, but this base rule avoids showing a circle. */
 img.snx-gate-logo {
@@ -12197,6 +12208,60 @@ div.snx-gate-logo {
     }
   }
 
+  /* ═══════════════════════════════════════════════════════════════════════
+     CENTRALIZED SCROLL-LOCK MANAGER
+     All modal open/close paths call snxLockScroll() / snxUnlockScroll().
+     A reference counter ensures scroll stays locked while ANY modal is open
+     and only unlocks when ALL modals are closed.  Direct writes to
+     document.body.style.overflow are replaced with these helpers throughout
+     the application.  The intro overlay uses its own _lockScroll/_unlockScroll
+     (nexus-intro.js) which are exempt from this counter — they reset on every
+     page session anyway.
+     ═══════════════════════════════════════════════════════════════════════ */
+  window._snxScrollLockCount = window._snxScrollLockCount || 0;
+  window._snxScrollSavedY    = window._snxScrollSavedY    || 0;
+
+  window.snxLockScroll = function snxLockScroll() {
+      window._snxScrollLockCount++;
+      if (window._snxScrollLockCount === 1) {
+          // First locker — apply the lock
+          window._snxScrollSavedY = window.scrollY || window.pageYOffset || 0;
+          document.body.style.overflow  = 'hidden';
+          document.body.style.overflowY = 'hidden';
+      }
+  };
+
+  window.snxUnlockScroll = function snxUnlockScroll() {
+      if (window._snxScrollLockCount <= 0) {
+          // Safety: already unlocked — just ensure body is clean
+          window._snxScrollLockCount = 0;
+          document.body.style.overflow  = '';
+          document.body.style.overflowY = '';
+          return;
+      }
+      window._snxScrollLockCount--;
+      if (window._snxScrollLockCount === 0) {
+          // Last locker released — restore scroll
+          document.body.style.overflow  = '';
+          document.body.style.overflowY = '';
+      }
+  };
+
+  // Safety: navTo always resets the counter and scroll state so a stuck modal
+  // can never permanently block scrolling after page navigation.
+  // This is called from navTo() below.
+  window._snxScrollLockReset = function _snxScrollLockReset() {
+      window._snxScrollLockCount = 0;
+      document.body.style.overflow  = '';
+      document.body.style.overflowY = '';
+      document.body.style.position  = '';
+      document.body.style.top       = '';
+      document.body.style.touchAction = '';
+      document.documentElement.style.overflow  = '';
+      document.documentElement.style.overflowY = '';
+      document.documentElement.style.touchAction = '';
+  };
+
   let currentUser = null;
   let userData = null;
   let _authFirstResolved = false; // prevents login-flash on initial page load
@@ -16091,13 +16156,13 @@ div.snx-gate-logo {
 
       const modal = document.getElementById('snxMsgNotifModal');
       if (modal) modal.classList.add('open');
-      document.body.style.overflow = 'hidden';
+      snxLockScroll();
   };
 
   window.snxMsgNotifClose = function() {
       const modal = document.getElementById('snxMsgNotifModal');
       if (modal) modal.classList.remove('open');
-      document.body.style.overflow = '';
+      snxUnlockScroll();
   };
 
   window.snxMsgNotifOpenProfile = function() {
@@ -17133,7 +17198,7 @@ div.snx-gate-logo {
       // Always restore body scroll when tearing down the modal — this catches
       // Android paths where the user closed the modal via back gesture or
       // navigation without going through ipcModalClose().
-      document.body.style.overflow = '';
+      snxUnlockScroll();
       // Stop real-time listeners
       if (_m_msgUnsub)  { _m_msgUnsub();  _m_msgUnsub  = null; }
       if (_m_stUnsub)   { _m_stUnsub();   _m_stUnsub   = null; }
@@ -17180,7 +17245,7 @@ div.snx-gate-logo {
   // Wraps _mClose, restores body scroll, and resets visualViewport offsets
   // so the modal isn't incorrectly positioned the next time it opens.
   window.ipcModalClose = function() {
-      document.body.style.overflow = '';
+      snxUnlockScroll();
       // Reset any styles applied by the visualViewport keyboard handler
       const _modal = document.getElementById('ipcModal');
       if (_modal) { _modal.style.top = ''; _modal.style.height = ''; }
@@ -18867,7 +18932,7 @@ div.snx-gate-logo {
       if (_m_chId === newChId && _m_ready) {
           const modal = document.getElementById('ipcModal');
           if (modal && !modal.classList.contains('open')) modal.classList.add('open');
-          document.body.style.overflow = 'hidden';
+          snxLockScroll();
           setTimeout(() => {
               const inp = document.getElementById('ipcModalInput');
               if (inp) inp.focus();
@@ -18888,7 +18953,7 @@ div.snx-gate-logo {
       if (modal) modal.classList.add('open');
 
       // Prevent body scroll on mobile while modal is open
-      document.body.style.overflow = 'hidden';
+      snxLockScroll();
 
       // Grab elements we'll use below
       const inp     = document.getElementById('ipcModalInput');
@@ -21098,12 +21163,12 @@ div.snx-gate-logo {
       _svIdx = 0;
       _svShowSlide(0);
       document.getElementById('storyViewerModal').classList.add('open');
-      document.body.style.overflow = 'hidden';
+      snxLockScroll();
   };
 
   window.closeStoryViewer = function() {
       document.getElementById('storyViewerModal').classList.remove('open');
-      document.body.style.overflow = '';
+      snxUnlockScroll();
       _svStop();
       const vid = document.getElementById('svVid');
       vid.pause(); vid.src = '';
@@ -21375,8 +21440,7 @@ function navTo(pageId) {
     // ── Android scroll-lock safety: any modal that set overflow:hidden on body
     //    must be cleaned up when the user navigates away.  This is the single
     //    guaranteed recovery path for all stale scroll-locks on Android Chrome.
-    document.body.style.overflow = '';
-    document.body.style.top      = '';
+    window._snxScrollLockReset();
     document.body.classList.remove('arcade-open');
     // Scroll to top on every page navigation so Founder Panel content
     // never appears at the scroll position of a previously-visited page
@@ -24159,7 +24223,7 @@ window.openMediaViewer = function(type, url) {
     else if (type === 'video') { vid.src = url; vid.style.display = 'block'; }
     else if (type === 'audio') { aud.src = url; aud.style.display = 'block'; }
     viewer.classList.add('open');
-    document.body.style.overflow = 'hidden';
+    snxLockScroll();
 };
 
 window.closeMediaViewer = function() {
@@ -24169,7 +24233,7 @@ window.closeMediaViewer = function() {
     if (vid) { vid.pause(); vid.src = ''; }
     if (aud) { aud.pause(); aud.src = ''; }
     if (viewer) viewer.classList.remove('open');
-    document.body.style.overflow = '';
+    snxUnlockScroll();
 };
 
 // Close viewer on Escape key
@@ -31746,15 +31810,21 @@ function closeMobileDrawer() {
             document.getElementById('arcadeGameModal').classList.contains('open'))
     );
     if (!_modalOpen) {
-        // Clear shorthand AND individual properties — belt-and-suspenders for Android
-        document.body.style.overflow  = '';
-        document.body.style.overflowY = '';
-        document.body.style.overflowX = '';
-        // Restore touch-action so Android vertical pan gestures reach the page
-        document.body.style.touchAction = '';
-        document.documentElement.style.overflow  = '';
-        document.documentElement.style.overflowY = '';
-        document.documentElement.style.touchAction = '';
+        // Reset the centralized scroll-lock counter and all inline style overrides.
+        // snxScrollLockReset() clears overflow, position, top, and touch-action on
+        // both body and html so Android Chrome reliably restores vertical scrolling.
+        if (typeof window._snxScrollLockReset === 'function') {
+            window._snxScrollLockReset();
+        } else {
+            // Fallback (should never be needed — manager is declared above)
+            document.body.style.overflow  = '';
+            document.body.style.overflowY = '';
+            document.body.style.overflowX = '';
+            document.body.style.touchAction = '';
+            document.documentElement.style.overflow  = '';
+            document.documentElement.style.overflowY = '';
+            document.documentElement.style.touchAction = '';
+        }
     }
 }
 window.closeMobileDrawer = closeMobileDrawer;
@@ -33029,11 +33099,11 @@ window.snxConfirm = function({ title = 'Confirm', body = '', confirmText = 'Conf
       okBtn.style.borderColor = danger ? 'rgba(255,51,80,0.6)' : 'rgba(0,174,239,0.55)';
     }
     modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    snxLockScroll();
 
     const cleanup = (result) => {
       modal.style.display = 'none';
-      document.body.style.overflow = '';
+      snxUnlockScroll();
       okBtn.onclick = null; cancelBtn.onclick = null; modal.onclick = null;
       resolve(result);
     };
@@ -33209,13 +33279,13 @@ window.snxOpenReportModal = function(type, targetId, targetUid, labelText) {
   if (uidEl)    uidEl.value          = targetUid || '';
   if (detailEl) detailEl.value       = '';
   modal.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
+  snxLockScroll();
 };
 
 window.snxCloseReportModal = function() {
   const modal = document.getElementById('snxReportModal');
   if (modal) modal.style.display = 'none';
-  document.body.style.overflow = '';
+  snxUnlockScroll();
 };
 
 window.snxSubmitReport = async function() {
@@ -33515,7 +33585,7 @@ if (window._snxAuthReadyQueue) {
     if (confirmModal && confirmModal.style.display !== 'none') {
       const cancelBtn = document.getElementById('snxConfirmCancelBtn');
       if (cancelBtn) cancelBtn.click();
-      document.body.style.overflow = ''; // Android safety
+      snxUnlockScroll(); // Android safety
       return;
     }
 
@@ -33564,7 +33634,7 @@ if (window._snxAuthReadyQueue) {
     const reauthModal = document.getElementById('reauthModal');
     if (reauthModal && reauthModal.style.display !== 'none') {
       reauthModal.style.display = 'none';
-      document.body.style.overflow = '';
+      snxUnlockScroll();
       return;
     }
 
@@ -33661,7 +33731,7 @@ window.snxFounderPanelCleanup = (function() {
     const confirmModal = document.getElementById('snxConfirmModal');
     if (confirmModal && confirmModal.style.display !== 'none') {
       confirmModal.style.display = 'none';
-      document.body.style.overflow = '';
+      snxUnlockScroll();
     }
 
     // Any inline TCC confirm modal appended to document.body as a fallback
@@ -33716,7 +33786,7 @@ window.snxFounderPanelCleanup = (function() {
 
   // ── 5. Restore body scroll / pointer events ──
   function _restoreBodyState() {
-    document.body.style.overflow     = '';
+    window._snxScrollLockReset();
     document.body.style.pointerEvents = '';
   }
 

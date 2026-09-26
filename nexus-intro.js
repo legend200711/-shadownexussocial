@@ -590,6 +590,21 @@
         // background content on iOS Safari before the fixed overlay paints.
         _lockScroll();
 
+        // ── Suppress the auth-gate while the cinematic intro is running ─────────
+        // The auth gate (z-index 99999) is in the DOM from page load to prevent a
+        // login-screen flash for returning users.  The intro overlay (z-index 999999)
+        // covers it completely, but the gate's visible-by-default state means it
+        // briefly shows before the intro overlay paints its first frame.
+        // Immediately marking it resolved (opacity:0, visibility:hidden) removes the
+        // flicker without removing the element — Firebase auth still resolves it
+        // through the normal onAuthStateChanged path.
+        var _authGate = document.getElementById('snx-auth-gate');
+        if (_authGate) {
+            // Skip the transition — instant hide so no double-screen flash.
+            _authGate.style.transition = 'none';
+            _authGate.classList.add('resolved');
+        }
+
         document.body.insertBefore(_overlay, document.body.firstChild);
         _injectCrows(document.getElementById('snxIntroCrows'));
         _injectParticles(document.getElementById('snxIntroParticles'));
