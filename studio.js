@@ -3097,11 +3097,8 @@ window.snxAdminLoadCloudStreams = function() {
       var remaining   = expiresTs ? Math.max(0, Math.floor((expiresTs - Date.now()) / 60000)) + 'm' : '—';
       var startedFmt  = startedTs ? new Date(startedTs).toLocaleTimeString() : '—';
       // Public channel watch URL uses the canonical SPA route via ?snxPage=nexusPage&watchChannel=uid
-      // Fall back to the legacy standalone page if the UID is not available from the stream doc.
-      var channelUid  = d.uid || '';
-      var listenUrl   = channelUid
-        ? window.location.origin + '/?snxPage=nexusPage&watchChannel=' + encodeURIComponent(channelUid)
-        : '24-hour-cloud-stream/index.html?id=' + encodeURIComponent(doc.id);
+      var channelUid  = d.uid || doc.id || '';
+      var listenUrl   = window.location.origin + '/?snxPage=nexusPage&watchChannel=' + encodeURIComponent(channelUid);
       return '<div class="snx-admin-stream-card">' +
         '<div class="snx-admin-stream-header">' +
           '<span style="font-size:18px;">&#9925;</span>' +
@@ -5501,13 +5498,12 @@ function _snxsUpdateStatus(state) {
 }
 
 /* ── START STREAM — bridges simplified UI to existing snxStartCloudStream ── */
-/* snxsStartStream — opens 24-Hour Nexus (the canonical streaming system).
-   cloud-stream.html is the standalone public viewer — the main flow uses nexusPage SPA. */
+/* snxsStartStream — opens 24-Hour Nexus (the canonical streaming system). */
 window.snxsStartStream = function() {
   if (typeof window.realmNavTo === 'function') {
     window.realmNavTo('nexusPage');
   } else {
-    window.location.href = 'cloud-stream.html';
+    window.location.href = '/?snxPage=nexusPage';
   }
 };
 

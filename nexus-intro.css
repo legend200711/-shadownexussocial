@@ -17,6 +17,14 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    /* ── iPhone safe-area: push content clear of Dynamic Island, notch,
+       Safari toolbar, and home indicator.  Use padding so the flex centering
+       happens inside the safe zone, not behind hardware chrome. ── */
+    padding-top:    max(env(safe-area-inset-top, 0px), 0px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
+    padding-left:   max(env(safe-area-inset-left, 0px), 0px);
+    padding-right:  max(env(safe-area-inset-right, 0px), 0px);
+    box-sizing: border-box;
     /* transition used only for exit, not entry */
     transition: opacity 1.8s ease;
     /* touch-action: manipulation keeps overlay interactive without blocking Android pan gestures
@@ -338,9 +346,17 @@
 /* The logo image itself */
 #snxIntroLogoImg {
     display: block;
+    /* Width constraint keeps logo from being too narrow on large screens.
+       Height constraint (via max-height) is the critical iPhone fix:
+       limits logo so it never overflows the visible viewport vertically,
+       accounting for safe-area padding and UI chrome above/below. */
     width: clamp(280px, 72vw, 680px);
     max-width: 92vw;
+    /* Leave ~220px for buttons + tagline + safe areas.
+       Using dvh (dynamic viewport = Safari toolbar excluded) with a svh fallback. */
+    max-height: min(calc(100dvh - 220px), calc(100svh - 220px), calc(var(--snxi-stable-h, 100svh) - 220px));
     height: auto;
+    object-fit: contain;
     /* drop-shadow only — cheaper than box-shadow, GPU composited */
     filter:
         drop-shadow(0 0 28px rgba(0,130,255,.70))
@@ -669,7 +685,9 @@
 
 /* Logo reveal */
 @keyframes snxiPreGlow  { 0%{opacity:0} 40%{opacity:.6} 100%{opacity:.35} }
-@keyframes snxiLogoIn   { 0%{opacity:0;transform:scale(.82) translateY(12px)} 60%{opacity:1;transform:scale(1.04) translateY(-3px)} 100%{opacity:1;transform:scale(1.0) translateY(0)} }
+/* scale peak reduced from 1.04 → 1.02 so the logo never clips the viewport
+   on small screens (iPhone SE, iPhone 13 mini) during the reveal animation */
+@keyframes snxiLogoIn   { 0%{opacity:0;transform:scale(.82) translateY(12px)} 60%{opacity:1;transform:scale(1.02) translateY(-2px)} 100%{opacity:1;transform:scale(1.0) translateY(0)} }
 @keyframes snxiLogoGlow { from{filter:drop-shadow(0 0 20px rgba(0,120,255,.60)) drop-shadow(0 0 50px rgba(0,80,200,.38)) drop-shadow(0 0 10px rgba(0,180,110,.22))} to{filter:drop-shadow(0 0 36px rgba(0,160,255,.85)) drop-shadow(0 0 80px rgba(0,110,240,.55)) drop-shadow(0 0 20px rgba(0,220,130,.38))} }
 @keyframes snxiDimmerIn { from{opacity:0} to{opacity:1} }
 
@@ -730,15 +748,25 @@
     /* ── Viewport stability: use fixed pixel height captured by JS on load.
        The CSS fallback uses 100svh (small viewport = with chrome) so the intro
        never resizes when Android Chrome's address bar slides in/out.
-       JS will override this with a stable pixel value via --snxi-vh. */
+       JS will override this with a stable pixel value via --snxi-stable-h. */
     #snxIntroOverlay {
         height: calc(var(--snxi-stable-h, 100svh));
         /* Prevent the overlay from stretching when Android address bar hides */
         max-height: calc(var(--snxi-stable-h, 100svh));
     }
 
-    /* Reduce logo size slightly on small phones */
-    #snxIntroLogoImg { width: clamp(240px, 88vw, 420px); }
+    /* ── iPhone logo sizing: constrain by BOTH width AND height.
+       On portrait iPhones the logo must fit between the Dynamic Island / notch
+       at the top and the home indicator + button row at the bottom.
+       ~200px reserved for buttons, tagline, safe areas.
+       object-fit:contain is set on the base rule; width+max-height drive the box. */
+    #snxIntroLogoImg {
+        width: clamp(200px, 82vw, 380px);
+        max-height: min(
+            calc(var(--snxi-stable-h, 100svh) - 200px),
+            55vw
+        );
+    }
 
     /* Reduce pre-glow blur to save GPU */
     #snxIntroLogoPreGlow { filter: blur(10px); }
@@ -777,6 +805,54 @@
 
     /* Reduce backdrop glow blur */
     #snxIntroFlameGlow { filter: blur(4px); }
+}
+
+/* ─── Landscape iPhone / small height screens ───────────────────────────── */
+/* Matches portrait phones rotated AND compact iPhones (SE, 13 mini) landscape */
+@media (max-height: 500px) and (max-width: 900px) {
+    /* Flex direction stays column; shrink everything to fit reduced height */
+    #snxIntroOverlay {
+        justify-content: flex-start;
+        /* Extra top padding to clear Dynamic Island / notch in landscape */
+        padding-top: max(env(safe-area-inset-top, 8px), 8px);
+    }
+
+    #snxIntroLogoWrap {
+        margin-top: 4px;
+    }
+
+    /* Logo must fit inside a short viewport — height is the bottleneck.
+       Use dvh so Safari toolbar doesn't eat the available space.
+       90px reserved for buttons row + safe areas. */
+    #snxIntroLogoImg {
+        width: auto;
+        max-width: min(90vw, calc(100dvh * 2.8));  /* keep aspect ratio */
+        max-height: calc(100dvh - 90px);
+        height: auto;
+    }
+
+    /* Collapse tagline margin in landscape — every pixel counts */
+    .snxi-tagline {
+        margin-top: 6px;
+        font-size: 10px;
+    }
+
+    /* Reduce button row spacing in landscape */
+    #snxIntroBtns {
+        margin-top: 8px;
+        gap: 8px;
+    }
+
+    /* Skip/sound buttons: safe-area-aware placement for landscape notch */
+    #snxIntroSkipBtn  { top: max(env(safe-area-inset-top, 8px), 8px);  right: max(env(safe-area-inset-right, 14px), 14px); }
+    #snxIntroSoundBtn { top: max(env(safe-area-inset-top, 8px), 8px);  left:  max(env(safe-area-inset-left,  14px), 14px); }
+
+    /* Tighter now-playing strip in landscape */
+    #snxIntroNowPlaying { display: none; }
+
+    /* Reduce fog layers for landscape performance */
+    .snxi-fog:nth-child(3),
+    .snxi-fog:nth-child(4) { display: none; }
 }
 
 /* ─── Tablet: moderate reduction ────────────────────────────────────────── */

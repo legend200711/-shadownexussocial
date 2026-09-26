@@ -1091,8 +1091,14 @@ button:not(.sc-item):hover {
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
     z-index: 4999;
+    /* Safety: explicit pointer-events:none when hidden prevents backdrop-filter
+       compositing layer from intercepting Android touch events after close */
+    pointer-events: none;
   }
-  #sidebarOverlay.visible { display: block; }
+  #sidebarOverlay.visible {
+    display: block;
+    pointer-events: auto;
+  }
 
   /* Page content — full screen, top padding accounts for the toggle button */
   .page {

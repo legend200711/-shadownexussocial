@@ -25,11 +25,17 @@
     // Android Chrome changes window.innerHeight when the address bar shows/hides.
     // Capturing the initial height and pinning it via a CSS custom property prevents
     // the intro overlay from resizing during the animation.
+    // On iOS Safari, window.innerHeight reflects the SMALL viewport (address bar visible).
+    // We prefer that as the stable baseline so content is never clipped.
     var _stableVH = window.innerHeight;
+
+    // Detect dvh support — iOS 15.4+, Chrome 108+.
+    // dvh = dynamic viewport height (excludes browser chrome like Safari toolbar).
+    // We use innerHeight as the stable pin (= svh ≈ small viewport, most conservative).
     function _applyStableHeight(el) {
-        if (_isMobile) {
-            el.style.setProperty('--snxi-stable-h', _stableVH + 'px');
-        }
+        // Always set --snxi-stable-h: use innerHeight (conservative / stable).
+        // The CSS min() in nexus-intro.css picks the smallest of dvh/svh/this value.
+        el.style.setProperty('--snxi-stable-h', _stableVH + 'px');
     }
 
     // ── State ─────────────────────────────────────────────────────────────────
@@ -65,6 +71,11 @@
 
     // Called by index.html — no-op here, auth flow already handles navigation
     window.snxIntroCompleted = function () {};
+
+    // finishIntro() — canonical public exit point used by any external caller.
+    // Performs full cleanup: removes scroll/touch locks, kills overlay, fires snxIntroCompleted.
+    // Fast=false gives the cinematic exit; fast=true is an instant skip.
+    window.finishIntro = function (fast) { _exit(fast === true); };
 
     // ── SVG inlines (no external requests) ───────────────────────────────────
     function _wolfSVG() {

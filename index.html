@@ -367,8 +367,14 @@ body::after {
     background: rgba(0,0,0,0.45);
     z-index: 1500;
     backdrop-filter: blur(1px);
+    /* Safety: pointer-events:none when hidden so no GPU-composited layer
+       can intercept Android touch events even on older Chrome builds */
+    pointer-events: none;
 }
-#sidebarOverlay.visible { display: block; }
+#sidebarOverlay.visible {
+    display: block;
+    pointer-events: auto;
+}
 
 /* ── Navigation side panel ── */
 .sidebar {
@@ -31602,15 +31608,22 @@ function closeMobileDrawer() {
     if (side)    { side.classList.remove('active'); }
     if (overlay) { overlay.classList.remove('visible'); }
     if (btn)     { btn.classList.remove('menu-open'); btn.setAttribute('aria-expanded', 'false'); }
-    // Android safety: the sidebar never locks body scroll, but restore it here
-    // as a catch-all in case any stale overflow:hidden was left by a modal
-    // that was open when the menu was triggered.  This is a no-op when scroll
-    // was already unlocked so it is safe to call unconditionally.
-    // NOTE: Only restore if no modal is currently open — check for common modals.
+
+    // ── Android scroll-lock restoration ───────────────────────────────────────
+    // BUG FIX: After closing the sidebar, Android Chrome can leave body scroll
+    // locked if any stale overflow:hidden or touch-action:none is on body/html.
+    // This restores scroll UNCONDITIONALLY unless a legitimate full-screen modal
+    // is open (those manage their own overflow state).
+    //
+    // IMPORTANT: We restore BOTH the shorthand AND the individual properties.
+    // Clearing just body.style.overflow = '' leaves overflow-x:hidden in the
+    // cascade which on some Android Chrome builds blocks body scroll events.
+    // Explicitly setting overflowY:'auto' ensures Y-axis scroll is always live.
     var _modalOpen = (
         document.querySelector('#ipcModal.open') ||
         document.querySelector('#storyViewerModal.open') ||
         document.querySelector('#snxMediaViewer.open') ||
+        document.querySelector('#snxAlbumViewer.open') ||
         document.querySelector('#snxMsgNotifModal.open') ||
         (document.getElementById('snxConfirmModal') &&
             document.getElementById('snxConfirmModal').style.display === 'flex') ||
@@ -31620,7 +31633,15 @@ function closeMobileDrawer() {
             document.getElementById('arcadeGameModal').classList.contains('open'))
     );
     if (!_modalOpen) {
-        document.body.style.overflow = '';
+        // Clear shorthand AND individual properties — belt-and-suspenders for Android
+        document.body.style.overflow  = '';
+        document.body.style.overflowY = '';
+        document.body.style.overflowX = '';
+        // Restore touch-action so Android vertical pan gestures reach the page
+        document.body.style.touchAction = '';
+        document.documentElement.style.overflow  = '';
+        document.documentElement.style.overflowY = '';
+        document.documentElement.style.touchAction = '';
     }
 }
 window.closeMobileDrawer = closeMobileDrawer;

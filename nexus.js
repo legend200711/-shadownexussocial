@@ -1351,7 +1351,6 @@ function _nxUploadSingleFile(file) {
   }
 
   // Obtain a fresh Firebase ID token before uploading.
-  // accessToken is not a reliable property in Firebase SDK v9+.
   _nx.user.getIdToken(true).then(function(idToken) {
     var form = new FormData();
     form.append('file', file, file.name);
