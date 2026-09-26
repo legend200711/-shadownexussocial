@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-10-GLOBAL-REPAIR-001",
-  "swVersion": "v74",
+  "buildId": "SNS-2026-10-STAGE2-REPAIR-001",
+  "swVersion": "v75",
   "deployedAt": "2026-10-01T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
-  "nexusVersion": "3.2.1",
-  "note": "SNS-2026-10-GLOBAL-REPAIR-001: Global repair update. Removed dead nexus-rooms cache entries, fixed duplicate SW registration in index.html, bumped SW to v74, fixed firebase.json standalone page routing, cleaned cohost comment from snx-net.js."
+  "nexusVersion": "3.2.2",
+  "note": "SNS-2026-10-STAGE2-REPAIR-001: Stage 2 functional repair. Fixed stale build diagnostics in Founder panel (was v63/2025-07-20, now v75/current). Exposed _SNX_BUILD/_SNX_SW_VER on window for shadow-nexus-upgrade.js. Fixed signOutUser alias to route through handleLogout so RTDB presence cleanup runs on logout. Updated all CSS/JS query-string version tags. Bumped SW to v75."
 }

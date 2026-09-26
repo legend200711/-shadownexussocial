@@ -44,10 +44,10 @@
 
 <!-- ── Shared stylesheet ── -->
 <link rel="stylesheet" href="snx-living-bg.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
-<link rel="stylesheet" href="style.css?v=SNS-2026-GLOBAL-REPAIR-002">
-<link rel="stylesheet" href="album.css?v=SNS-2026-GLOBAL-REPAIR-002">
-<link rel="stylesheet" href="profile-music.css?v=SNS-2026-GLOBAL-REPAIR-002">
-<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-GLOBAL-REPAIR-002">
+<link rel="stylesheet" href="style.css?v=SNS-2026-10-STAGE2-REPAIR-001">
+<link rel="stylesheet" href="album.css?v=SNS-2026-10-STAGE2-REPAIR-001">
+<link rel="stylesheet" href="profile-music.css?v=SNS-2026-10-STAGE2-REPAIR-001">
+<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-10-STAGE2-REPAIR-001">
 <!-- ── Shadow Nexus Social Realm — full immersive redesign ── -->
 <link rel="stylesheet" href="realm.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
 <!-- ── Mobile responsive design layer ── -->
@@ -55,17 +55,17 @@
 <!-- cloud-stream.css belongs to the standalone cloud-stream.html page only;
      do NOT load it on the main app — it caused global style pollution. -->
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library / Upload / Playlists / Queue ── -->
-<link rel="stylesheet" href="studio.css?v=SNS-2026-GLOBAL-REPAIR-002">
+<link rel="stylesheet" href="studio.css?v=SNS-2026-10-STAGE2-REPAIR-001">
 <!-- ── Nexus Global Theme Engine ── -->
-<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-GLOBAL-REPAIR-002">
+<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-10-STAGE2-REPAIR-001">
 <!-- ── Shadow Nexus Cinematic Welcome Experience ── -->
 <link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-LOGO-INTRO-004">
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Egyptian/Horror theme ── -->
-<link rel="stylesheet" href="nexus.css?v=SNS-2026-GLOBAL-REPAIR-002">
+<link rel="stylesheet" href="nexus.css?v=SNS-2026-10-STAGE2-REPAIR-001">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-GLOBAL-REPAIR-002">
+<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-10-STAGE2-REPAIR-001">
 <!-- ── Shadow Nexus Adaptive Cinematic Performance System ── -->
-<link rel="stylesheet" href="snx-perf.css?v=SNS-2026-GLOBAL-REPAIR-002">
+<link rel="stylesheet" href="snx-perf.css?v=SNS-2026-10-STAGE2-REPAIR-001">
 <!-- ── Nexus Cinematic Glass Visual Upgrade (loads last — overrides land above perf quality gates) ── -->
 <link rel="stylesheet" href="nexus-glass.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
 
@@ -12761,6 +12761,9 @@ div.snx-gate-logo {
       }
       signOut(auth);
   };
+  // Alias: logout buttons call signOutUser() — route through handleLogout so
+  // presence/RTDB cleanup always runs before Firebase auth sign-out.
+  window.signOutUser = window.handleLogout;
 
   /* ── Forgot Password ── */
   window.openForgotPasswordModal = function() {
@@ -25332,18 +25335,18 @@ function _supportStopCanvas() {
      ═══════════════════════════════════════════════════════════ -->
 
 <!-- ── Global Background Internet Manager (must load before script.js) ── -->
-<script src="snx-net.js?v=SNS-2026-GLOBAL-REPAIR-002"></script>
+<script src="snx-net.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
 
-<script src="script.js?v=SNS-2026-GLOBAL-REPAIR-002"></script>
+<script src="script.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
 
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library, Upload, Playlists, Queue ── -->
-<script src="studio.js?v=SNS-2026-GLOBAL-REPAIR-002"></script>
+<script src="studio.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
 
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Eternal Stream + Studio ── -->
-<script src="nexus.js?v=SNS-2026-GLOBAL-REPAIR-002"></script>
+<script src="nexus.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
 
 <!-- ── Moderator & Administrator Panel (extracted to js/moderator.js) ── -->
-<script src="js/moderator.js?v=SNS-2026-GLOBAL-REPAIR-002"></script>
+<script src="js/moderator.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════
@@ -29832,16 +29835,16 @@ window.switchAdminTab = function(tab) {
 </script>
 
 <!-- ── Profile Photo Album module (must load after the main IIFE) ── -->
-<script src="album.js?v=SNS-2026-GLOBAL-REPAIR-002"></script>
+<script src="album.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
 
 <!-- ── Profile Music System (loads after Firebase is initialized) ── -->
-<script src="profile-music.js?v=SNS-2026-GLOBAL-REPAIR-002"></script>
+<script src="profile-music.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
 
 <!-- ── Profile Theme System (loads after Firebase is initialized) ── -->
-<script src="profile-theme.js?v=SNS-2026-GLOBAL-REPAIR-002"></script>
+<script src="profile-theme.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
 
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<script src="shadow-nexus-upgrade.js?v=SNS-2026-GLOBAL-REPAIR-002"></script>
+<script src="shadow-nexus-upgrade.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
 
 <!-- ═══════════════════ GRIM AI ASSISTANT PANEL ═══════════════════ -->
 
@@ -31828,11 +31831,11 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = 'SNS-2026-10-GLOBAL-REPAIR-001';
-  var SW_VER   = 'v74';
+  var BUILD_ID = 'SNS-2026-10-STAGE2-REPAIR-001';
+  var SW_VER   = 'v75';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
-  window.SNX_BUILD_ID               = 'SNS-2026-10-GLOBAL-REPAIR-001';
+  window.SNX_BUILD_ID               = 'SNS-2026-10-STAGE2-REPAIR-001';
 
   /* ══════════════════════════════════════════════════════
      SERVICE WORKER UPDATE HANDLING
@@ -31979,10 +31982,19 @@ document.addEventListener('click', function(e) {
 (function() {
   'use strict';
 
-  var _SNX_BUILD    = 'SNS-2026-GLOBAL-REPAIR-002';
-  var _SNX_SW_VER   = 'v63';
-  var _SNX_DEPLOY   = '2025-07-20T00:00:00Z';
+  /* ── Single authoritative source for Founder diagnostics.
+       These must match sw.js CACHE_VERSION / BUILD_ID and version.json.
+       window._SNX_BUILD is read by shadow-nexus-upgrade.js diagnostic copy. ── */
+  var _SNX_BUILD    = 'SNS-2026-10-STAGE2-REPAIR-001';
+  var _SNX_SW_VER   = 'v75';
+  var _SNX_DEPLOY   = '2026-10-01T00:00:00Z';
   var _SNX_PROJECT  = 'horr-a08f4';
+
+  /* Expose on window so shadow-nexus-upgrade.js can read them */
+  window._SNX_BUILD   = _SNX_BUILD;
+  window._SNX_SW_VER  = _SNX_SW_VER;
+  window._SNX_DEPLOY  = _SNX_DEPLOY;
+  window._SNX_PROJECT = _SNX_PROJECT;
 
   function _dRow(label, val, ok) {
     var color = ok === true ? '#39FF14' : ok === false ? '#ff5566' : ok === 'warn' ? '#ffbb44' : '#a0cfef';
@@ -33642,7 +33654,7 @@ window.snxFounderPanelCleanup = (function() {
      Loaded before the Welcome Experience so quality is applied
      before any cinematic assets render.
      ═══════════════════════════════════════════════════════════ -->
-<script src="snx-perf.js?v=SNS-2026-GLOBAL-REPAIR-002"></script>
+<script src="snx-perf.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
 
 <!-- ═══════════════════════════════════════════════════════════
      PERFORMANCE SETTINGS UI — Settings page + Founder dashboard
