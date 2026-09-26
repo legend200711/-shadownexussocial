@@ -514,6 +514,66 @@
   </section><!-- end csrViewerSection -->
 
   <!-- ══════════════════════════════════════════════
+       24-HOUR CLOUD STREAM — NAVIGATION TABS
+       DISCOVER | MY CHANNEL | LIVE NOW | NEW CHANNELS
+  ═══════════════════════════════════════════════════ -->
+  <nav id="snxNavTabs" class="snx-nav-tabs" role="tablist" aria-label="Cloud Stream Navigation">
+    <button class="snx-tab-btn active" data-tab="discover"    role="tab" aria-selected="true">DISCOVER</button>
+    <button class="snx-tab-btn"        data-tab="mychannel"   role="tab" aria-selected="false">MY CHANNEL</button>
+    <button class="snx-tab-btn"        data-tab="livenow"     role="tab" aria-selected="false">LIVE NOW</button>
+    <button class="snx-tab-btn"        data-tab="newchannels" role="tab" aria-selected="false">NEW CHANNELS</button>
+  </nav>
+
+  <!-- ── DISCOVER panel (default) ── -->
+  <section id="snxPanelDiscover" class="snx-tab-panel" role="tabpanel">
+    <div class="snx-panel-inner">
+      <div class="snx-panel-section">
+        <div class="snx-section-title">🔴 LIVE NOW</div>
+        <div id="snxLiveNowList" class="snx-channel-grid">
+          <div class="snx-panel-loading">Loading…</div>
+        </div>
+      </div>
+      <div class="snx-panel-section" style="margin-top:20px;">
+        <div class="snx-section-title">✦ NEW CHANNELS</div>
+        <div id="snxNewChannelsList" class="snx-channel-grid">
+          <div class="snx-panel-loading">Loading…</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── MY CHANNEL panel ── -->
+  <section id="snxPanelMyChannel" class="snx-tab-panel" style="display:none;" role="tabpanel">
+    <div class="snx-panel-inner">
+      <div id="snxMyChannelContent">
+        <div class="snx-panel-loading">Loading channel…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── LIVE NOW panel (standalone) ── -->
+  <section id="snxPanelLiveNow" class="snx-tab-panel" style="display:none;" role="tabpanel">
+    <div class="snx-panel-inner">
+      <div class="snx-section-title">🔴 LIVE NOW — SHADOW NEXUS</div>
+      <p class="snx-panel-desc">Channels currently broadcasting live. Click any channel to open the viewer.</p>
+      <div id="snxLiveNowListFull" class="snx-channel-grid">
+        <div class="snx-panel-loading">Loading…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── NEW CHANNELS panel (standalone) ── -->
+  <section id="snxPanelNewChannels" class="snx-tab-panel" style="display:none;" role="tabpanel">
+    <div class="snx-panel-inner">
+      <div class="snx-section-title">✦ NEW CHANNELS — SHADOW NEXUS</div>
+      <p class="snx-panel-desc">Recently created channels. Create yours in MY CHANNEL.</p>
+      <div id="snxNewChannelsListFull" class="snx-channel-grid">
+        <div class="snx-panel-loading">Loading…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
        CHANNEL MANAGEMENT (stream owner)
   ═══════════════════════════════════════════════════ -->
   <div id="csrAdminDivider" class="csr-admin-divider" style="display:none;" aria-hidden="true">

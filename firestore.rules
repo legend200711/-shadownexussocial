@@ -771,6 +771,18 @@ service cloud.firestore {
 
       // Only the owner can delete their channel
       allow delete: if isOwner(channelId);
+
+      // ── nexusChannels/{channelId}/media/{mediaId} — channel media library ──
+      // Separate from cloudStreamTracks (track metadata) — stores quick-access
+      // references for a channel's uploadable media items.
+      // Owner creates/updates/deletes; any signed-in user reads.
+      match /media/{mediaId} {
+        allow read:   if isSignedIn();
+        allow create: if isOwner(channelId)
+          && request.resource.data.ownerUid == request.auth.uid;
+        allow update: if isOwner(channelId);
+        allow delete: if isOwner(channelId) || isFounder();
+      }
     }
 
     // ── Music (public catalogue) ───────────────────────────────────────────────

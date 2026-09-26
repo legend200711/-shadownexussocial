@@ -232,6 +232,15 @@ async function _initCreatorMode() {
   _show('csrAdminSection', true);
   _show('csrAdminDivider', true);
 
+  // Initialize navigation tabs (DISCOVER / MY CHANNEL / LIVE NOW / NEW CHANNELS)
+  // Uses a short delay so the new module's functions are parsed before calling
+  setTimeout(() => {
+    if (typeof _initNavTabs === 'function') {
+      _initNavTabs();
+      if (typeof _switchTab === 'function') _switchTab('discover');
+    }
+  }, 50);
+
   // Check for an active stream belonging to this user
   try {
     const snap = await getDocs(query(
@@ -2103,3 +2112,681 @@ window.csrSpaInit = async function() {
 window.csrRefreshPlaylists = function() {
   if (_user) _loadPlaylists();
 };
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SHADOW NEXUS 24-HOUR CLOUD STREAM — MY CHANNEL / DISCOVER EXTENSION
+   Appended module — adds:
+     • Top navigation tabs (DISCOVER | MY CHANNEL | LIVE NOW | NEW CHANNELS)
+     • nexusChannels/{uid} channel create/load
+     • cloudStreamTracks media library (list/upload/delete)
+     • Media upload to Cloudflare R2 via upload-worker with real progress
+     • Discover panel — LIVE NOW (active cloudStreams) + NEW CHANNELS (nexusChannels)
+   
+   Firestore collections used (all already in rules):
+     nexusChannels/{channelId}                 — channel record (channelId == uid)
+     cloudStreamTracks/{uid}/tracks/{trackId}  — media library entries
+     cloudStreams  (query for discover)
+   
+   R2 upload endpoint (existing upload-worker):
+     https://yellow-term-11e6.nthntjrn.workers.dev/upload-music
+     POST FormData: Authorization: Bearer <idToken>, file, path
+   
+   Naming convention for R2 keys:
+     cloud-stream/{uid}/tracks/{timestamp}_{filename}
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Imports already at top of file; these are already available:
+   _db, _user, doc, getDoc, setDoc, getDocs, updateDoc, deleteDoc,
+   collection, query, orderBy, limit, where, serverTimestamp, onSnapshot ── */
+
+/* ═══════════════════════════════════════════════════════
+   NAVIGATION TABS — init after auth resolves
+═══════════════════════════════════════════════════════ */
+
+// Active tab state
+let _activeTab = 'discover'; // 'discover' | 'mychannel' | 'livenow' | 'newchannels'
+
+function _initNavTabs() {
+  const nav = _el('snxNavTabs');
+  if (!nav || nav.dataset.init) return;
+  nav.dataset.init = '1';
+  nav.addEventListener('click', e => {
+    const btn = e.target.closest('[data-tab]');
+    if (!btn) return;
+    _switchTab(btn.dataset.tab);
+  });
+}
+
+function _switchTab(tab) {
+  _activeTab = tab;
+  // Update button states
+  const btns = document.querySelectorAll('[data-tab]');
+  btns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  // Show/hide panels
+  const panels = ['snxPanelDiscover','snxPanelMyChannel','snxPanelLiveNow','snxPanelNewChannels'];
+  const map = {
+    discover:    'snxPanelDiscover',
+    mychannel:   'snxPanelMyChannel',
+    livenow:     'snxPanelLiveNow',
+    newchannels: 'snxPanelNewChannels',
+  };
+  panels.forEach(id => { const el = _el(id); if (el) el.style.display = 'none'; });
+  const target = _el(map[tab]);
+  if (target) target.style.display = '';
+  // Lazy-load panel content
+  if (tab === 'discover')    _loadDiscover();
+  if (tab === 'mychannel')   _loadMyChannel();
+  if (tab === 'livenow')     _loadLiveNowFull();
+  if (tab === 'newchannels') _loadNewChannelsFull();
+}
+
+/* Expose for onclick */
+window.snxSwitchTab = function(tab) { _switchTab(tab); };
+
+/* ═══════════════════════════════════════════════════════
+   MY CHANNEL — nexusChannels/{uid}
+═══════════════════════════════════════════════════════ */
+
+let _myChannel = null;     // nexusChannels doc data
+let _myChannelLoaded = false;
+
+async function _loadMyChannel() {
+  if (!_user) { _renderMyChannelAuth(); return; }
+  const el = _el('snxMyChannelContent');
+  if (el) el.innerHTML = '<div class="snx-panel-loading">Loading your channel…</div>';
+  try {
+    const snap = await getDoc(doc(_db, 'nexusChannels', _user.uid));
+    if (snap.exists()) {
+      _myChannel = { id: snap.id, ...snap.data() };
+      _myChannelLoaded = true;
+      _renderMyChannelActive();
+    } else {
+      _myChannel = null;
+      _myChannelLoaded = false;
+      _renderMyChannelCreate();
+    }
+  } catch(e) {
+    console.error('[SNS Cloud Stream] Firebase:', e.message);
+    if (el) el.innerHTML = `<div class="snx-panel-error">Could not load channel: ${_esc(e.message)}</div>`;
+  }
+}
+
+function _renderMyChannelAuth() {
+  const el = _el('snxMyChannelContent');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="snx-empty-state">
+      <div class="snx-empty-icon">𓂀</div>
+      <div class="snx-empty-title">SIGN IN REQUIRED</div>
+      <div class="snx-empty-sub">Sign in to Shadow Nexus Social to access your channel.</div>
+      <a class="csr-btn csr-btn-outline" href="/?snxPage=studioPage" style="width:auto;margin-top:12px;text-decoration:none;">Return to Shadow Nexus</a>
+    </div>`;
+}
+
+function _renderMyChannelCreate() {
+  const el = _el('snxMyChannelContent');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="snx-channel-create">
+      <div class="snx-empty-icon">𓂀</div>
+      <div class="snx-empty-title">CREATE YOUR CHANNEL</div>
+      <div class="snx-empty-sub">You don't have a 24-Hour Cloud Stream channel yet. Create one to upload media and start broadcasting.</div>
+      <div class="csr-form-group" style="margin-top:14px;">
+        <label class="csr-label">Channel Name</label>
+        <input class="csr-input" id="snxChName" placeholder="My Cloud Stream" maxlength="60">
+      </div>
+      <div class="csr-form-group">
+        <label class="csr-label">Description <span class="csr-optional">optional</span></label>
+        <input class="csr-input" id="snxChDesc" placeholder="What will you broadcast?" maxlength="200">
+      </div>
+      <div class="csr-form-group">
+        <label class="csr-label">Category</label>
+        <select class="csr-input csr-select" id="snxChCat">
+          <option value="Music">♫ Music</option>
+          <option value="Talk">🎙 Talk / Podcast</option>
+          <option value="Gaming">🎮 Gaming</option>
+          <option value="Art">🎨 Art</option>
+          <option value="General">🌐 General</option>
+        </select>
+      </div>
+      <div id="snxChCreateError" class="csr-error" style="display:none;"></div>
+      <button class="csr-btn csr-btn-start" id="snxChCreateBtn" onclick="snxCreateChannel()">✦ CREATE MY CHANNEL</button>
+    </div>`;
+}
+
+window.snxCreateChannel = async function() {
+  if (!_user) { _toast('Sign in required', 'error'); return; }
+  const btn   = _el('snxChCreateBtn');
+  const name  = (_el('snxChName')  || {}).value?.trim();
+  const desc  = (_el('snxChDesc')  || {}).value?.trim() || '';
+  const cat   = (_el('snxChCat')   || {}).value || 'Music';
+  if (!name) { _showError('snxChCreateError', 'Channel name is required.'); return; }
+
+  // Guard: one channel per user
+  try {
+    const existing = await getDoc(doc(_db, 'nexusChannels', _user.uid));
+    if (existing.exists()) {
+      _myChannel = { id: _user.uid, ...existing.data() };
+      _myChannelLoaded = true;
+      _renderMyChannelActive();
+      return;
+    }
+  } catch(_) {}
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Creating…'; }
+  try {
+    const channelData = {
+      ownerUid:          _user.uid,
+      channelName:       name,
+      ownerDisplayName:  _userData?.displayName || _userData?.username || '',
+      ownerUsername:     _userData?.username || '',
+      description:       desc,
+      category:          cat,
+      isPublic:          true,
+      isLive:            false,
+      activeStreamId:    '',
+      currentMedia:      {},
+      viewerCount:       0,
+      likeCount:         0,
+      createdAt:         serverTimestamp(),
+      updatedAt:         serverTimestamp(),
+    };
+    await setDoc(doc(_db, 'nexusChannels', _user.uid), channelData);
+    _myChannel = { id: _user.uid, ...channelData };
+    _myChannelLoaded = true;
+    _toast('✦ Channel created!', 'success');
+    _renderMyChannelActive();
+  } catch(e) {
+    console.error('[SNS Cloud Stream] Firebase:', e.message);
+    _showError('snxChCreateError', 'Could not create channel: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '✦ CREATE MY CHANNEL'; }
+  }
+};
+
+function _renderMyChannelActive() {
+  const el = _el('snxMyChannelContent');
+  if (!el || !_myChannel) return;
+  const ch = _myChannel;
+  const isLive = ch.isLive ? `<span class="csr-pulse-dot-sm" style="margin-right:5px;"></span>LIVE` : 'OFFLINE';
+  const isLiveClass = ch.isLive ? 'csr-status-live' : 'csr-status-offline';
+  el.innerHTML = `
+    <div class="snx-channel-header">
+      <div class="snx-channel-name">${_esc(ch.channelName || 'My Channel')}</div>
+      <span class="csr-status-badge ${isLiveClass}" style="font-size:9px;">${isLive}</span>
+    </div>
+    <div class="snx-channel-meta">
+      <span>${_esc(ch.category || 'General')}</span>
+      <span>·</span>
+      <span>${ch.viewerCount || 0} viewers</span>
+      <span>·</span>
+      <span>${ch.likeCount || 0} likes</span>
+    </div>
+    ${ch.description ? `<div class="snx-channel-desc">${_esc(ch.description)}</div>` : ''}
+    <div id="snxMediaSection">
+      <div class="snx-section-title">MEDIA LIBRARY</div>
+      <div class="snx-upload-area" id="snxUploadArea">
+        <input type="file" id="snxMediaFileInput" accept="audio/*,video/*,image/*" onchange="snxHandleMediaFile(event)" style="display:none;" multiple>
+        <button class="csr-btn csr-btn-outline" style="width:auto;" onclick="document.getElementById('snxMediaFileInput').click()">
+          ⬆ UPLOAD MEDIA
+        </button>
+        <div class="snx-upload-hint">Audio · Music · Video · Images — max 200MB audio / 2GB video / 10MB image</div>
+        <div id="snxUploadProgress" class="snx-upload-progress" style="display:none;"></div>
+      </div>
+      <div id="snxMediaLibrary" class="snx-media-library">
+        <div class="snx-panel-loading">Loading media…</div>
+      </div>
+    </div>`;
+  _loadMediaLibrary();
+}
+
+/* ═══════════════════════════════════════════════════════
+   MEDIA LIBRARY — cloudStreamTracks/{uid}/tracks
+═══════════════════════════════════════════════════════ */
+
+async function _loadMediaLibrary() {
+  if (!_user) return;
+  const el = _el('snxMediaLibrary');
+  if (!el) return;
+  try {
+    const snap = await getDocs(query(
+      collection(_db, 'cloudStreamTracks', _user.uid, 'tracks'),
+      orderBy('uploadedAt', 'desc'), limit(50)
+    ));
+    if (!snap.docs.length) {
+      el.innerHTML = '<div class="snx-empty-sub">No media uploaded yet. Upload audio, music, video or images above.</div>';
+      return;
+    }
+    const tracks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    el.innerHTML = tracks.map(t => _renderTrackRow(t)).join('');
+  } catch(e) {
+    console.error('[SNS Cloud Stream] Firebase:', e.message);
+    el.innerHTML = `<div class="snx-panel-error">Could not load library: ${_esc(e.message)}</div>`;
+  }
+}
+
+function _renderTrackRow(t) {
+  const icon = t.mediaType === 'video' ? '𓆙' : t.mediaType === 'picture' ? '𓇳' : '𓆣';
+  const dur  = t.duration ? ` · ${_fmtDur(t.duration)}` : '';
+  const size = t.fileSize ? ` · ${(t.fileSize / 1024 / 1024).toFixed(1)}MB` : '';
+  return `<div class="snx-track-row" id="snxTrack_${_esc(t.id)}">
+    <div class="snx-track-icon">${icon}</div>
+    <div class="snx-track-info">
+      <div class="snx-track-title">${_esc(t.title || 'Untitled')}</div>
+      <div class="snx-track-meta">${_esc(t.mediaType || 'music')}${dur}${size}</div>
+    </div>
+    <button class="csr-btn csr-btn-sm csr-btn-danger" onclick="snxDeleteTrack('${_esc(t.id)}','${_esc(t.r2Key||'')}')">✕</button>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   MEDIA UPLOAD — to R2 via upload-worker
+═══════════════════════════════════════════════════════ */
+
+const _UPLOAD_WORKER = 'https://yellow-term-11e6.nthntjrn.workers.dev';
+
+window.snxHandleMediaFile = async function(evt) {
+  if (!_user) { _toast('Sign in required', 'error'); return; }
+  const files = Array.from(evt.target.files || []);
+  if (!files.length) return;
+  // Clear input so same file can be re-selected
+  evt.target.value = '';
+  for (const file of files) {
+    await _uploadMediaFile(file);
+  }
+};
+
+async function _uploadMediaFile(file) {
+  const progressEl = _el('snxUploadProgress');
+  if (progressEl) progressEl.style.display = '';
+
+  const mediaType = file.type.startsWith('video/')  ? 'video'
+                  : file.type.startsWith('image/')  ? 'picture'
+                  : 'music';
+  const safeName  = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
+  const r2Key     = `cloud-stream/${_user.uid}/tracks/${Date.now()}_${safeName}`;
+  const uploadId  = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+  const addProgress = (msg) => {
+    if (!progressEl) return;
+    const row = document.createElement('div');
+    row.className = 'snx-progress-row';
+    row.id = 'snxUpProg_' + uploadId;
+    row.textContent = msg;
+    progressEl.appendChild(row);
+    return row;
+  };
+  const setProgress = (msg) => {
+    const row = _el('snxUpProg_' + uploadId);
+    if (row) row.textContent = msg;
+  };
+
+  addProgress(`⬆ ${file.name} — preparing…`);
+
+  let idToken;
+  try {
+    idToken = await _user.getIdToken(true);
+  } catch(e) {
+    setProgress(`✕ ${file.name} — auth failed: ${e.message}`);
+    console.error('[SNS Cloud Stream] Auth:', e.message);
+    return;
+  }
+
+  // Choose upload strategy:
+  // Small files (≤ 40 MB): single POST to /upload-music
+  // Larger files: chunked upload (/upload-chunk × N + /upload-complete)
+  const SINGLE_THRESHOLD = 40 * 1024 * 1024;
+  let publicUrl = null;
+  let r2FinalKey = r2Key;
+
+  if (file.size <= SINGLE_THRESHOLD) {
+    // Single upload
+    const form = new FormData();
+    form.append('file', file, file.name);
+    form.append('path', r2Key);
+
+    await new Promise((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhr.timeout = 3 * 60 * 1000;
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          setProgress(`⬆ ${file.name} — ${pct}%`);
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          try {
+            const res = JSON.parse(xhr.responseText);
+            if (res.url) { publicUrl = res.url; r2FinalKey = res.key || r2Key; }
+          } catch(_) {}
+          if (publicUrl) {
+            setProgress(`✓ ${file.name} — uploaded`);
+          } else {
+            setProgress(`✕ ${file.name} — upload error (no URL returned)`);
+            console.error('[SNS Cloud Stream] Upload:', xhr.responseText);
+          }
+        } else {
+          setProgress(`✕ ${file.name} — HTTP ${xhr.status}`);
+          console.error('[SNS Cloud Stream] Upload:', xhr.status, xhr.responseText);
+        }
+        resolve();
+      };
+      xhr.onerror = xhr.ontimeout = () => {
+        setProgress(`✕ ${file.name} — network error`);
+        console.error('[SNS Cloud Stream] Upload: network error for', file.name);
+        resolve();
+      };
+      xhr.open('POST', _UPLOAD_WORKER + '/upload-music');
+      xhr.setRequestHeader('Authorization', 'Bearer ' + idToken);
+      xhr.send(form);
+    });
+  } else {
+    // Chunked upload
+    const CHUNK_SIZE = 20 * 1024 * 1024; // 20 MB chunks
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    setProgress(`⬆ ${file.name} — 0/${totalChunks} chunks`);
+
+    // Upload chunks
+    let failed = false;
+    for (let i = 0; i < totalChunks; i++) {
+      if (failed) break;
+      const start = i * CHUNK_SIZE;
+      const end   = Math.min(start + CHUNK_SIZE, file.size);
+      const chunk = file.slice(start, end);
+      const fd    = new FormData();
+      fd.append('uploadId',    uploadId);
+      fd.append('chunkIndex',  String(i));
+      fd.append('totalChunks', String(totalChunks));
+      fd.append('chunk',       chunk, file.name);
+      try {
+        const r = await fetch(_UPLOAD_WORKER + '/upload-chunk', {
+          method: 'POST', headers: { 'Authorization': 'Bearer ' + idToken }, body: fd
+        });
+        if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || 'HTTP ' + r.status); }
+        setProgress(`⬆ ${file.name} — ${i + 1}/${totalChunks} chunks`);
+      } catch(e) {
+        setProgress(`✕ ${file.name} — chunk ${i} failed: ${e.message}`);
+        console.error('[SNS Cloud Stream] Upload chunk', i, e.message);
+        failed = true;
+      }
+    }
+
+    if (!failed) {
+      setProgress(`⬆ ${file.name} — assembling…`);
+      const fd2 = new FormData();
+      fd2.append('uploadId',    uploadId);
+      fd2.append('totalChunks', String(totalChunks));
+      fd2.append('fileName',    file.name);
+      fd2.append('fileType',    file.type || 'application/octet-stream');
+      fd2.append('fileSize',    String(file.size));
+      fd2.append('key',         r2Key);
+      try {
+        const r = await fetch(_UPLOAD_WORKER + '/upload-complete', {
+          method: 'POST', headers: { 'Authorization': 'Bearer ' + idToken }, body: fd2
+        });
+        const d = await r.json().catch(() => ({}));
+        if (r.ok && d.url) {
+          publicUrl   = d.url;
+          r2FinalKey  = d.key || r2Key;
+          setProgress(`✓ ${file.name} — uploaded`);
+        } else {
+          setProgress(`✕ ${file.name} — assembly failed: ${d.error || 'unknown'}`);
+          console.error('[SNS Cloud Stream] Upload assembly:', d.error);
+        }
+      } catch(e) {
+        setProgress(`✕ ${file.name} — assembly error: ${e.message}`);
+        console.error('[SNS Cloud Stream] Upload assembly:', e.message);
+      }
+    }
+  }
+
+  if (!publicUrl) return; // upload failed — already reported above
+
+  // Save metadata to Firestore cloudStreamTracks/{uid}/tracks/{trackId}
+  const trackId = _user.uid + '_' + Date.now();
+  const trackData = {
+    uid:        _user.uid,
+    title:      file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' '),
+    artist:     _userData?.displayName || _userData?.username || '',
+    mediaType,
+    fileSize:   file.size,
+    fileName:   file.name,
+    r2Key:      r2FinalKey,
+    url:        publicUrl,
+    duration:   0,    // populated client-side after load if needed
+    artworkUrl: '',
+    uploadedAt: serverTimestamp(),
+    updatedAt:  serverTimestamp(),
+  };
+  try {
+    await setDoc(doc(_db, 'cloudStreamTracks', _user.uid, 'tracks', trackId), trackData);
+    console.log('[SNS Cloud Stream] Firebase: track metadata saved', trackId);
+    _toast(`✓ ${file.name} uploaded`, 'success');
+    // Refresh library
+    _loadMediaLibrary();
+  } catch(e) {
+    console.error('[SNS Cloud Stream] Firebase:', e.message);
+    _toast('Upload complete but metadata save failed: ' + e.message, 'error');
+  }
+}
+
+/* ── Delete media track ── */
+window.snxDeleteTrack = async function(trackId, r2Key) {
+  if (!_user || !trackId) return;
+  if (!confirm('Delete this media file? This cannot be undone.')) return;
+
+  // Remove R2 object
+  if (r2Key) {
+    try {
+      const idToken = await _user.getIdToken(true);
+      const r = await fetch(_UPLOAD_WORKER + '/' + encodeURIComponent(r2Key), {
+        method: 'DELETE', headers: { 'Authorization': 'Bearer ' + idToken }
+      });
+      if (!r.ok) console.warn('[SNS Cloud Stream] R2: delete HTTP', r.status);
+    } catch(e) { console.warn('[SNS Cloud Stream] R2: delete error', e.message); }
+  }
+
+  // Remove Firestore doc
+  try {
+    await deleteDoc(doc(_db, 'cloudStreamTracks', _user.uid, 'tracks', trackId));
+    const row = _el('snxTrack_' + trackId);
+    if (row) row.remove();
+    _toast('Media deleted.', 'success');
+  } catch(e) {
+    console.error('[SNS Cloud Stream] Firebase:', e.message);
+    _toast('Could not delete: ' + e.message, 'error');
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   DISCOVER — active cloudStreams
+═══════════════════════════════════════════════════════ */
+
+async function _loadDiscover() {
+  _loadLiveNow();
+  _loadNewChannels();
+}
+
+async function _loadLiveNow() {
+  const el = _el('snxLiveNowList');
+  if (!el) return;
+  el.innerHTML = '<div class="snx-panel-loading">Loading live channels…</div>';
+  try {
+    const snap = await getDocs(query(
+      collection(_db, 'cloudStreams'),
+      where('status', 'in', ['active', 'recovering']),
+      orderBy('startedAt', 'desc'),
+      limit(20)
+    ));
+    if (!snap.docs.length) {
+      el.innerHTML = '<div class="snx-empty-sub">No channels are live right now. Be the first to go live!</div>';
+      return;
+    }
+    el.innerHTML = snap.docs.map(d => {
+      const data = d.data();
+      return `<div class="snx-channel-card" onclick="snxOpenChannel('${_esc(d.id)}','${_esc(data.displayName||'')}')">
+        <div class="snx-channel-card-live"><span class="csr-pulse-dot-sm"></span> LIVE</div>
+        <div class="snx-channel-card-name">${_esc(data.streamName || 'Untitled')}</div>
+        <div class="snx-channel-card-meta">${_esc(data.displayName || '')} · ${data.viewerCount || 0} watching</div>
+        <div class="snx-channel-card-cat">${_esc(data.category || 'General')}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('[SNS Cloud Stream] Firebase:', e.message);
+    el.innerHTML = `<div class="snx-panel-error">Could not load: ${_esc(e.message)}</div>`;
+  }
+}
+
+async function _loadNewChannels() {
+  const el = _el('snxNewChannelsList');
+  if (!el) return;
+  el.innerHTML = '<div class="snx-panel-loading">Loading new channels…</div>';
+  try {
+    const snap = await getDocs(query(
+      collection(_db, 'nexusChannels'),
+      where('isPublic', '==', true),
+      orderBy('createdAt', 'desc'),
+      limit(20)
+    ));
+    if (!snap.docs.length) {
+      el.innerHTML = '<div class="snx-empty-sub">No channels yet. Create yours!</div>';
+      return;
+    }
+    el.innerHTML = snap.docs.map(d => {
+      const data = d.data();
+      return `<div class="snx-channel-card" onclick="snxOpenChannelById('${_esc(d.id)}')">
+        <div class="snx-channel-card-name">${_esc(data.channelName || 'Untitled')}</div>
+        <div class="snx-channel-card-meta">${_esc(data.ownerDisplayName || '')} · ${_esc(data.category || 'General')}</div>
+        ${data.description ? `<div class="snx-channel-card-desc">${_esc(data.description.slice(0,80))}${data.description.length>80?'…':''}</div>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('[SNS Cloud Stream] Firebase:', e.message);
+    el.innerHTML = `<div class="snx-panel-error">Could not load: ${_esc(e.message)}</div>`;
+  }
+}
+
+/* ── Open a live channel by stream ID (goes to viewer mode) ── */
+window.snxOpenChannel = function(streamId, displayName) {
+  if (!streamId) return;
+  // Use the existing listener mode — set the URL param so bookmark works
+  const url = new URL(window.location.href);
+  url.searchParams.set('id', streamId);
+  window.history.pushState({}, '', url.toString());
+  _show('csrViewerSection', true);
+  _initListenerMode(streamId);
+  // Scroll to viewer
+  const vs = _el('csrViewerSection');
+  if (vs) vs.scrollIntoView({ behavior: 'smooth' });
+};
+
+/* ── Open a nexus channel profile (shows their active stream if any) ── */
+window.snxOpenChannelById = async function(uid) {
+  if (!uid) return;
+  try {
+    // Check if the channel owner has an active stream
+    const snap = await getDocs(query(
+      collection(_db, 'cloudStreams'),
+      where('uid', '==', uid),
+      where('status', 'in', ['active', 'recovering']),
+      limit(1)
+    ));
+    if (snap.docs.length) {
+      snxOpenChannel(snap.docs[0].id, snap.docs[0].data().displayName || '');
+    } else {
+      _toast('This channel is not currently live.', 'info');
+    }
+  } catch(e) {
+    _toast('Could not load channel.', 'error');
+    console.error('[SNS Cloud Stream] Firebase:', e.message);
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   BOOT — wire tabs after auth resolves
+   Hook into the existing onAuthStateChanged response
+   by extending the _initCreatorMode path.
+═══════════════════════════════════════════════════════ */
+
+// Intercept app init — run after existing auth handler
+const _origSpaInit = window.csrSpaInit;
+window.csrSpaInit = async function() {
+  if (_origSpaInit) await _origSpaInit();
+  _initNavTabs();
+  _switchTab('discover');
+};
+
+// Also init tabs on first load (onAuthStateChanged fires _initCreatorMode)
+const _origInitCreatorMode = typeof _initCreatorMode === 'function' ? _initCreatorMode : null;
+// Patch: after auth resolves, always set up tabs
+document.addEventListener('DOMContentLoaded', () => {
+  // Delayed so Firebase module has loaded
+  setTimeout(() => { _initNavTabs(); }, 200);
+});
+
+// Expose tab loader globally so inline HTML onclick can trigger it
+window.snxLoadMyChannel    = function() { _switchTab('mychannel'); };
+window.snxLoadDiscover     = function() { _switchTab('discover'); };
+window.snxLoadLiveNow      = function() { _switchTab('livenow'); };
+window.snxLoadNewChannels  = function() { _switchTab('newchannels'); };
+
+/* ── Standalone LIVE NOW / NEW CHANNELS loaders (dedicated tab panels) ── */
+
+async function _loadLiveNowFull() {
+  const el = _el('snxLiveNowListFull');
+  if (!el) return;
+  el.innerHTML = '<div class="snx-panel-loading">Loading live channels…</div>';
+  try {
+    const snap = await getDocs(query(
+      collection(_db, 'cloudStreams'),
+      where('status', 'in', ['active', 'recovering']),
+      orderBy('startedAt', 'desc'),
+      limit(30)
+    ));
+    if (!snap.docs.length) {
+      el.innerHTML = '<div class="snx-empty-sub">No channels are live right now. Start yours in MY CHANNEL → GO LIVE.</div>';
+      return;
+    }
+    el.innerHTML = snap.docs.map(d => {
+      const data = d.data();
+      return `<div class="snx-channel-card" onclick="snxOpenChannel('${_esc(d.id)}','${_esc(data.displayName||'')}')">
+        <div class="snx-channel-card-live"><span class="csr-pulse-dot-sm"></span> LIVE</div>
+        <div class="snx-channel-card-name">${_esc(data.streamName || 'Untitled')}</div>
+        <div class="snx-channel-card-meta">${_esc(data.displayName || '')} · ${data.viewerCount || 0} watching</div>
+        <div class="snx-channel-card-cat">${_esc(data.category || 'General')}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('[SNS Cloud Stream] Firebase:', e.message);
+    el.innerHTML = `<div class="snx-panel-error">Could not load: ${_esc(e.message)}</div>`;
+  }
+}
+
+async function _loadNewChannelsFull() {
+  const el = _el('snxNewChannelsListFull');
+  if (!el) return;
+  el.innerHTML = '<div class="snx-panel-loading">Loading channels…</div>';
+  try {
+    const snap = await getDocs(query(
+      collection(_db, 'nexusChannels'),
+      where('isPublic', '==', true),
+      orderBy('createdAt', 'desc'),
+      limit(30)
+    ));
+    if (!snap.docs.length) {
+      el.innerHTML = '<div class="snx-empty-sub">No public channels yet. Be the first — create yours in MY CHANNEL!</div>';
+      return;
+    }
+    el.innerHTML = snap.docs.map(d => {
+      const data = d.data();
+      return `<div class="snx-channel-card" onclick="snxOpenChannelById('${_esc(d.id)}')">
+        <div class="snx-channel-card-name">${_esc(data.channelName || 'Untitled')}</div>
+        <div class="snx-channel-card-meta">${_esc(data.ownerDisplayName || '')} · ${_esc(data.category || 'General')}</div>
+        ${data.description ? `<div class="snx-channel-card-desc">${_esc(data.description.slice(0,100))}${data.description.length>100?'…':''}</div>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('[SNS Cloud Stream] Firebase:', e.message);
+    el.innerHTML = `<div class="snx-panel-error">Could not load: ${_esc(e.message)}</div>`;
+  }
+}
