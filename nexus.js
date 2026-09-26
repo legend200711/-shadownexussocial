@@ -1090,8 +1090,12 @@ window.snxNexusOnTracksLoaded = function() { if (_nx.activeTab === 'vault') _ren
    PLAYLISTS
 ═══════════════════════════════════════════════════════ */
 function _loadPlaylists() {
-  if (typeof _csMusicLoadPlaylists === 'function') _csMusicLoadPlaylists();
+  // Render whatever is already in memory immediately (may be empty on first open).
   _renderPlaylists();
+  // Then ask studio.js to fetch from Firestore.  When it resolves it calls
+  // window.snxNexusOnPlaylistsLoaded → _renderPlaylists() with the real data.
+  // Do NOT call _renderPlaylists() a second time here — that would race the async return.
+  if (typeof _csMusicLoadPlaylists === 'function') _csMusicLoadPlaylists();
 }
 
 function _renderPlaylists() {

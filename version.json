@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-FINAL-NEXUS-REALM-001",
-  "swVersion": "v69",
-  "deployedAt": "2025-09-25T08:00:00Z",
+  "buildId": "2026-09-26-MASTER-REPAIR",
+  "swVersion": "v70",
+  "deployedAt": "2026-09-26T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
-  "nexusVersion": "3.1.0",
-  "note": "SNS-2026-FINAL-NEXUS-REALM-001: Final Nexus Realm Visual Update. New panoramic Nexus Realm artwork (Grim Reaper + castle + waterfalls + wolves + crows + cats). Transparent SNS Grim Reaper logo replaces emoji moon — login page, desktop nav brand, mobile drawer, auth gate. Portal energy ring nav accents. Post type left-border variants (text/photo/video/music/live). Readability overlay tuned for new vivid artwork. Background positioning updated to center panoramic scene. Version bump to v69."
+  "nexusVersion": "3.2.0",
+  "note": "2026-09-26-MASTER-REPAIR: Master source repair. Fixed playlist async race (render-before-Firestore). Service worker bumped v69→v70 to evict stale caches. Build ID unified across sw.js/index.html/version.json. All upload paths verified (getIdToken / POST /). Navigation confirmed via realmNavTo('nexusPage'). Android scroll unlock verified on all intro exit paths."
 }
