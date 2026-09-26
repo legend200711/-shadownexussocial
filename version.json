@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-10-STAGE2-REPAIR-001",
-  "swVersion": "v75",
+  "buildId": "SNS-2026-10-STAGE3-STABILITY-001",
+  "swVersion": "v76",
   "deployedAt": "2026-10-01T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
   "nexusVersion": "3.2.2",
-  "note": "SNS-2026-10-STAGE2-REPAIR-001: Stage 2 functional repair. Fixed stale build diagnostics in Founder panel (was v63/2025-07-20, now v75/current). Exposed _SNX_BUILD/_SNX_SW_VER on window for shadow-nexus-upgrade.js. Fixed signOutUser alias to route through handleLogout so RTDB presence cleanup runs on logout. Updated all CSS/JS query-string version tags. Bumped SW to v75."
+  "note": "SNS-2026-10-STAGE3-STABILITY-001: Stage 3 targeted stability repair. Fixed FCM SW registration to match by script URL instead of scope (prevents sw.js/firebase-messaging-sw.js ambiguity). Classified all onAuthStateChanged listeners (GLOBAL vs FEATURE). Fixed Profile Music silent catches for saveMusicLink and playlist reorder. Improved upload failure reporting with distinct auth/permission/Cloudflare/R2/network/metadata messages. Cleaned obsolete cohost.js references in live.js. Standardized console prefixes to [SNS Auth|Feed|Messages|Music|Live|Profile|FCM|SW]. Bumped SW to v76."
 }

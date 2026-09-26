@@ -44,10 +44,10 @@
 
 <!-- ── Shared stylesheet ── -->
 <link rel="stylesheet" href="snx-living-bg.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
-<link rel="stylesheet" href="style.css?v=SNS-2026-10-STAGE2-REPAIR-001">
-<link rel="stylesheet" href="album.css?v=SNS-2026-10-STAGE2-REPAIR-001">
-<link rel="stylesheet" href="profile-music.css?v=SNS-2026-10-STAGE2-REPAIR-001">
-<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-10-STAGE2-REPAIR-001">
+<link rel="stylesheet" href="style.css?v=SNS-2026-10-STAGE3-STABILITY-001">
+<link rel="stylesheet" href="album.css?v=SNS-2026-10-STAGE3-STABILITY-001">
+<link rel="stylesheet" href="profile-music.css?v=SNS-2026-10-STAGE3-STABILITY-001">
+<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-10-STAGE3-STABILITY-001">
 <!-- ── Shadow Nexus Social Realm — full immersive redesign ── -->
 <link rel="stylesheet" href="realm.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
 <!-- ── Mobile responsive design layer ── -->
@@ -55,17 +55,17 @@
 <!-- cloud-stream.css belongs to the standalone cloud-stream.html page only;
      do NOT load it on the main app — it caused global style pollution. -->
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library / Upload / Playlists / Queue ── -->
-<link rel="stylesheet" href="studio.css?v=SNS-2026-10-STAGE2-REPAIR-001">
+<link rel="stylesheet" href="studio.css?v=SNS-2026-10-STAGE3-STABILITY-001">
 <!-- ── Nexus Global Theme Engine ── -->
-<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-10-STAGE2-REPAIR-001">
+<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-10-STAGE3-STABILITY-001">
 <!-- ── Shadow Nexus Cinematic Welcome Experience ── -->
 <link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-LOGO-INTRO-004">
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Egyptian/Horror theme ── -->
-<link rel="stylesheet" href="nexus.css?v=SNS-2026-10-STAGE2-REPAIR-001">
+<link rel="stylesheet" href="nexus.css?v=SNS-2026-10-STAGE3-STABILITY-001">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-10-STAGE2-REPAIR-001">
+<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-10-STAGE3-STABILITY-001">
 <!-- ── Shadow Nexus Adaptive Cinematic Performance System ── -->
-<link rel="stylesheet" href="snx-perf.css?v=SNS-2026-10-STAGE2-REPAIR-001">
+<link rel="stylesheet" href="snx-perf.css?v=SNS-2026-10-STAGE3-STABILITY-001">
 <!-- ── Nexus Cinematic Glass Visual Upgrade (loads last — overrides land above perf quality gates) ── -->
 <link rel="stylesheet" href="nexus-glass.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
 
@@ -11986,35 +11986,44 @@ div.snx-gate-logo {
   ─────────────────────────────────────────────────────────────────── */
   async function initPushNotifications() {
     if (!messaging) {
-      console.warn('[FCM] Messaging not initialised — browser may not support it.');
+      console.warn('[SNS FCM] Messaging not initialised — browser may not support it.');
       return;
     }
     if (!('Notification' in window)) {
-      console.warn('[FCM] This browser does not support the Notification API.');
+      console.warn('[SNS FCM] This browser does not support the Notification API.');
       return;
     }
     if (!('serviceWorker' in navigator)) {
-      console.warn('[FCM] Service workers not supported — push disabled.');
+      console.warn('[SNS FCM] Service workers not supported — push disabled.');
       return;
     }
 
-    // ── Step 1: Derive the correct scope from the page URL ──
-    // The FCM SW must be registered under the same scope as the app.
-    // App is served from the root of shadownexussocial.online — scope is always './'.
-    const swScope = './';
-    const swPath  = swScope + 'firebase-messaging-sw.js';
+    // ── Step 1: Locate or register the firebase-messaging-sw.js registration ──
+    // IMPORTANT: match by script URL, not just scope.  Both sw.js and
+    // firebase-messaging-sw.js share the root '/' scope, so a scope-only
+    // search would non-deterministically pick sw.js and break FCM getToken.
+    const swPath = './firebase-messaging-sw.js';
+    // Canonical absolute script URL for comparison
+    const swAbsUrl = new URL(swPath, location.href).href;
 
     let swReg = null;
     try {
-      // Use an existing registration if one already controls the scope to avoid
-      // redundant registrations and the "scope already claimed" error.
+      // Prefer an already-active registration for firebase-messaging-sw.js
+      // so we never create a duplicate and never use sw.js accidentally.
       const existing = await navigator.serviceWorker.getRegistrations();
-      swReg = existing.find(r => r.scope && r.scope.includes(swScope.replace('./', '')));
-      if (!swReg) {
-        swReg = await navigator.serviceWorker.register(swPath, { scope: swScope });
-        console.log('[FCM-SW] Registered, scope:', swReg.scope);
+      swReg = existing.find(r => {
+        const active  = r.active  && r.active.scriptURL;
+        const waiting = r.waiting && r.waiting.scriptURL;
+        const installing = r.installing && r.installing.scriptURL;
+        return (active  && active.includes('firebase-messaging-sw')) ||
+               (waiting && waiting.includes('firebase-messaging-sw')) ||
+               (installing && installing.includes('firebase-messaging-sw'));
+      });
+      if (swReg) {
+        console.log('[SNS FCM] Reusing firebase-messaging-sw.js registration, scope:', swReg.scope);
       } else {
-        console.log('[FCM-SW] Reusing existing registration, scope:', swReg.scope);
+        swReg = await navigator.serviceWorker.register(swAbsUrl, { scope: './' });
+        console.log('[SNS FCM] Registered firebase-messaging-sw.js, scope:', swReg.scope);
       }
 
       // ── Step 2: Wait until the SW is active before calling getToken ──
@@ -12032,13 +12041,13 @@ div.snx-gate-logo {
         });
       }
     } catch (swErr) {
-      console.error('[FCM] Service worker registration error:', swErr.message);
+      console.error('[SNS FCM] Service worker registration error:', swErr.message);
       return;
     }
 
     // ── Step 3: Request notification permission ──
     if (Notification.permission === 'denied') {
-      console.warn('[FCM] Notification permission was denied by the user. Push notifications are disabled.');
+      console.warn('[SNS FCM] Notification permission was denied by the user. Push notifications are disabled.');
       return;
     }
 
@@ -12047,34 +12056,36 @@ div.snx-gate-logo {
       try {
         permission = await Notification.requestPermission();
       } catch (permErr) {
-        console.error('[FCM] requestPermission() threw:', permErr.message);
+        console.error('[SNS FCM] requestPermission() threw:', permErr.message);
         return;
       }
     }
 
     if (permission !== 'granted') {
-      console.warn('[FCM] Notification permission not granted (status:', permission + ').');
+      console.warn('[SNS FCM] Notification permission not granted (status:', permission + ').');
       return;
     }
 
     // ── Step 4: Get/refresh the FCM token ──
+    // Pass the firebase-messaging-sw.js registration explicitly so FCM never
+    // accidentally uses sw.js (which does not import the Firebase messaging compat SDK).
     try {
       fcmToken = await getToken(messaging, {
         vapidKey:                  FCM_VAPID_KEY,
         serviceWorkerRegistration: swReg,
       });
     } catch (tokenErr) {
-      console.error('[FCM] getToken() failed:', tokenErr.message,
+      console.error('[SNS FCM] getToken() failed:', tokenErr.message,
         '\n  Common causes: VAPID key mismatch, SW scope wrong, Firebase project config wrong.');
       return;
     }
 
     if (!fcmToken) {
-      console.warn('[FCM] getToken() returned null — no push subscription created.');
+      console.warn('[SNS FCM] getToken() returned null — no push subscription created.');
       return;
     }
 
-    console.log('[FCM] Token obtained:', fcmToken.substring(0, 20) + '…');
+    console.log('[SNS FCM] Token obtained:', fcmToken.substring(0, 20) + '…');
 
     // ── Step 5: Persist token to Firestore ──
     if (currentUser) {
@@ -12084,9 +12095,9 @@ div.snx-gate-logo {
           // Stamp the last token registration time for staleness audits
           fcmTokenUpdatedAt: Date.now(),
         });
-        console.log('[FCM] Token saved to Firestore for uid:', currentUser.uid);
+        console.log('[SNS FCM] Token saved to Firestore for uid:', currentUser.uid);
       } catch (saveErr) {
-        console.error('[FCM] Failed to save token to Firestore:', saveErr.message);
+        console.error('[SNS FCM] Failed to save token to Firestore:', saveErr.message);
       }
     }
 
@@ -12096,7 +12107,7 @@ div.snx-gate-logo {
     if (!_fcmFgListenerAttached) {
       _fcmFgListenerAttached = true;
       onMessage(messaging, async (payload) => {
-        console.log('[FCM] Foreground message:', payload);
+        console.log('[SNS FCM] Foreground message:', payload);
         const data  = payload.data || {};
         const type  = data.type  || '';
         const title = payload.notification?.title || data.title || '🔔 Shadow Nexus Social';
@@ -12116,7 +12127,7 @@ div.snx-gate-logo {
               data:     { url: swScope, type, fromUid: data.fromUid || '', roomId: data.roomId || '' },
             });
           } catch (notifErr) {
-            console.warn('[FCM] Foreground showNotification failed:', notifErr.message);
+            console.warn('[SNS FCM] Foreground showNotification failed:', notifErr.message);
           }
         }
 
@@ -12138,7 +12149,7 @@ div.snx-gate-logo {
       // Check target user's notification preferences
       const userSnap = await getDoc(doc(db, 'users', targetUid));
       if (!userSnap.exists()) {
-        console.warn('[SNX Push] Target user not found:', targetUid);
+        console.warn('[SNS FCM] Target user not found:', targetUid);
         return;
       }
       const uData = userSnap.data();
@@ -12151,7 +12162,7 @@ div.snx-gate-logo {
         repost: 'likes', wallPost: 'comments',
       };
       if (prefs[typeMap[type] || type] === false) {
-        console.log('[SNX Push] User has disabled', type, 'notifications — skipping.');
+        console.log('[SNS FCM] User has disabled', type, 'notifications — skipping.');
         return;
       }
 
@@ -12161,7 +12172,7 @@ div.snx-gate-logo {
       const _tokenUpdatedAt = uData.fcmTokenUpdatedAt || 0;
       const _tokenAgeDays   = (Date.now() - _tokenUpdatedAt) / (1000 * 60 * 60 * 24);
       if (_tokenAgeDays > 30 && Array.isArray(uData.fcmTokens) && uData.fcmTokens.length > 0) {
-        console.log('[SNX Push] Pruning stale FCM tokens for uid:', targetUid, '(age:', Math.round(_tokenAgeDays), 'days)');
+        console.log('[SNS FCM] Pruning stale FCM tokens for uid:', targetUid, '(age:', Math.round(_tokenAgeDays), 'days)');
         try {
           await updateDoc(doc(db, 'users', targetUid), { fcmTokens: [] });
         } catch (_pruneErr) { /* non-fatal */ }
@@ -12182,7 +12193,7 @@ div.snx-gate-logo {
           })
       });
     } catch(e) {
-      console.error('[SNX Push] sendPushToUser failed for', targetUid, ':', e.message);
+      console.error('[SNS FCM] sendPushToUser failed for', targetUid, ':', e.message);
     }
   }
 
@@ -12527,6 +12538,9 @@ div.snx-gate-logo {
       _purgeStale(rawDocs);
     }
 
+    // ── FEATURE AUTH LISTENER: Live Hub ──
+    // Starts/stops its own Firestore subscriptions only.
+    // Does NOT redirect, hide the app, or modify global UI state.
     onAuthStateChanged(auth, user => {
       if (!user || _hubUnsub) return;
 
@@ -12557,7 +12571,7 @@ div.snx-gate-logo {
             _mergeAndRender();
           }, err => {
             if (!useSimple) {
-              console.warn('[LiveHub] index not ready, using fallback:', err.message);
+              console.warn('[SNS Live] index not ready, using fallback:', err.message);
               _hubUnsub = null;
               _attach(true);
             } else {
@@ -12566,7 +12580,7 @@ div.snx-gate-logo {
             }
           });
         } catch(e) {
-          console.warn('[LiveHub] watcher error:', e.message);
+          console.warn('[SNS Live] watcher error:', e.message);
           if (loadingEl) loadingEl.style.display = 'none';
           if (emptyEl)   emptyEl.style.display   = '';
         }
@@ -12585,10 +12599,10 @@ div.snx-gate-logo {
           });
           _mergeAndRender();
         }, err => {
-          console.warn('[LiveHub] studioLiveRooms watcher error:', err.message);
+          console.warn('[SNS Live] studioLiveRooms watcher error:', err.message);
         });
       } catch(e) {
-        console.warn('[LiveHub] studioLiveRooms watcher setup error:', e.message);
+        console.warn('[SNS Live] studioLiveRooms watcher setup error:', e.message);
       }
 
       _attach(false);
@@ -12717,7 +12731,7 @@ div.snx-gate-logo {
           _mergeBannerAndRender();
         }, err => {
           if (!useSimple) {
-            console.warn('[FeedLive] compound query failed, using fallback:', err.message);
+            console.warn('[SNS Live] compound query failed, using fallback:', err.message);
             _liveUnsub = null;
             _attachBannerQuery(true);
           } else {
@@ -12725,11 +12739,14 @@ div.snx-gate-logo {
           }
         });
       } catch(e) {
-        console.warn('[FeedLive] watcher failed:', e.message);
+        console.warn('[SNS Live] watcher failed:', e.message);
         banner.style.display = 'none';
       }
     }
 
+    // ── FEATURE AUTH LISTENER: Feed Live Banner ──
+    // Starts/stops its own Firestore subscriptions only.
+    // Does NOT redirect, hide the app, or modify global UI state.
     onAuthStateChanged(auth, user => {
       if (!user)     return;
       if (_liveUnsub) return;
@@ -12743,10 +12760,10 @@ div.snx-gate-logo {
             snap.forEach(d => { const r = d.data(); r.roomId = r.roomId || d.id; _bannerSnapshotStudio.push(r); });
             _mergeBannerAndRender();
           }, err => {
-            console.warn('[FeedLive] studioLiveRooms watcher error:', err.message);
+            console.warn('[SNS Live] studioLiveRooms watcher error:', err.message);
           });
         } catch(e) {
-          console.warn('[FeedLive] studioLiveRooms watcher setup error:', e.message);
+          console.warn('[SNS Live] studioLiveRooms watcher setup error:', e.message);
         }
       }
 
@@ -12827,7 +12844,7 @@ div.snx-gate-logo {
   //    Wait for enableNetwork() to complete (set by _snxFirestoreNetworkMonitor)
   //    before reopening the chat so Firestore is actually ready. ──
   window.addEventListener('online', async () => {
-      console.log('[SNX] Network reconnected — restoring presence');
+      console.log('[SNS Auth] Network reconnected — restoring presence');
       await new Promise(r => setTimeout(r, 800));
       if (currentUser) {
           try { updateDoc(doc(db, "users", currentUser.uid), { status: "online", lastSeen: Date.now() }); } catch(_) {}
@@ -12913,6 +12930,18 @@ div.snx-gate-logo {
       window.visualViewport.addEventListener('resize', _vvHandler);
       window.visualViewport.addEventListener('scroll', _vvHandler);
   }
+
+  // ════════════════════════════════════════════════════════════════════
+  // GLOBAL AUTH CONTROLLER — the ONE authoritative auth state listener.
+  // Responsibilities:
+  //   - Show login screen when no user is present
+  //   - Navigate to feed when user is authenticated
+  //   - Drive presence, user data snapshot, push notifications
+  //   - Tear down all listeners on logout
+  // All other onAuthStateChanged listeners in this file are FEATURE
+  // LISTENERS that only start/stop their own subscriptions and must
+  // never redirect, show login, or hide the application.
+  // ════════════════════════════════════════════════════════════════════
 
   // ── Safety net: dismiss the auth gate after 10 s even if onAuthStateChanged
   //    never fires (e.g. Firebase CDN blocked, network error).
@@ -13107,7 +13136,7 @@ div.snx-gate-logo {
                               data:     { url: n.url || _snxBase, type: n.type || '', fromUid: n.fromUid || '', roomId: n.roomId || '' }
                           });
                       } catch(notifErr) {
-                          console.warn('[SNX Push] showNotification failed:', notifErr.message);
+                          console.warn('[SNS FCM] showNotification failed:', notifErr.message);
                           try { new Notification(n.title || '🔔 Shadow Nexus Social', { body: n.body || '', icon: _iconPath }); } catch(_) {}
                       }
                   }
@@ -13351,10 +13380,10 @@ div.snx-gate-logo {
       try {
         await enableNetwork(db);
         window._snxFsNetworkEnabled = true;
-        console.log('[SNX] Firestore network re-enabled — pending writes flushed.');
+        console.log('[SNS Auth] Firestore network re-enabled — pending writes flushed.');
         toastNotification('📶 Back online — syncing…');
       } catch(e) {
-        console.warn('[SNX] enableNetwork error:', e);
+        console.warn('[SNS Auth] enableNetwork error:', e);
         window._snxFsNetworkEnabled = true; // assume OK so chat can retry
       }
     }
@@ -13363,7 +13392,7 @@ div.snx-gate-logo {
       // Mark as disabled so the online handler knows to re-enable first
       // Do NOT call disableNetwork() — it cancels in-flight Promises
       window._snxFsNetworkEnabled = false;
-      console.log('[SNX] Browser went offline — Firestore will serve from cache.');
+      console.log('[SNS Auth] Browser went offline — Firestore will serve from cache.');
     }
 
     window.addEventListener('online',  _onNetworkRestored);
@@ -13820,7 +13849,7 @@ div.snx-gate-logo {
                   const _muSafe = escFeed(mu);
                   if (_kind === 'audio') {
                       if (!mu) {
-                          console.error('[SNX Feed] Audio post has missing URL:', pDoc.id);
+                          console.error('[SNS Feed] Audio post has missing URL:', pDoc.id);
                           mediaHTML = `<div class="post-music-card"><div class="post-music-icon">🎵</div><div class="post-music-info"><div class="post-music-title" style="color:#ff5577;">⚠️ Audio unavailable</div></div></div>`;
                       } else {
                           mediaHTML = `
@@ -14318,10 +14347,10 @@ div.snx-gate-logo {
           });
           if (count > 0) {
               await batch.commit();
-              console.log(`[SNX] Cleaned ${count} expired post(s).`);
+              console.log(`[SNS Feed] Cleaned ${count} expired post(s).`);
           }
       } catch (err) {
-          console.warn('[SNX] Post cleanup error:', err);
+          console.warn('[SNS Feed] Post cleanup error:', err);
       }
   }
 
@@ -14522,12 +14551,12 @@ div.snx-gate-logo {
 
           // ── Validate: log and abort if imageURL is unexpectedly blank after media pick ──
           if (mediaFileInput && mediaFileInput.files && mediaFileInput.files.length > 0 && mediaUrlsRaw.length === 0) {
-              console.warn('[SNX Post] File was selected but imageURL is empty — aborting post to prevent blank-media record.');
+              console.warn('[SNS Feed] File was selected but imageURL is empty — aborting post to prevent blank-media record.');
               toastNotification("⚠️ Media URL missing. Please re-upload your photo.");
               return;
           }
 
-          console.log('[SNX Post] Creating post:', {
+          console.log('[SNS Feed] Creating post:', {
               uid: currentUser.uid,
               textLen: text.length,
               mediaUrls: mediaUrlsRaw,
@@ -14579,7 +14608,7 @@ div.snx-gate-logo {
           // Write the postId back so every consumer can read it without knowing the doc ref
           await updateDoc(postRef, { postId: postRef.id });
 
-          console.log('[SNX Post] Feed post saved:', postRef.id, '| mediaUrls:', mediaUrlsRaw);
+          console.log('[SNS Feed] Feed post saved:', postRef.id, '| mediaUrls:', mediaUrlsRaw);
 
           // ── If photo & saveToAlbum: write each photo URL to /albumPhotos/ ──
           if (saveToAlbum && isPhotoPost && mediaUrlsRaw.length > 0) {
@@ -14603,10 +14632,10 @@ div.snx-gate-logo {
                           timestamp:   now,
                       });
                   } catch (ae) {
-                      console.warn('[SNX Post] Album save failed (non-fatal):', ae);
+                      console.warn('[SNS Feed] Album save failed (non-fatal):', ae);
                   }
               }
-              console.log('[SNX Post] Photos saved to album:', imageUrls.length);
+              console.log('[SNS Feed] Photos saved to album:', imageUrls.length);
           }
 
           // ── If checked, mirror post to profileWall subcollection (permanent) ──
@@ -14633,7 +14662,7 @@ div.snx-gate-logo {
                   likedBy:      [],
                   commentCount: 0,
               });
-              console.log('[SNX Post] Profile Wall entry saved:', postRef.id);
+              console.log('[SNS Feed] Profile Wall entry saved:', postRef.id);
           }
 
           // Detect @mentions / tags and notify
@@ -14657,7 +14686,7 @@ div.snx-gate-logo {
               ? `⚡ Post published & saved to: ${destinations.join(' + ')}!`
               : "⚡ Post published to the Eclipse!");
       } catch(e) {
-          console.error('[SNX Post] Failed to create post:', e);
+          console.error('[SNS Feed] Failed to create post:', e);
           const msg = e?.code === 'permission-denied'
               ? "Permission denied — please log out and back in."
               : e?.message
@@ -14780,7 +14809,7 @@ div.snx-gate-logo {
                   }).catch(() => {});
               }
           } catch(e) {
-              console.error('[SNX] Like failed:', e);
+              console.error('[SNS Feed] Like failed:', e);
               // Roll back optimistic UI
               if (likeBtn) {
                   const countEl = likeBtn.querySelector('.like-count');
@@ -15041,7 +15070,7 @@ div.snx-gate-logo {
               detectAndNotifyMentions(txt, id, true);
           } catch(_) { /* best-effort */ }
       } catch(e) {
-          console.error('[SNX] Comment save failed:', e);
+          console.error('[SNS Feed] Comment save failed:', e);
           toastNotification("Could not save comment — please try again.");
           el.value = txt; // restore text so user doesn't lose it
       } finally {
@@ -16350,10 +16379,10 @@ div.snx-gate-logo {
   let activeProfileUnsubscribe = null;
 
   window.viewProfile = async function(uid) {
-      if (!uid) { console.warn('[SNX Profile] viewProfile called with no uid'); return; }
+      if (!uid) { console.warn('[SNS Profile] viewProfile called with no uid'); return; }
       // If auth has not yet resolved, wait briefly then retry
       if (!currentUser) {
-          console.warn('[SNX Profile] viewProfile called before auth resolved — queuing');
+          console.warn('[SNS Profile] viewProfile called before auth resolved — queuing');
           window._snxOnAuthReady(() => window.viewProfile(uid));
           return;
       }
@@ -16500,13 +16529,13 @@ div.snx-gate-logo {
                   avatarEl.childNodes.forEach(n => { if (n.nodeType === Node.TEXT_NODE) n.remove(); });
               };
               _probe.onerror = () => {
-                  console.warn('[SNX Profile] Avatar URL failed to load — showing fallback initials:', _avatarUrl);
+                  console.warn('[SNS Profile] Avatar URL failed to load — showing fallback initials:', _avatarUrl);
                   _applyAvatarFallback();
               };
               _probe.src = _avatarUrl;
           } else {
               if (_avatarUrl.startsWith('gs://')) {
-                  console.warn('[SNX Profile] Avatar URL is a Firebase Storage path (gs://) — not displayable in browser. Re-upload the image to fix this.');
+                  console.warn('[SNS Profile] Avatar URL is a Firebase Storage path (gs://) — not displayable in browser. Re-upload the image to fix this.');
               }
               _applyAvatarFallback();
           }
@@ -18162,14 +18191,14 @@ div.snx-gate-logo {
     // docs, so deleteDoc() on a messages/{id} path will never work here.
     // This function does the correct array update directly.
     window.deleteMessage = async function(chatId, msgIndex, forEveryone) {
-        if (!currentUser) { console.warn('[SNX] deleteMessage: no current user'); return; }
-        if (!chatId || msgIndex == null) { console.warn('[SNX] deleteMessage: missing chatId or msgIndex'); return; }
+        if (!currentUser) { console.warn('[SNS Messages] deleteMessage: no current user'); return; }
+        if (!chatId || msgIndex == null) { console.warn('[SNS Messages] deleteMessage: missing chatId or msgIndex'); return; }
         try {
             const ref  = doc(db, 'chats', chatId);
             const snap = await getDoc(ref);
-            if (!snap.exists()) { console.warn('[SNX] deleteMessage: chat doc not found'); return; }
+            if (!snap.exists()) { console.warn('[SNS Messages] deleteMessage: chat doc not found'); return; }
             const msgs = [...(snap.data().messages || [])];
-            if (!msgs[msgIndex]) { console.warn('[SNX] deleteMessage: message index out of range'); return; }
+            if (!msgs[msgIndex]) { console.warn('[SNS Messages] deleteMessage: message index out of range'); return; }
 
             if (forEveryone) {
                 // Delete for everyone — only allowed if the caller is the sender
@@ -18213,7 +18242,7 @@ div.snx-gate-logo {
             }
         } catch (err) {
             toastNotification('❌ Delete failed: ' + err.message);
-            console.error('[SNX] deleteMessage:', err);
+            console.error('[SNS Messages] deleteMessage:', err);
         }
     };
 
@@ -18718,7 +18747,7 @@ div.snx-gate-logo {
 
       } catch (err) {
           toastNotification('Message failed to send — please try again.');
-          console.error('[Chat Modal] Send error:', err);
+          console.error('[SNS Messages] Send error:', err);
           // Input was NOT cleared — text is still there so user can retry
       } finally {
           if (sendBtn) { sendBtn.style.opacity = ''; sendBtn.style.transform = ''; }
@@ -18807,7 +18836,7 @@ div.snx-gate-logo {
               _initOk = true;
               break;
           } catch (e) {
-              console.error(`[Chat Modal] setDoc attempt ${_attempt} error:`, e);
+              console.error(`[SNS Messages] setDoc attempt ${_attempt} error:`, e);
               if (_m_chId !== capturedChId) return; // user switched — abort
               if (_attempt < 5) {
                   // Show reconnecting spinner and wait before retrying
@@ -18911,7 +18940,7 @@ div.snx-gate-logo {
           _m_firstSnap = false;
       }, (snapErr) => {
           // Log actual Firebase error and auto-retry
-          console.error('[Chat Modal] onSnapshot error:', snapErr.code || snapErr.message || snapErr);
+          console.error('[SNS Messages] onSnapshot error:', snapErr.code || snapErr.message || snapErr);
           if (_m_chId !== capturedChId) return;
           if (msgBox) msgBox.innerHTML = `<div class="ipc-modal-empty"><div class="ipc-modal-empty-icon">📡</div><div class="ipc-modal-empty-text">Connection lost.<br><span style="font-size:11px;color:#3a6a8a;">${snapErr.code || 'network-error'}</span><br><button onclick="window.ipcOpen('${capturedTgtUid}')" style="margin-top:10px;padding:8px 18px;border-radius:20px;font-size:12px;cursor:pointer;">🔄 Retry</button></div></div>`;
           // Auto-retry after 5 s
@@ -21459,7 +21488,7 @@ function switchProfileTab(t) {
         if (window.activeProfileUid && typeof window.snxMusic?.initMusicTab === 'function') {
             const _musicUid  = window.activeProfileUid;
             const _musicSelf = !!(window._snxCurrentUser && _musicUid === window._snxCurrentUser.uid);
-            console.log('[SNX Music] tab click — profileUid:', _musicUid, 'isSelf:', _musicSelf, 'currentUser:', window._snxCurrentUser?.uid);
+            console.log('[SNS Music] tab click — profileUid:', _musicUid, 'isSelf:', _musicSelf, 'currentUser:', window._snxCurrentUser?.uid);
             window.snxMusic.initMusicTab(_musicUid, _musicSelf);
         }
     } else if (t === 'themes') {
@@ -25335,18 +25364,18 @@ function _supportStopCanvas() {
      ═══════════════════════════════════════════════════════════ -->
 
 <!-- ── Global Background Internet Manager (must load before script.js) ── -->
-<script src="snx-net.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
+<script src="snx-net.js?v=SNS-2026-10-STAGE3-STABILITY-001"></script>
 
-<script src="script.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
+<script src="script.js?v=SNS-2026-10-STAGE3-STABILITY-001"></script>
 
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library, Upload, Playlists, Queue ── -->
-<script src="studio.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
+<script src="studio.js?v=SNS-2026-10-STAGE3-STABILITY-001"></script>
 
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Eternal Stream + Studio ── -->
-<script src="nexus.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
+<script src="nexus.js?v=SNS-2026-10-STAGE3-STABILITY-001"></script>
 
 <!-- ── Moderator & Administrator Panel (extracted to js/moderator.js) ── -->
-<script src="js/moderator.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
+<script src="js/moderator.js?v=SNS-2026-10-STAGE3-STABILITY-001"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════
@@ -29835,16 +29864,16 @@ window.switchAdminTab = function(tab) {
 </script>
 
 <!-- ── Profile Photo Album module (must load after the main IIFE) ── -->
-<script src="album.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
+<script src="album.js?v=SNS-2026-10-STAGE3-STABILITY-001"></script>
 
 <!-- ── Profile Music System (loads after Firebase is initialized) ── -->
-<script src="profile-music.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
+<script src="profile-music.js?v=SNS-2026-10-STAGE3-STABILITY-001"></script>
 
 <!-- ── Profile Theme System (loads after Firebase is initialized) ── -->
-<script src="profile-theme.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
+<script src="profile-theme.js?v=SNS-2026-10-STAGE3-STABILITY-001"></script>
 
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<script src="shadow-nexus-upgrade.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
+<script src="shadow-nexus-upgrade.js?v=SNS-2026-10-STAGE3-STABILITY-001"></script>
 
 <!-- ═══════════════════ GRIM AI ASSISTANT PANEL ═══════════════════ -->
 
@@ -31831,11 +31860,11 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = 'SNS-2026-10-STAGE2-REPAIR-001';
-  var SW_VER   = 'v75';
+  var BUILD_ID = 'SNS-2026-10-STAGE3-STABILITY-001';
+  var SW_VER   = 'v76';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
-  window.SNX_BUILD_ID               = 'SNS-2026-10-STAGE2-REPAIR-001';
+  window.SNX_BUILD_ID               = 'SNS-2026-10-STAGE3-STABILITY-001';
 
   /* ══════════════════════════════════════════════════════
      SERVICE WORKER UPDATE HANDLING
@@ -31985,8 +32014,8 @@ document.addEventListener('click', function(e) {
   /* ── Single authoritative source for Founder diagnostics.
        These must match sw.js CACHE_VERSION / BUILD_ID and version.json.
        window._SNX_BUILD is read by shadow-nexus-upgrade.js diagnostic copy. ── */
-  var _SNX_BUILD    = 'SNS-2026-10-STAGE2-REPAIR-001';
-  var _SNX_SW_VER   = 'v75';
+  var _SNX_BUILD    = 'SNS-2026-10-STAGE3-STABILITY-001';
+  var _SNX_SW_VER   = 'v76';
   var _SNX_DEPLOY   = '2026-10-01T00:00:00Z';
   var _SNX_PROJECT  = 'horr-a08f4';
 
@@ -33654,7 +33683,7 @@ window.snxFounderPanelCleanup = (function() {
      Loaded before the Welcome Experience so quality is applied
      before any cinematic assets render.
      ═══════════════════════════════════════════════════════════ -->
-<script src="snx-perf.js?v=SNS-2026-10-STAGE2-REPAIR-001"></script>
+<script src="snx-perf.js?v=SNS-2026-10-STAGE3-STABILITY-001"></script>
 
 <!-- ═══════════════════════════════════════════════════════════
      PERFORMANCE SETTINGS UI — Settings page + Founder dashboard

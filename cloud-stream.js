@@ -182,6 +182,11 @@ function _getSessionId() {
 
 /* ═══════════════════════════════════════════════════════
    BOOT — Auth state
+   PAGE-LEVEL AUTH CONTROLLER for cloud-stream.js.
+   cloud-stream.html is a standalone page that owns its own
+   auth lifecycle. This listener only controls the Cloud
+   Stream page UI — it does not affect or compete with the
+   GLOBAL AUTH CONTROLLER in index.html.
 ═══════════════════════════════════════════════════════ */
 onAuthStateChanged(_auth, async user => {
   _show('csrLoading', false);

@@ -193,15 +193,15 @@
       reason = 'no src set on audio element';
     }
 
-    console.error('[SNX Music] ── Audio playback error ────────────────────────');
-    console.error('[SNX Music]   song title :', songTitle);
-    console.error('[SNX Music]   song index :', songIdx);
-    console.error('[SNX Music]   audio src  :', src);
-    console.error('[SNX Music]   error code :', err ? err.code : '(no MediaError)');
-    console.error('[SNX Music]   reason     :', reason);
-    if (hint) console.error('[SNX Music]   hint       :', hint);
-    if (err && err.message) console.error('[SNX Music]   message    :', err.message);
-    console.error('[SNX Music] ──────────────────────────────────────────────────');
+    console.error('[SNS Music] ── Audio playback error ────────────────────────');
+    console.error('[SNS Music]   song title :', songTitle);
+    console.error('[SNS Music]   song index :', songIdx);
+    console.error('[SNS Music]   audio src  :', src);
+    console.error('[SNS Music]   error code :', err ? err.code : '(no MediaError)');
+    console.error('[SNS Music]   reason     :', reason);
+    if (hint) console.error('[SNS Music]   hint       :', hint);
+    if (err && err.message) console.error('[SNS Music]   message    :', err.message);
+    console.error('[SNS Music] ──────────────────────────────────────────────────');
 
     // Show the error on the player UI so the user knows what happened
     const titleEl = document.getElementById('snxPlayerTitle');
@@ -305,7 +305,7 @@
       };
 
       xhr.onerror  = () => {
-        console.error('[SNX Music] XHR upload failed. Target:', R2_WORKER_URL + '/upload-music',
+        console.error('[SNS Music] XHR upload failed. Target:', R2_WORKER_URL + '/upload-music',
           '| Origin:', location.origin, '| Status:', xhr.status,
           '| If status=0 this is a CORS block or DNS failure.');
         reject(new Error(
@@ -328,7 +328,7 @@
       const user = (window._snxAuth && window._snxAuth.currentUser)
                  ? window._snxAuth.currentUser : (window._snxCurrentUser || null);
       if (!user || typeof user.getIdToken !== 'function') {
-        console.warn('[SNX Music] deleteR2File: no signed-in user — skipping R2 delete');
+        console.warn('[SNS Music] deleteR2File: no signed-in user — skipping R2 delete');
         return;
       }
       const idToken = await user.getIdToken(true);
@@ -338,20 +338,20 @@
         method:  'DELETE',
         headers: { 'Authorization': 'Bearer ' + idToken },
       });
-    } catch (e) { console.warn('[SNX Music] R2 delete best-effort failed:', e); }
+    } catch (e) { console.warn('[SNS Music] R2 delete best-effort failed:', e); }
   }
 
   // ── Firestore ops ─────────────────────────────────────────────
   async function loadSongs(uid) {
     // uid must ALWAYS be the profile owner's UID — never the signed-in visitor's UID.
     if (!uid) {
-      console.error('[SNX Music] loadSongs called with empty uid — aborting');
+      console.error('[SNS Music] loadSongs called with empty uid — aborting');
       return [];
     }
 
-    console.log('[SNX Music] loadSongs ── START ─────────────────────────');
-    console.log('[SNX Music]   profile UID :', uid);
-    console.log('[SNX Music]   signed-in   :', window._snxCurrentUser?.uid ?? '(none)');
+    console.log('[SNS Music] loadSongs ── START ─────────────────────────');
+    console.log('[SNS Music]   profile UID :', uid);
+    console.log('[SNS Music]   signed-in   :', window._snxCurrentUser?.uid ?? '(none)');
 
     const { collection, query, where, orderBy, getDocs } = fs();
 
@@ -383,28 +383,28 @@
         );
         const snap = await getDocs(q);
         docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        console.log(`[SNX Music]   ${field} query → ${docs.length} doc(s)`);
+        console.log(`[SNS Music]   ${field} query → ${docs.length} doc(s)`);
       } catch (err) {
         if (
           err.code === 'permission-denied' ||
           (err.message && err.message.includes('PERMISSION_DENIED'))
         ) {
           console.error(
-            `[SNX Music]   ${field} query PERMISSION DENIED —`,
+            `[SNS Music]   ${field} query PERMISSION DENIED —`,
             'Firestore rule likely requires isSignedIn(); check auth state.',
             err.message
           );
           return [];
         }
         // Index missing → retry without orderBy
-        console.warn(`[SNX Music]   ${field} query index fallback:`, err.message);
+        console.warn(`[SNS Music]   ${field} query index fallback:`, err.message);
         try {
           const q2 = query(collection(db(), COLL_SONGS), where(field, '==', uid));
           const snap2 = await getDocs(q2);
           docs = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
-          console.log(`[SNX Music]   ${field} fallback query → ${docs.length} doc(s)`);
+          console.log(`[SNS Music]   ${field} fallback query → ${docs.length} doc(s)`);
         } catch (e2) {
-          console.error(`[SNX Music]   ${field} fallback query also failed:`, e2.message);
+          console.error(`[SNS Music]   ${field} fallback query also failed:`, e2.message);
         }
       }
       return docs;
@@ -423,23 +423,23 @@
     results = sortByDate(results);
 
     // ── Diagnostic logging ────────────────────────────────────────────────────
-    console.log(`[SNX Music]   total after dedup : ${results.length} song(s) for profile ${uid}`);
+    console.log(`[SNS Music]   total after dedup : ${results.length} song(s) for profile ${uid}`);
 
     if (results.length === 0) {
-      console.warn('[SNX Music] ── ZERO RESULTS — root-cause checklist ──────────────');
-      console.warn('[SNX Music]   1. Firestore rules  : open the Rules Playground in Firebase Console');
-      console.warn(`[SNX Music]      and simulate a read of profileMusic where ownerUid=="${uid}"`);
-      console.warn('[SNX Music]      The rule must pass for isSignedIn() or visibility=="public".');
-      console.warn('[SNX Music]   2. Missing ownerId  : run this in the Firebase Console:');
-      console.warn(`[SNX Music]      db.collection("profileMusic").where("ownerUid","==","${uid}").get()`);
-      console.warn('[SNX Music]      If it returns docs, ownerId was not written. Re-upload a track.');
-      console.warn('[SNX Music]   3. Visibility filter: all docs must have visibility:"public".');
-      console.warn('[SNX Music]      Docs without the field will be excluded when rules check it.');
-      console.warn('[SNX Music]   4. Wrong profile UID: confirm window.activeProfileUid is the');
-      console.warn(`[SNX Music]      OWNER\'s UID, not the visitor\'s. Current value: "${uid}"`);
-      console.warn('[SNX Music]   5. R2 URL access    : paste a musicUrl into a private browser tab.');
-      console.warn('[SNX Music]      A 200 response means R2 is public. A 403 means it is private.');
-      console.warn('[SNX Music] ─────────────────────────────────────────────────────────────────');
+      console.warn('[SNS Music] ── ZERO RESULTS — root-cause checklist ──────────────');
+      console.warn('[SNS Music]   1. Firestore rules  : open the Rules Playground in Firebase Console');
+      console.warn(`[SNS Music]      and simulate a read of profileMusic where ownerUid=="${uid}"`);
+      console.warn('[SNS Music]      The rule must pass for isSignedIn() or visibility=="public".');
+      console.warn('[SNS Music]   2. Missing ownerId  : run this in the Firebase Console:');
+      console.warn(`[SNS Music]      db.collection("profileMusic").where("ownerUid","==","${uid}").get()`);
+      console.warn('[SNS Music]      If it returns docs, ownerId was not written. Re-upload a track.');
+      console.warn('[SNS Music]   3. Visibility filter: all docs must have visibility:"public".');
+      console.warn('[SNS Music]      Docs without the field will be excluded when rules check it.');
+      console.warn('[SNS Music]   4. Wrong profile UID: confirm window.activeProfileUid is the');
+      console.warn(`[SNS Music]      OWNER\'s UID, not the visitor\'s. Current value: "${uid}"`);
+      console.warn('[SNS Music]   5. R2 URL access    : paste a musicUrl into a private browser tab.');
+      console.warn('[SNS Music]      A 200 response means R2 is public. A 403 means it is private.');
+      console.warn('[SNS Music] ─────────────────────────────────────────────────────────────────');
     } else {
       // Log each document so the URL and visibility can be verified in DevTools.
       results.forEach((s, i) => {
@@ -447,21 +447,21 @@
         const vis = s.visibility ?? '(not set — treated as private by rule check)';
         const owner = s.ownerUid || s.ownerId || s.userId || '(no owner field)';
         console.log(
-          `[SNX Music]   [${i}] id=${s.id}  owner=${owner}  visibility=${vis}  url=${url}`
+          `[SNS Music]   [${i}] id=${s.id}  owner=${owner}  visibility=${vis}  url=${url}`
         );
         if (!s.musicUrl && !s.downloadURL && !s.url) {
-          console.warn(`[SNX Music]       ↳ doc ${s.id} has NO music URL — track will not play`);
+          console.warn(`[SNS Music]       ↳ doc ${s.id} has NO music URL — track will not play`);
         }
         if (!s.visibility) {
           console.warn(
-            `[SNX Music]       ↳ doc ${s.id} missing visibility field —`,
+            `[SNS Music]       ↳ doc ${s.id} missing visibility field —`,
             'Firestore rule may deny reads for unauthenticated viewers'
           );
         }
       });
     }
 
-    console.log('[SNX Music] loadSongs ── END ───────────────────────────────');
+    console.log('[SNS Music] loadSongs ── END ───────────────────────────────');
     return results;
   }
 
@@ -471,23 +471,23 @@
       const q = query(collection(db(), COLL_PLAYLISTS), where('ownerUid','==', uid), orderBy('createdAt','asc'));
       const snap = await getDocs(q);
       const results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      console.log(`[SNX Music] loadPlaylists → ${results.length} playlist(s) for uid ${uid}`);
+      console.log(`[SNS Music] loadPlaylists → ${results.length} playlist(s) for uid ${uid}`);
       return results;
     } catch (err) {
       if (err.code === 'permission-denied') {
-        console.error('[SNX Music] loadPlaylists PERMISSION DENIED — check Firestore rules for profilePlaylists:', err.message);
+        console.error('[SNS Music] loadPlaylists PERMISSION DENIED — check Firestore rules for profilePlaylists:', err.message);
         return [];
       }
       // Index missing → retry without orderBy
-      console.warn('[SNX Music] loadPlaylists index fallback:', err.code || '', err.message);
+      console.warn('[SNS Music] loadPlaylists index fallback:', err.code || '', err.message);
       try {
         const q2 = query(collection(db(), COLL_PLAYLISTS), where('ownerUid', '==', uid));
         const snap2 = await getDocs(q2);
         const results2 = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
-        console.log(`[SNX Music] loadPlaylists fallback → ${results2.length} playlist(s) for uid ${uid}`);
+        console.log(`[SNS Music] loadPlaylists fallback → ${results2.length} playlist(s) for uid ${uid}`);
         return results2;
       } catch (e2) {
-        console.error('[SNX Music] loadPlaylists fallback failed:', e2.code || '', e2.message);
+        console.error('[SNS Music] loadPlaylists fallback failed:', e2.code || '', e2.message);
         return [];
       }
     }
@@ -508,15 +508,21 @@
   async function saveSettings() {
     if (!state.isSelf) return;
     const { doc, updateDoc } = fs();
-    await updateDoc(doc(db(), 'users', state.profileUid), { musicSettings: state.settings }).catch(() => {});
+    await updateDoc(doc(db(), 'users', state.profileUid), { musicSettings: state.settings })
+      .catch(e => console.warn('[SNS Music] saveSettings failed (non-fatal):', e.message));
   }
 
   async function saveMusicLink(linkObj) {
     // linkObj = { url, platform, displayChoice } or null to clear
     if (!state.isSelf) return;
     const { doc, updateDoc } = fs();
-    await updateDoc(doc(db(), 'users', state.profileUid), { musicLink: linkObj || null }).catch(() => {});
-    state.musicLink = linkObj || null;
+    try {
+      await updateDoc(doc(db(), 'users', state.profileUid), { musicLink: linkObj || null });
+      state.musicLink = linkObj || null;
+    } catch (e) {
+      console.error('[SNS Music] saveMusicLink failed:', e.message);
+      toast('Could not save music link. Please try again.', 'error');
+    }
   }
 
   async function addSong(songData) {
@@ -598,7 +604,7 @@
           : '⚠ File unavailable';
       }
       console.error(
-        '[SNX Music] loadTrack — no playable URL for track', idx,
+        '[SNS Music] loadTrack — no playable URL for track', idx,
         '| title:', s.title || s.fileName || s.id,
         '| musicUrl:', s.musicUrl || '(missing)',
         '| downloadURL:', s.downloadURL || '(missing)',
@@ -608,7 +614,7 @@
       return;
     }
 
-    console.log('[SNX Music] loadTrack', idx, '→', streamUrl);
+    console.log('[SNS Music] loadTrack', idx, '→', streamUrl);
     a.src = streamUrl;
     if (state.resumeTime && prev === streamUrl) { a.currentTime = state.resumeTime; state.resumeTime = 0; }
     updatePlayerUI(s);
@@ -1048,7 +1054,7 @@
             const p = detectPlatform(url);
             if (!p) {
               // Unknown platform — warn but allow (link-only, no embed)
-              console.warn('[SNX Music] Saving link from unrecognised platform:', url);
+              console.warn('[SNS Music] Saving link from unrecognised platform:', url);
             }
             await saveMusicLink({ url, platform: p ? p.id : 'unknown', displayChoice });
             if (statusEl) { statusEl.style.color = '#00AEEF'; statusEl.textContent = '✓ Link saved!'; }
@@ -1246,7 +1252,12 @@
           pl.songIds = ids;
           document.getElementById('snxSongListWrap').innerHTML = renderSongList();
           attachSongListEvents();
-          await updatePlaylist(pl.id, { songIds: ids }).catch(() => {});
+          try {
+            await updatePlaylist(pl.id, { songIds: ids });
+          } catch (e) {
+            console.error('[SNS Music] Playlist reorder failed:', e.message);
+            toast('Could not save playlist order. Please try again.', 'error');
+          }
         });
       });
     }
@@ -1326,7 +1337,7 @@
     // Verify Firebase is ready before doing anything
     try { fs(); db(); } catch (e) {
       toast('Database not ready. Please wait a moment and try again.', 'error');
-      console.error('[SNX Music] Firebase not ready:', e);
+      console.error('[SNS Music] Firebase not ready:', e);
       return;
     }
 
@@ -1387,7 +1398,7 @@
           const artKey = `profiles/${uid}/music/art_${timestamp}_${artSafeFile}`;
           await uploadToR2(artKey, fields.artFile, uid, () => {})
             .then(r => { artUrl = r.url; artR2Key = r.key; })
-            .catch(e => { console.warn('[SNX Music] Artwork upload failed:', e); });
+            .catch(e => { console.warn('[SNS Music] Artwork upload failed:', e); });
         }
 
         // Step 4: Read audio duration (10s timeout so it never hangs)
@@ -1432,7 +1443,7 @@
           updatedAt:   now,
         });
 
-        console.log('[SNX Music] Saved song to R2 + Firebase:', songRef.id, { r2Key: audioR2Key, url: audioUrl });
+        console.log('[SNS Music] Saved song to R2 + Firebase:', songRef.id, { r2Key: audioR2Key, url: audioUrl });
 
         // ── Also write to /mediaFiles so all uploads have a centralised metadata record ──
         try {
@@ -1450,20 +1461,51 @@
             messageId:  '',
             storyId:    '',
             visibility: 'public',
-          }).catch(e => console.warn('[SNX Music] mediaFiles write failed (non-fatal):', e.message));
+          }).catch(e => console.warn('[SNS Music] mediaFiles write failed (non-fatal):', e.message));
         } catch (_) {}
 
         if (!firstSuccessId) firstSuccessId = songRef.id;
         results.push({ ok: true, id: songRef.id, url: audioUrl, title: fields.title || f.name, artist: fields.artist || '', artUrl });
 
       } catch (err) {
-        console.error(`[SNX Music] Upload step failed for "${f.name}":`, err);
-        // Identify the failed step from the error message
-        let errMsg = err.message || String(err);
-        if (errMsg.includes('Permission denied') || errMsg.includes('permission')) errMsg = 'Permission denied — check your account.';
-        else if (errMsg.includes('CORS or network') || errMsg.includes('upload server rejected')) errMsg = 'Upload failed: server rejected the request. See console for details.';
-        else if (errMsg.includes('Network error') || errMsg.includes('network')) errMsg = 'Network error — check your connection.';
-        else if (errMsg.includes('Database save') || errMsg.includes('Firestore') || errMsg.includes('PERMISSION_DENIED')) errMsg = 'Database save failed — ' + errMsg;
+        // Log the full technical error for Founder debugging — never log tokens or secrets
+        console.error(`[SNS Music] Upload failed for "${f.name}":`, err.message || err);
+        // Map technical errors to user-readable messages.
+        // Failure types: auth | Firebase permission | Cloudflare auth | R2 upload | network | metadata save
+        const raw = (err.message || String(err)).toLowerCase();
+        let errMsg;
+        if (raw.includes('no authenticated') || raw.includes('sign in again') ||
+            raw.includes('session expired') || raw.includes('auth/') ||
+            raw.includes('invalid session')) {
+          errMsg = 'Authentication failed — please sign in again.';
+          console.error('[SNS Music] Auth failure during upload — user may need to re-login.');
+        } else if (raw.includes('authorization was rejected') || raw.includes('upload authorization')) {
+          errMsg = 'Cloudflare authorization rejected — upload server denied access.';
+          console.error('[SNS Music] Cloudflare R2 authorization failure.');
+        } else if (raw.includes('cors or network') || raw.includes('upload server rejected') ||
+                   raw.includes('cors block') || raw.includes('network error') ||
+                   raw.includes('failed to fetch')) {
+          errMsg = 'Upload failed — network or server error. Check your connection.';
+          console.error('[SNS Music] R2 upload network/CORS failure. Origin:', location.origin);
+        } else if (raw.includes('http 401') || raw.includes('status 401')) {
+          errMsg = 'Authentication rejected by upload server — please sign in again.';
+          console.error('[SNS Music] Upload server returned 401 Unauthorized.');
+        } else if (raw.includes('http 403') || raw.includes('status 403') ||
+                   raw.includes('permission denied') || raw.includes('permission_denied') ||
+                   raw.includes('missing or insufficient')) {
+          errMsg = 'Permission denied — your account may not have upload access.';
+          console.error('[SNS Music] Firebase or R2 permission denied.');
+        } else if (raw.includes('http 413') || raw.includes('too large')) {
+          errMsg = 'File too large — maximum upload size is 200 MB.';
+        } else if (raw.includes('timed out') || raw.includes('timeout')) {
+          errMsg = 'Upload timed out — file may be too large or connection too slow.';
+        } else if (raw.includes('database save') || raw.includes('firestore') ||
+                   raw.includes('cloud firestore') || raw.includes('metadata')) {
+          errMsg = 'Metadata save failed — file uploaded but library record failed. Try reloading.';
+          console.error('[SNS Music] Firestore metadata write failure after R2 upload.');
+        } else {
+          errMsg = err.message || 'Upload failed. See browser console for details.';
+        }
         results.push({ ok: false, name: f.name, err: errMsg });
       }
     }
@@ -1528,7 +1570,7 @@
       await deleteSong(songId);
     } catch (e) {
       toast('Failed to delete track: ' + (e.message || e), 'error');
-      console.error('[SNX Music] deleteSong error:', e);
+      console.error('[SNS Music] deleteSong error:', e);
       return;
     }
     // Remove from playlists
@@ -1552,7 +1594,7 @@
       renderMusicTab();
     } catch (e) {
       toast('Failed to create playlist: ' + (e.message || e), 'error');
-      console.error('[SNX Music] addPlaylist error:', e);
+      console.error('[SNS Music] addPlaylist error:', e);
     }
   }
 
@@ -1569,7 +1611,7 @@
       renderMusicTab();
     } catch (e) {
       toast('Failed to rename: ' + (e.message || e), 'error');
-      console.error('[SNX Music] renamePlaylist error:', e);
+      console.error('[SNS Music] renamePlaylist error:', e);
     }
   }
 
@@ -1585,7 +1627,7 @@
       renderMusicTab();
     } catch (e) {
       toast('Failed to delete playlist: ' + (e.message || e), 'error');
-      console.error('[SNX Music] deletePlaylist error:', e);
+      console.error('[SNS Music] deletePlaylist error:', e);
     }
   }
 
@@ -1602,7 +1644,7 @@
       toast(`Added to "${pl.name}"!`);
     } catch (e) {
       toast('Failed to update playlist: ' + (e.message || e), 'error');
-      console.error('[SNX Music] addToPlaylist error:', e);
+      console.error('[SNS Music] addToPlaylist error:', e);
       return;
     }
     document.getElementById('snxSongListWrap').innerHTML = renderSongList();
@@ -1619,7 +1661,7 @@
       toast(`Removed from "${pl.name}".`);
     } catch (e) {
       toast('Failed to update playlist: ' + (e.message || e), 'error');
-      console.error('[SNX Music] removeFromPlaylist error:', e);
+      console.error('[SNS Music] removeFromPlaylist error:', e);
       return;
     }
     document.getElementById('snxSongListWrap').innerHTML = renderSongList();
@@ -1634,7 +1676,7 @@
       state.songs     = await loadSongs(uid);
       state.playlists = await loadPlaylists(uid);
     } catch (e) {
-      console.error('[SNX Music] reload error:', e);
+      console.error('[SNS Music] reload error:', e);
       toast('Failed to refresh music library: ' + (e.message || e), 'error');
       return;
     }
@@ -1658,7 +1700,7 @@
     try {
       savedSettings = await loadSettings(uid);
     } catch (e) {
-      console.warn('[SNX Music] loadSettings failed:', e);
+      console.warn('[SNS Music] loadSettings failed:', e);
     }
     state.settings = Object.assign(
       { enabled: true, autoplay: false, loop: false, repeat: false, repeatOne: false, shuffle: false, showPlayer: true, showPlaylist: true },
@@ -1677,7 +1719,7 @@
       state.songs     = await loadSongs(uid);
       state.playlists = await loadPlaylists(uid);
     } catch (e) {
-      console.error('[SNX Music] initMusicTab load error:', e);
+      console.error('[SNS Music] initMusicTab load error:', e);
       const c = document.getElementById('tabContentMusic');
       if (c) c.innerHTML = `<div class="snx-music-empty" style="color:#ff4757;">Failed to load music: ${esc(e.message || String(e))}</div>`;
       return;

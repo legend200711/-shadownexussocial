@@ -10,8 +10,8 @@
  * shadownexussocial.online (/) and any local dev server (/).
  */
 
-const CACHE_VERSION = 'v75';
-const BUILD_ID      = 'SNS-2026-10-STAGE2-REPAIR-001';
+const CACHE_VERSION = 'v76';
+const BUILD_ID      = 'SNS-2026-10-STAGE3-STABILITY-001';
 const CACHE_NAME    = `shadow-nexus-${CACHE_VERSION}`;
 const MEDIA_CACHE   = `shadow-nexus-media-${CACHE_VERSION}`;
 
@@ -105,7 +105,7 @@ self.addEventListener('install', (event) => {
         Promise.allSettled(
           PRECACHE_URLS.map((url) =>
             cache.add(url).catch((err) =>
-              console.warn(`[SW] Pre-cache skipped: ${url}`, err.message)
+              console.warn(`[SNS SW] Pre-cache skipped: ${url}`, err.message)
             )
           )
         )
@@ -129,7 +129,7 @@ self.addEventListener('activate', (event) => {
           names
             .filter((n) => n !== CACHE_NAME && n !== MEDIA_CACHE)
             .map((n) => {
-              console.log(`[SW] Deleting old cache: ${n}`);
+              console.log(`[SNS SW] Deleting old cache: ${n}`);
               return caches.delete(n);
             })
         )

@@ -21,7 +21,7 @@
    the new SW on the next page load.
    ═══════════════════════════════════════════════════════════ */
 function showUpdateToast(worker) {
-  console.log('[SW] New version is waiting. Refresh the page to update.');
+  console.log('[SNS SW] New version is waiting. Refresh the page to update.');
   // Show a non-intrusive banner if the toast helper exists
   if (typeof toastNotification === 'function') {
     toastNotification('🔄 New version available — refresh to update.');
@@ -47,7 +47,7 @@ function showUpdateToast(worker) {
     // ── Register main app service worker ──
     try {
       reg = await navigator.serviceWorker.register(swPath, { scope: base });
-      console.log('[SW] Registered, scope:', reg.scope);
+      console.log('[SNS SW] Registered, scope:', reg.scope);
 
       // If a new SW is already waiting, notify — do not auto-activate
       if (reg.waiting) {
@@ -91,7 +91,7 @@ function showUpdateToast(worker) {
       setTimeout(_checkForSwUpdate, 10_000);
 
     } catch (err) {
-      console.warn('[SW] Registration failed:', err);
+      console.warn('[SNS SW] Registration failed:', err);
     }
 
     // NOTE: firebase-messaging-sw.js is registered inside initPushNotifications()

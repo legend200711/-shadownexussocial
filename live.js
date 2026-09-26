@@ -466,6 +466,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // ── PAGE-LEVEL AUTH CONTROLLER for live.js ──
+  // live.html is a standalone page that owns its own auth lifecycle.
+  // This listener controls only the live.html UI — it does not affect
+  // the main app (index.html) session and does not compete with the
+  // GLOBAL AUTH CONTROLLER in index.html.
   onAuthStateChanged(_auth, user => {
     const isFirstCallback = !_authInitialized;
     _authInitialized = true;
@@ -877,7 +882,7 @@ async function startLive() {
 
   toast('🔴 You are LIVE!');
 
-  // ── Notify add-on modules (co-host, etc.) that live has started ──
+  // ── Notify integrated modules that live has started ──
   window.dispatchEvent(new CustomEvent('snxLiveReady', { detail: {
     db: _db, liveDB: _liveDB, auth: _auth,
     user: _user, userData: _userData,
@@ -1218,7 +1223,10 @@ async function endLive() {
   _aiSafetyOnLiveEnd();
   _iqOnLiveEnd();
 
-  // ── Co-host cleanup (no-op if cohost.js is not loaded) ──
+  // ── Extended cleanup for any registered live cleanup handler ──
+  // window._cohostCleanup may be set by the integrated guest/co-host system.
+  // The standalone cohost.js has been removed; this guard handles any
+  // current or future module that registers a cleanup callback at window._cohostCleanup.
   if (typeof window._cohostCleanup === 'function') { try { window._cohostCleanup(); } catch(_){} }
 
   _showEndedOverlay(true);
@@ -1260,7 +1268,7 @@ async function _initAudioMixer() {
     } catch(_) {}
   });
 
-  console.log('[SNXAudioMixer] Mixer ready — mixedAudioTrack:', !!_audioMixer.mixedAudioTrack);
+  console.log('[SNS Live] Mixer ready — mixedAudioTrack:', !!_audioMixer.mixedAudioTrack);
 }
 
 /**
@@ -1292,7 +1300,7 @@ function _replaceAudioInAllPeers() {
     const sender = peer.pc.getSenders().find(s => s.track && s.track.kind === 'audio');
     if (sender && sender.track !== mixedTrack) {
       sender.replaceTrack(mixedTrack).catch(e => {
-        console.warn(`[SNXAudioMixer] replaceTrack failed for viewer ${uid}:`, e.message);
+        console.warn(`[SNS Live] replaceTrack failed for viewer ${uid}:`, e.message);
       });
     }
   }
@@ -2777,7 +2785,7 @@ function _subscribeChat() {
     if (atBottom) cm.scrollTop = cm.scrollHeight;
   }, (err) => {
     // Fix: chat listener error — auto-retry after 5 s so chat survives network blips
-    console.warn('[Chat] Firestore listener error:', err.code, '— retrying in 5 s');
+    console.warn('[SNS Live Chat] Firestore listener error:', err.code, '— retrying in 5 s');
     _chatUnsub = null;
     setTimeout(() => { if (_roomId && !_viewerLeftFlag) _subscribeChat(); }, 5000);
   });
