@@ -1476,6 +1476,7 @@ window.snxCSMusicAddSingleTrack = function(playlistId, trackId) {
     _toast('Track added to playlist.');
     _renderCSLibrary();
     _renderCSPlaylistPanel();
+    if (typeof window.snxNexusOnPlaylistsLoaded === 'function') window.snxNexusOnPlaylistsLoaded();
     // If stream is active, push updated queue
     if (_state.cloudStatus === 'active' && _state.cloudStreamId) {
       _csMusicResolveQueue(pl.trackIds, function(tracks) {
@@ -2364,9 +2365,12 @@ function _csMusicLoadPlaylists() {
     }
     console.log('[SNX Studio] Playlists loaded:', _csMusic.playlists.length);
     _renderCSPlaylistPanel();
+    // Notify 24-Hour Nexus so its playlist tab refreshes immediately after Firestore load
+    if (typeof window.snxNexusOnPlaylistsLoaded === 'function') window.snxNexusOnPlaylistsLoaded();
   }).catch(function(e) {
     console.error('[SNX Studio] _csMusicLoadPlaylists failed:', e.code || '', e.message);
     _renderCSPlaylistPanel();
+    if (typeof window.snxNexusOnPlaylistsLoaded === 'function') window.snxNexusOnPlaylistsLoaded();
   });
 }
 
@@ -2384,6 +2388,7 @@ window.snxCSMusicCreatePlaylist = function() {
       _csMusic.playlists.unshift(Object.assign({}, pl, { id: id, createdAt: Date.now() }));
       _toast('Playlist created: ' + name);
       _renderCSPlaylistPanel();
+      if (typeof window.snxNexusOnPlaylistsLoaded === 'function') window.snxNexusOnPlaylistsLoaded();
     })
     .catch(function(e) { _toastError('Could not create playlist: ' + e.message); });
 };
@@ -2432,6 +2437,7 @@ window.snxCSMusicDeletePlaylist = function(playlistId) {
       if (_csMusic.selectedId === playlistId) _csMusic.selectedId = null;
       _renderCSPlaylistPanel();
       _toast('Playlist deleted.');
+      if (typeof window.snxNexusOnPlaylistsLoaded === 'function') window.snxNexusOnPlaylistsLoaded();
     })
     .catch(function(e) { _toastError('Delete failed: ' + e.message); });
 };
@@ -2464,6 +2470,7 @@ window.snxCSMusicAddTracksToPlaylist = function(playlistId) {
     }).then(function() {
       _toast(added + ' tracks added to playlist.');
       _renderCSPlaylistPanel();
+      if (typeof window.snxNexusOnPlaylistsLoaded === 'function') window.snxNexusOnPlaylistsLoaded();
     }).catch(function(e) { _toastError('Update failed: ' + e.message); });
   }).catch(function(e) { _toastError('Could not load library: ' + e.message); });
 };
@@ -2506,6 +2513,7 @@ window.snxCSMusicRemoveTrackFromPlaylist = function(playlistId, trackId) {
     }
     _toast('Track removed from playlist.');
     _renderCSPlaylistPanel();
+    if (typeof window.snxNexusOnPlaylistsLoaded === 'function') window.snxNexusOnPlaylistsLoaded();
   }).catch(function(e) {
     // Restore the trackId on failure so state stays consistent
     if (pl.trackIds.indexOf(trackId) === -1) pl.trackIds.push(trackId);
@@ -2533,7 +2541,10 @@ window.snxCSMusicMoveTrack = function(playlistId, fromIdx, dir) {
   var uid = _state.user.uid;
   fs.updateDoc(fs.doc(fs.db, 'studioPlaylists', uid, 'playlists', playlistId), {
     trackIds: pl.trackIds
-  }).then(function() { _renderCSPlaylistPanel(); }).catch(function() { _renderCSPlaylistPanel(); });
+  }).then(function() {
+    _renderCSPlaylistPanel();
+    if (typeof window.snxNexusOnPlaylistsLoaded === 'function') window.snxNexusOnPlaylistsLoaded();
+  }).catch(function() { _renderCSPlaylistPanel(); });
 };
 
 /* Rename a playlist */
@@ -2551,6 +2562,7 @@ window.snxCSMusicRenamePlaylist = function(playlistId) {
     pl.name = newName.trim();
     _toast('Playlist renamed to "' + newName.trim() + '".');
     _renderCSPlaylistPanel();
+    if (typeof window.snxNexusOnPlaylistsLoaded === 'function') window.snxNexusOnPlaylistsLoaded();
   }).catch(function(e) { _toastError('Rename failed: ' + e.message); });
 };
 
@@ -3084,7 +3096,12 @@ window.snxAdminLoadCloudStreams = function() {
       var expiresTs   = d.expiresAt || null;
       var remaining   = expiresTs ? Math.max(0, Math.floor((expiresTs - Date.now()) / 60000)) + 'm' : '—';
       var startedFmt  = startedTs ? new Date(startedTs).toLocaleTimeString() : '—';
-      var listenUrl   = '24-hour-cloud-stream/index.html?id=' + encodeURIComponent(doc.id);
+      // Public channel watch URL uses the canonical SPA route via ?snxPage=nexusPage&watchChannel=uid
+      // Fall back to the legacy standalone page if the UID is not available from the stream doc.
+      var channelUid  = d.uid || '';
+      var listenUrl   = channelUid
+        ? window.location.origin + '/?snxPage=nexusPage&watchChannel=' + encodeURIComponent(channelUid)
+        : '24-hour-cloud-stream/index.html?id=' + encodeURIComponent(doc.id);
       return '<div class="snx-admin-stream-card">' +
         '<div class="snx-admin-stream-header">' +
           '<span style="font-size:18px;">&#9925;</span>' +
@@ -3411,6 +3428,8 @@ function _mlLoadTracks() {
     _renderNowPlayingBar();
     // Also populate the CS library list if it is currently visible
     if (typeof _renderCSLibrary === 'function') { _renderCSLibrary(); }
+    // Notify 24-Hour Nexus Vault to refresh immediately
+    if (typeof window.snxNexusOnTracksLoaded === 'function') window.snxNexusOnTracksLoaded();
   }).catch(function() {});
 }
 
@@ -3554,6 +3573,8 @@ function _uploadOneTrack(job) {
         var existing = _music.tracks.findIndex(function(t) { return t.id === job.trackId; });
         if (existing === -1) _music.tracks.unshift(Object.assign({}, trackDoc));
         else _music.tracks[existing] = Object.assign({}, trackDoc);
+        // Notify 24-Hour Nexus Vault to refresh — track is now ready
+        if (typeof window.snxNexusOnTracksLoaded === 'function') window.snxNexusOnTracksLoaded();
       } else {
         var errMsg = 'HTTP ' + xhr.status;
         try {
@@ -4141,6 +4162,7 @@ window.snxLibPickerAddToPlaylist = function(playlistId, idsJson) {
     _toast(added + ' track' + (added > 1 ? 's' : '') + ' added to "' + pl.name + '".');
     _libMultiSelect.selected = {};
     _renderCSPlaylistPanel();
+    if (typeof window.snxNexusOnPlaylistsLoaded === 'function') window.snxNexusOnPlaylistsLoaded();
   }).catch(function(e) { _toastError('Could not update playlist: ' + e.message); });
 };
 
@@ -4161,6 +4183,7 @@ window.snxLibPickerNewPlaylist = function(idsJson) {
       _toast('Playlist "' + name.trim() + '" created with ' + ids.length + ' track' + (ids.length > 1 ? 's' : '') + '.');
       _libMultiSelect.selected = {};
       _renderCSPlaylistPanel();
+      if (typeof window.snxNexusOnPlaylistsLoaded === 'function') window.snxNexusOnPlaylistsLoaded();
     })
     .catch(function(e) { _toastError('Could not create playlist: ' + e.message); });
 };
@@ -4694,15 +4717,20 @@ var _origInitMusicMode = typeof _initMusicMode === 'function' ? _initMusicMode :
     document.addEventListener('DOMContentLoaded', function() { hookRealmNavTo(); });
     return;
   }
-  window.realmNavTo = function(pageId) {
+  // Guard: only wrap once — index.html navTo already calls snxStudioInit for studioPage/nexusPage
+  if (orig._snxStudioHooked) return;
+  var wrapped = function(pageId) {
     orig.apply(this, arguments);
     if (pageId === 'studioPage') {
       document.body.classList.add('snx-studio-open');
-      setTimeout(snxStudioInit, 120);
     } else {
       document.body.classList.remove('snx-studio-open');
     }
   };
+  wrapped._snxStudioHooked = true;
+  // Preserve any existing flags so the tab hook guard still works
+  if (orig._snxTabHooked) wrapped._snxTabHooked = true;
+  window.realmNavTo = wrapped;
 })();
 
 /* ═══════════════════════════════════════════════════════
@@ -5063,6 +5091,8 @@ function _sqRenderQueue() {
 function _sqRenderLibraryButtons() {
   // Refresh the CS library list so "Add to Queue" buttons reflect queue state
   if (typeof _renderCSLibrary === 'function') _renderCSLibrary();
+  // Notify 24-Hour Nexus queue tab to refresh
+  if (typeof window.snxNexusOnQueueUpdate === 'function') window.snxNexusOnQueueUpdate();
 }
 
 window.snxSQJumpTo = function(idx) {
@@ -5471,10 +5501,14 @@ function _snxsUpdateStatus(state) {
 }
 
 /* ── START STREAM — bridges simplified UI to existing snxStartCloudStream ── */
-/* snxsStartStream — redirects to the separate Cloud Stream system (cloud-stream.html).
-   The embedded start flow has been removed; Go Live lives exclusively in cloud-stream.html. */
+/* snxsStartStream — opens 24-Hour Nexus (the canonical streaming system).
+   cloud-stream.html is the standalone public viewer — the main flow uses nexusPage SPA. */
 window.snxsStartStream = function() {
-  window.location.href = 'cloud-stream.html';
+  if (typeof window.realmNavTo === 'function') {
+    window.realmNavTo('nexusPage');
+  } else {
+    window.location.href = 'cloud-stream.html';
+  }
 };
 
 /* ── Patch _handoffComplete to update simplified UI on success ── */
@@ -5654,8 +5688,7 @@ window.snxStudioTabSwitch = function(tab, btn) {
     // (no extra init needed — file input triggers upload from any tab)
   }
   if (tab === 'stream') {
-    // Stream tab now redirects to the Eternal Stream standalone page (cloud-stream.html).
-    // Navigation is handled by the tab button's onclick — no SPA init needed here.
+    // Stream tab button (in index.html) uses onclick="realmNavTo('nexusPage')" — no init needed here.
   }
 };
 

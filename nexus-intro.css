@@ -19,13 +19,16 @@
     justify-content: center;
     /* transition used only for exit, not entry */
     transition: opacity 1.8s ease;
-    /* Prevent Android touch events from leaking through */
-    touch-action: none;
+    /* touch-action: manipulation keeps overlay interactive without blocking Android pan gestures
+       at the document level — do NOT use touch-action:none on a full-screen fixed element */
+    touch-action: manipulation;
 }
 #snxIntroOverlay.snxi-exit {
     opacity: 0;
     pointer-events: none;
-    touch-action: none;
+    /* When fading out, restore touch-action so Android gesture recognizer is not confused
+       by an invisible element still consuming touch events */
+    touch-action: auto;
 }
 #snxIntroOverlay.snxi-gone {
     display: none !important;
@@ -724,27 +727,71 @@
 
 /* ─── Mobile performance ─────────────────────────────────────────────────── */
 @media (max-width: 640px) {
+    /* ── Viewport stability: use fixed pixel height captured by JS on load.
+       The CSS fallback uses 100svh (small viewport = with chrome) so the intro
+       never resizes when Android Chrome's address bar slides in/out.
+       JS will override this with a stable pixel value via --snxi-vh. */
+    #snxIntroOverlay {
+        height: calc(var(--snxi-stable-h, 100svh));
+        /* Prevent the overlay from stretching when Android address bar hides */
+        max-height: calc(var(--snxi-stable-h, 100svh));
+    }
+
     /* Reduce logo size slightly on small phones */
     #snxIntroLogoImg { width: clamp(240px, 88vw, 420px); }
+
     /* Reduce pre-glow blur to save GPU */
-    #snxIntroLogoPreGlow { filter: blur(12px); }
-    /* Lighter fog blur on mobile */
-    .snxi-fog                { filter: blur(20px); }
-    .snxi-fog:nth-child(2)   { filter: blur(28px); }
+    #snxIntroLogoPreGlow { filter: blur(10px); }
+
+    /* Lighter fog — reduce blur and layer count on mobile */
+    .snxi-fog                { filter: blur(16px); }
+    .snxi-fog:nth-child(2)   { filter: blur(22px); }
+    /* 4th fog layer (high depth, most expensive blur) hidden on mobile */
     .snxi-fog:nth-child(4)   { display: none; }
-    /* Hide centre mega-flame on mobile (expensive blur) */
+
+    /* Hide centre mega-flame on mobile (expensive 12px blur) */
     .snxi-flame:nth-child(6) { display: none; }
+    /* Reduce individual flame blur on mobile */
+    .snxi-flame:nth-child(1) { filter: none; }
+    .snxi-flame:nth-child(3) { filter: none; }
+    .snxi-flame:nth-child(7) { filter: none; }
+    .snxi-flame:nth-child(8) { filter: none; }
+
+    /* Hide ambient lightning glow layers on mobile (expensive repeated radial-gradient) */
+    #snxIntroLightGlow { display: none; }
+    /* Only keep 2 edge bolts on mobile — hide the converging arcs (less impactful) */
+    .snxi-bolt:nth-child(5),
+    .snxi-bolt:nth-child(6) { display: none; }
+
     /* Simpler wolf on mobile */
-    #snxIntroWolf { filter: blur(3px) drop-shadow(0 0 8px rgba(0,50,180,.18)); }
-    /* Reduce logo glow intensity on mobile (cheaper filter) */
+    #snxIntroWolf { filter: blur(2px); }
+
+    /* Reduce logo glow to a single drop-shadow (one GPU pass instead of three) */
     #snxIntroLogoImg {
-        filter:
-            drop-shadow(0 0 18px rgba(0,120,255,.58))
-            drop-shadow(0 0 42px rgba(0,80,200,.30));
+        filter: drop-shadow(0 0 20px rgba(0,120,255,.62));
     }
     @keyframes snxiLogoGlow {
-        from{filter:drop-shadow(0 0 16px rgba(0,110,240,.55)) drop-shadow(0 0 38px rgba(0,80,200,.30))}
-        to  {filter:drop-shadow(0 0 28px rgba(0,150,255,.72)) drop-shadow(0 0 60px rgba(0,100,230,.42))}
+        from { filter: drop-shadow(0 0 16px rgba(0,110,240,.55)); }
+        to   { filter: drop-shadow(0 0 30px rgba(0,150,255,.75)); }
+    }
+
+    /* Reduce backdrop glow blur */
+    #snxIntroFlameGlow { filter: blur(4px); }
+}
+
+/* ─── Tablet: moderate reduction ────────────────────────────────────────── */
+@media (min-width: 641px) and (max-width: 1024px) {
+    /* Stable height for tablets too (landscape orientation changes) */
+    #snxIntroOverlay {
+        height: calc(var(--snxi-stable-h, 100svh));
+        max-height: calc(var(--snxi-stable-h, 100svh));
+    }
+    /* Slightly reduce blur on tablets */
+    .snxi-fog:nth-child(4)   { filter: blur(32px); }
+    #snxIntroLogoImg {
+        filter:
+            drop-shadow(0 0 22px rgba(0,120,255,.65))
+            drop-shadow(0 0 55px rgba(0,80,200,.40));
     }
 }
 

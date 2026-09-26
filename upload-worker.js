@@ -62,7 +62,8 @@ function corsHeaders(origin) {
   const allowedOrigin = isAllowed ? origin : ALLOWED_ORIGINS[0];
   return {
     'Access-Control-Allow-Origin':   allowedOrigin,
-    'Access-Control-Allow-Methods':  'GET, POST, PATCH, DELETE, OPTIONS',
+    // PUT is needed for presigned-URL multipart part uploads
+    'Access-Control-Allow-Methods':  'GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS',
     // Authorization is required for all upload/delete endpoints.
     'Access-Control-Allow-Headers':  'Content-Type, Authorization, X-User-UID, Upload-Offset, Upload-Length, Tus-Resumable, Range',
     // Expose byte-range headers so audio/video elements can read them cross-origin
@@ -406,6 +407,7 @@ async function handleUploadComplete(request, env, cors, sec) {
     `videos/${verifiedUid}/`,
     `music/${verifiedUid}/`,
     `posts/${verifiedUid}/`,
+    `stories/${verifiedUid}/`,
     `radio/${verifiedUid}/`,
     `cloud-stream/${verifiedUid}/`,
     `themes/${verifiedUid}/`,
@@ -1354,6 +1356,14 @@ export default {
     // ── R2 file delete ─────────────────────────────────────────────────────────
     if (url.pathname === '/r2/delete') return handleR2Delete(request, env, cors, sec);
 
+    // ── /upload alias — legacy compatibility route ─────────────────────────────
+    // Older client code (nexus.js before 2026 fix) POSTed to /upload instead of /.
+    // Fall through to the POST / generic handler at the bottom of this function.
+    // (No explicit redirect needed — just don't return here so execution continues.)
+    if (url.pathname === '/upload' && request.method !== 'POST') {
+      return new Response('Method not allowed', { status: 405, headers: mergeHeaders(cors, sec) });
+    }
+
     // ── POST /upload-music | /upload-artwork | /upload-theme ─────────────────
     // Shared handler for audio, artwork, and theme background uploads.
     // The client sends: Authorization: Bearer <idToken>, file, path (the full R2 key)
@@ -1396,6 +1406,7 @@ export default {
         `users/${musicUid}/`,
         `themes/${musicUid}/`,
         `posts/${musicUid}/`,
+        `stories/${musicUid}/`,
       ];
       if (!reqPath || !musicAllowedPrefixes.some(p => reqPath.startsWith(p))) {
         return new Response(JSON.stringify({ error: 'Invalid path: must start with an allowed prefix for your account' }), {
@@ -1470,6 +1481,7 @@ export default {
                           || key.startsWith(`videos/${deleteUid}/`)
                           || key.startsWith(`music/${deleteUid}/`)
                           || key.startsWith(`posts/${deleteUid}/`)
+                          || key.startsWith(`stories/${deleteUid}/`)
                           || key.startsWith(`radio/${deleteUid}/`)
                           || key.startsWith(`cloud-stream/${deleteUid}/`)
                           || key.startsWith(`themes/${deleteUid}/`)
@@ -1678,6 +1690,7 @@ export default {
         `videos/${userUid}/`,
         `music/${userUid}/`,
         `posts/${userUid}/`,
+        `stories/${userUid}/`,
         `radio/${userUid}/`,
         `cloud-stream/${userUid}/`,
         `themes/${userUid}/`,

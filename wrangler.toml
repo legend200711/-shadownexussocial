@@ -11,10 +11,38 @@ account_id = "f276c4406b82d3c1e35efed1ef486235"
 binding = "BUCKET"
 bucket_name = "legend"
 
-# ── LiveKit credentials (stored as encrypted Worker secrets, not in this file) ─
+# ── Non-secret environment variables ──────────────────────────────────────────
+# LiveKit credentials (stored as encrypted Worker secrets, not in this file)
 # Provisioned via: wrangler secret put LIVEKIT_API_KEY / LIVEKIT_API_SECRET
 [vars]
-LIVEKIT_URL = "wss://chris-oxi8fwap.livekit.cloud"
+LIVEKIT_URL   = "wss://chris-oxi8fwap.livekit.cloud"
+SNX_ORIGIN    = "https://shadownexussocial.online"
+SNX_ORIGIN2   = "https://chrislegendofshadows.com"
+BUCKET_NAME   = "legend"
+
+# ── REQUIRED WORKER SECRETS ─────────────────────────────────────────────────
+# Set these via wrangler CLI — NEVER put real values in this file.
+#
+#   npx wrangler secret put FIREBASE_WEB_API_KEY
+#     → Firebase Web API Key (from Firebase Console → Project Settings → General)
+#     → Used to verify Firebase ID tokens server-side on every upload/delete.
+#     → Without this, ALL uploads return HTTP 503 "Auth service not configured".
+#
+#   npx wrangler secret put LIVEKIT_API_KEY
+#   npx wrangler secret put LIVEKIT_API_SECRET
+#     → LiveKit API credentials for room creation and token generation.
+#
+#   npx wrangler secret put CLOUDFLARE_ACCOUNT_ID    (optional — for Stream)
+#   npx wrangler secret put CLOUDFLARE_API_TOKEN     (optional — for Stream)
+#     → Required only for Cloudflare Stream video uploads.
+#
+#   npx wrangler secret put R2_ACCESS_KEY_ID         (optional — for presigned URLs)
+#   npx wrangler secret put R2_SECRET_ACCESS_KEY     (optional — for presigned URLs)
+#     → R2 S3-compatible API credentials for presigned multipart part URLs.
+#     → If not set, /mpu/part proxy path is used instead (slightly slower but works).
+#
+#   npx wrangler secret put ADMIN_UIDS
+#     → Comma-separated Firebase UIDs with admin/founder delete permissions.
 
 # ── Cloudflare Security Notes ─────────────────────────────────────────────────
 # Enable these in the Cloudflare Dashboard for full protection:

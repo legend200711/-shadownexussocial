@@ -12355,10 +12355,11 @@ div.snx-gate-logo {
       const initial  = (room.hostName || room.hostUsername || '?')[0].toUpperCase();
       const isCloudStream    = room.type === '24hour_cloudstream';
       const isStudioLive     = room.type === '24hour_studio_live';
-      // Studio Live routes through the existing live.html viewer (same proven system).
-      // Cloud Stream uses the 24-Hour Cloud Stream standalone page.
+      // Cloud Stream: route to the canonical 24-Hour Nexus SPA via watchChannel=uid.
+      // Studio Live: route to the existing live.html viewer.
+      // The 24-hour-cloud-stream/ standalone folder is NOT deployed — using it causes 404.
       const watchUrl = isCloudStream
-        ? '24-hour-cloud-stream/index.html?id=' + roomId
+        ? (room.hostId ? window.location.origin + '/?snxPage=nexusPage&watchChannel=' + encodeURIComponent(room.hostId) : 'live.html#watch=' + roomId)
         : 'live.html#watch=' + roomId;
       const tsRaw    = room.createdAt ? (room.createdAt.toMillis ? room.createdAt.toMillis() : room.createdAt) : '';
       const livePill = isCloudStream ? '☁️ CLOUDSTREAM' : isStudioLive ? '🎬 STUDIO LIVE' : 'LIVE';
@@ -12615,12 +12616,13 @@ div.snx-gate-logo {
         ? `<img class="flc-thumb-img" src="${escL(avatar)}" alt="${name}" loading="lazy">`
         : `<div class="flc-thumb-initial">${initial}</div>`;
 
-      // Studio Live routes through the existing live.html viewer (same proven system).
-      // Cloud Stream uses the 24-Hour Cloud Stream standalone page.
+      // Cloud Stream: route to the canonical 24-Hour Nexus SPA via watchChannel=uid.
+      // Studio Live: route to the existing live.html viewer.
+      // The 24-hour-cloud-stream/ standalone folder is NOT deployed — using it causes 404.
       const isCloudStream = room.type === '24hour_cloudstream';
       const isStudioLive  = room.type === '24hour_studio_live';
       const watchUrl      = isCloudStream
-        ? '24-hour-cloud-stream/index.html?id=' + roomId
+        ? (room.hostId ? window.location.origin + '/?snxPage=nexusPage&watchChannel=' + encodeURIComponent(room.hostId) : 'live.html#watch=' + roomId)
         : 'live.html#watch=' + roomId;
 
       const card = document.createElement('a');
@@ -12860,16 +12862,22 @@ div.snx-gate-logo {
 
   // Handle cold-start query params (app was closed when notification was tapped)
   (function() {
-      const _params  = new URLSearchParams(window.location.search);
-      const _chatUid = _params.get('snxChat');
-      const _page    = _params.get('snxPage');
+      const _params      = new URLSearchParams(window.location.search);
+      const _chatUid     = _params.get('snxChat');
+      const _page        = _params.get('snxPage');
+      const _watchCh     = _params.get('watchChannel');
       if (_chatUid) {
           window._snxPendingChatUid = _chatUid;
       }
       if (_page) {
           window._snxPendingPage = _page === 'notifications' ? 'notificationsPage' : _page;
       }
-      if (_chatUid || _page) {
+      // Preserve watchChannel so snxNexusInit can open the correct channel
+      // even after history.replaceState strips the URL params.
+      if (_watchCh) {
+          window._snxPendingWatchChannel = _watchCh;
+      }
+      if (_chatUid || _page || _watchCh) {
           // Strip params from URL bar without reload
           history.replaceState(null, '', window.location.pathname + window.location.hash);
       }

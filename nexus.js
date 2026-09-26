@@ -109,9 +109,10 @@ window.snxNexusInit = function() {
     _initHeader();
     // Default: show Discover
     _switchMain('discover');
-    // Check URL for direct channel watch
+    // Check URL query params OR pending param saved before URL was stripped
     var params = new URLSearchParams(window.location.search);
-    var watchCh = params.get('watchChannel');
+    var watchCh = params.get('watchChannel') || window._snxPendingWatchChannel || null;
+    if (window._snxPendingWatchChannel) window._snxPendingWatchChannel = null; // consume
     if (watchCh) {
       _openPublicWatch(watchCh);
       return;
@@ -1140,7 +1141,7 @@ function _nxCreatePlaylist(name) {
 }
 
 window.snxNexusOpenPlaylist     = function(plId) { if (typeof snxCSMusicSelectPlaylist === 'function') snxCSMusicSelectPlaylist(plId); _showPlaylistEditor(plId); };
-window.snxNexusDeletePlaylist   = function(plId) { if (!confirm('Delete this playlist?')) return; if (typeof snxCSMusicDeletePlaylist === 'function') { snxCSMusicDeletePlaylist(plId); setTimeout(_renderPlaylists, 400); } };
+window.snxNexusDeletePlaylist   = function(plId) { if (!confirm('Delete this playlist?')) return; if (typeof snxCSMusicDeletePlaylist === 'function') { snxCSMusicDeletePlaylist(plId); } };
 window.snxNexusSendToStream     = function(plId) { var modal = _el('nxStreamModal'); if (!modal) return; modal.dataset.plid = plId; modal.classList.add('open'); };
 window.snxNexusStreamModalClose = function() { var modal = _el('nxStreamModal'); if (modal) modal.classList.remove('open'); };
 
@@ -1333,33 +1334,72 @@ function _nxUploadSingleFile(file) {
   var progressEl = _el('nxUploadProgress');
   var barEl      = _el('nxUploadProgressBar');
   if (progressEl) progressEl.style.display = '';
-  var ext    = file.name.split('.').pop().toLowerCase();
   var type   = _nx.uploadType;
   var uid    = _nx.user ? _nx.user.uid : 'anon';
+  // Key must start with an allowed prefix — use {uid}/ so the worker accepts it.
   var fname  = uid + '/' + type + '/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
   var UPLOAD_URL = 'https://yellow-term-11e6.nthntjrn.workers.dev';
-  var form = new FormData();
-  form.append('file', file, fname);
-  form.append('path', fname);
-  form.append('uid',  uid);
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', UPLOAD_URL + '/upload', true);
-  var token = _nx.user ? _nx.user.accessToken : null;
-  if (token) xhr.setRequestHeader('Authorization', 'Bearer ' + token);
-  xhr.upload.onprogress = function(e) { if (e.lengthComputable && barEl) barEl.style.width = Math.round((e.loaded/e.total)*100) + '%'; };
-  xhr.onload = function() {
+
+  if (!_nx.user || typeof _nx.user.getIdToken !== 'function') {
+    _toastError('Upload failed: not signed in.');
     if (progressEl) progressEl.style.display = 'none';
-    if (barEl) barEl.style.width = '0%';
-    if (xhr.status >= 200 && xhr.status < 300) {
-      try {
-        var res = JSON.parse(xhr.responseText);
-        _nxSaveMediaToFirestore(file, res.url || res.publicUrl || '', type);
-        _toastOk('Upload complete: ' + file.name);
-      } catch(e) { _toastError('Upload failed: bad response'); }
-    } else { _toastError('Upload failed: ' + xhr.status); }
-  };
-  xhr.onerror = function() { if (progressEl) progressEl.style.display = 'none'; _toastError('Upload error.'); };
-  xhr.send(form);
+    return;
+  }
+
+  // Obtain a fresh Firebase ID token before uploading.
+  // accessToken is not a reliable property in Firebase SDK v9+.
+  _nx.user.getIdToken(true).then(function(idToken) {
+    var form = new FormData();
+    form.append('file', file, file.name);
+    // Supply the path hint — worker validates the prefix against the token UID.
+    form.append('path', fname);
+    // Do NOT append 'uid' — server derives UID from the verified token.
+    var xhr = new XMLHttpRequest();
+    xhr.timeout = 8 * 60 * 1000; // 8-minute timeout for large files
+    // POST to root — the worker's generic upload handler lives at POST /.
+    xhr.open('POST', UPLOAD_URL + '/', true);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + idToken);
+    xhr.upload.onprogress = function(e) { if (e.lengthComputable && barEl) barEl.style.width = Math.round((e.loaded/e.total)*100) + '%'; };
+    xhr.onload = function() {
+      if (progressEl) progressEl.style.display = 'none';
+      if (barEl) barEl.style.width = '0%';
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          var res = JSON.parse(xhr.responseText);
+          if (res.url) {
+            _nxSaveMediaToFirestore(file, res.url, type);
+            _toastOk('Upload complete: ' + file.name);
+          } else {
+            _toastError('Upload failed: ' + (res.error || 'no URL returned'));
+          }
+        } catch(e) { _toastError('Upload failed: bad server response'); }
+      } else if (xhr.status === 401) {
+        _toastError('Upload failed: session expired — please sign in again.');
+      } else if (xhr.status === 403) {
+        _toastError('Upload failed: authorization rejected by server.');
+      } else if (xhr.status === 503) {
+        _toastError('Upload failed: auth service unavailable — please try again.');
+      } else {
+        var errMsg = 'Upload failed: HTTP ' + xhr.status;
+        try { errMsg = JSON.parse(xhr.responseText).error || errMsg; } catch(_) {}
+        _toastError(errMsg);
+      }
+    };
+    xhr.onerror = function() {
+      if (progressEl) progressEl.style.display = 'none';
+      console.error('[NX Upload] XHR error. Target:', UPLOAD_URL, '| Status:', xhr.status,
+        xhr.status === 0 ? '| Likely CORS block, DNS failure, or network drop.' : '');
+      _toastError(xhr.status === 0 ? 'Upload interrupted — check your connection.' : 'Upload error: HTTP ' + xhr.status);
+    };
+    xhr.ontimeout = function() {
+      if (progressEl) progressEl.style.display = 'none';
+      _toastError('Upload timed out — file may be too large or connection too slow.');
+    };
+    xhr.send(form);
+  }).catch(function(e) {
+    if (progressEl) progressEl.style.display = 'none';
+    _toastError('Upload failed: could not get auth token — ' + e.message);
+  });
 }
 
 function _nxSaveMediaToFirestore(file, url, type) {
@@ -1374,7 +1414,13 @@ function _nxSaveMediaToFirestore(file, url, type) {
     uploadedAt: fs.serverTimestamp(), uid: uid
   };
   fs.setDoc(fs.doc(fs.db, 'cloudStreamTracks', uid, 'tracks', id), data)
-    .then(function() { if (typeof _mlLoadTracks === 'function') _mlLoadTracks(); })
+    .then(function() {
+      // Reload the studio track library — this also triggers snxNexusOnTracksLoaded
+      // via the _mlLoadTracks callback chain added in studio.js
+      if (typeof _mlLoadTracks === 'function') _mlLoadTracks();
+      // Direct Nexus Vault refresh in case studio.js isn't loaded
+      if (typeof window.snxNexusOnTracksLoaded === 'function') window.snxNexusOnTracksLoaded();
+    })
     .catch(function(e) { console.warn('[NX Upload]', e.message); });
 }
 

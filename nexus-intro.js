@@ -17,6 +17,21 @@
     var WELCOME_DOC     = 'welcomeConfig';   // /siteSettings/welcomeConfig
     var DEFAULT_VOLUME  = 0.45;
 
+    // ── Mobile detection ──────────────────────────────────────────────────────
+    var _isMobile = window.innerWidth < 768 ||
+                    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+    // ── Stable viewport height (captured ONCE at load time) ──────────────────
+    // Android Chrome changes window.innerHeight when the address bar shows/hides.
+    // Capturing the initial height and pinning it via a CSS custom property prevents
+    // the intro overlay from resizing during the animation.
+    var _stableVH = window.innerHeight;
+    function _applyStableHeight(el) {
+        if (_isMobile) {
+            el.style.setProperty('--snxi-stable-h', _stableVH + 'px');
+        }
+    }
+
     // ── State ─────────────────────────────────────────────────────────────────
     var _cfg              = null;   // welcomeConfig from Firestore
     var _audio            = null;   // HTMLAudioElement
@@ -43,6 +58,8 @@
         if (old) old.remove();
         _stopAudio();
         _exiting = false;
+        // Recapture stable height in case viewport changed since initial load
+        _stableVH = window.innerHeight;
         _buildAndRun();
     };
 
@@ -288,11 +305,12 @@
 
     // ── Scroll / touch unlock — MUST be called on every exit path ────────────
     function _unlockScroll() {
-        // Restore body/html overflow that may have been locked
+        // Restore body/html overflow that may have been locked by any other system
         document.body.style.overflow = '';
         document.body.style.overflowY = '';
         document.documentElement.style.overflow = '';
         document.documentElement.style.overflowY = '';
+        // Restore touch-action on body/html — critical for Android vertical scroll
         document.body.style.touchAction = '';
         document.documentElement.style.touchAction = '';
     }
@@ -303,7 +321,7 @@
         _exiting = true;
         sessionStorage.setItem(SESSION_KEY, '1');
 
-        // Always unlock scrolling immediately — critical for Android
+        // 1. Unlock body/html scrolling IMMEDIATELY — critical for Android
         _unlockScroll();
 
         var ov = document.getElementById('snxIntroOverlay');
@@ -312,18 +330,26 @@
             return;
         }
 
-        // Immediately disable pointer events on the overlay so touches pass through
+        // 2. Disable pointer events so touches pass through to the page immediately.
+        //    IMPORTANT: set touch-action to 'auto' (NOT 'none') — a fixed inset:0 element
+        //    with touch-action:none will permanently confuse Android Chrome's gesture
+        //    recognizer even after pointer-events:none is set.
         ov.style.pointerEvents = 'none';
-        ov.style.touchAction = 'none';
+        ov.style.touchAction   = 'auto';
+
+        // On mobile: use a faster exit to reduce how long the overlay lingers
+        var mobileFastExit = _isMobile && !fast;
+        var exitDelay = mobileFastExit ? 1200 : 2400;
 
         if (fast) {
             _stopAudio();
             ov.classList.add('snxi-exit');
+            // Remove from DOM quickly — don't leave an invisible fixed layer on Android
             setTimeout(function(){
                 ov.classList.add('snxi-gone');
                 if (ov.parentNode) ov.parentNode.removeChild(ov);
                 if (typeof window.snxIntroCompleted === 'function') window.snxIntroCompleted();
-            }, 600);
+            }, 400);
             return;
         }
 
@@ -332,35 +358,43 @@
         var logoWrap = document.getElementById('snxIntroLogoWrap');
         if (logoWrap) logoWrap.classList.add('snxi-logo-exit');
 
-        // 2. Flames react faster (energy is releasing)
-        document.querySelectorAll('.snxi-flame').forEach(function(f){ f.classList.add('snxi-flame-react'); });
+        // 2. Flames react faster (energy is releasing) — skip on mobile (too heavy)
+        if (!_isMobile) {
+            document.querySelectorAll('.snxi-flame').forEach(function(f){ f.classList.add('snxi-flame-react'); });
+        }
 
         // 3. Fog bursts outward
         document.querySelectorAll('.snxi-fog').forEach(function(f){ f.classList.add('snxi-fog-expand'); });
 
-        // 4. Camera slight zoom
-        setTimeout(function(){
-            if (ov) ov.classList.add('snxi-enter-travel');
-        }, 300);
+        // 4. Camera slight zoom — skip on mobile (can cause jank)
+        if (!_isMobile) {
+            setTimeout(function(){
+                if (ov) ov.classList.add('snxi-enter-travel');
+            }, 300);
+        }
 
         // 5. Blue energy burst fills screen
         var energy = document.getElementById('snxIntroEnergy');
         if (energy) {
-            setTimeout(function(){ energy.classList.add('snxi-energy-burst'); }, 700);
+            setTimeout(function(){ energy.classList.add('snxi-energy-burst'); }, _isMobile ? 400 : 700);
         }
 
         // 6. Fade music
         _fadeOutAudio(function(){});
 
-        // 7. Fade overlay
-        setTimeout(function(){ ov.classList.add('snxi-exit'); }, 900);
+        // 7. Fade overlay — sooner on mobile
+        setTimeout(function(){ ov.classList.add('snxi-exit'); }, _isMobile ? 500 : 900);
 
-        // 8. Remove from DOM — short enough to feel snappy, long enough for fade
+        // 8. Remove from DOM — faster on mobile so the fixed layer is gone quickly
+        //    Desktop: 2400ms (full cinematic feel)
+        //    Mobile:  1200ms (still cinematic but overlay cleared faster for Android scroll)
         setTimeout(function(){
             ov.classList.add('snxi-gone');
             if (ov.parentNode) ov.parentNode.removeChild(ov);
+            // Final safety: unlock scroll again in case anything re-locked it during exit
+            _unlockScroll();
             if (typeof window.snxIntroCompleted === 'function') window.snxIntroCompleted();
-        }, 2400);
+        }, exitDelay);
     }
 
     // ── Wire buttons ──────────────────────────────────────────────────────────
@@ -496,6 +530,12 @@
     // ── Main build + run ──────────────────────────────────────────────────────
     function _buildAndRun() {
         _overlay = _buildOverlay();
+
+        // Pin stable viewport height BEFORE inserting into DOM so the CSS custom
+        // property is set when the browser first lays out the overlay.
+        // This prevents Android address-bar motion from resizing the intro.
+        _applyStableHeight(_overlay);
+
         document.body.insertBefore(_overlay, document.body.firstChild);
         _injectCrows(document.getElementById('snxIntroCrows'));
         _injectParticles(document.getElementById('snxIntroParticles'));
@@ -524,6 +564,9 @@
     // ── Init ─────────────────────────────────────────────────────────────────
     function _init() {
         if (!_shouldShow()) return;
+        // Capture stable height at the moment the intro is about to start.
+        // On reload, this captures the real initial viewport before any chrome movement.
+        _stableVH = window.innerHeight;
         _buildAndRun();
     }
 
@@ -814,6 +857,7 @@
         _founderPreviewActive = true;  // mark: a Founder-preview overlay is now live
 
         var ov = _buildOverlay();
+        _applyStableHeight(ov);
         document.body.insertBefore(ov, document.body.firstChild);
         _injectCrows(document.getElementById('snxIntroCrows'));
         _injectParticles(document.getElementById('snxIntroParticles'));
@@ -838,6 +882,8 @@
             }
             // Stop audio started by the preview
             _stopAudio();
+            // Restore scroll/touch in case anything locked it
+            _unlockScroll();
             var ov2 = document.getElementById('snxIntroOverlay');
             // Only navigate back to adminPage if it is currently the active page.
             // This prevents _previewExit (triggered by keyboard/cleanup) from

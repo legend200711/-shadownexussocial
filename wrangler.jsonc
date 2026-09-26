@@ -15,7 +15,19 @@
   "vars": {
     "LIVEKIT_URL": "wss://chris-oxi8fwap.livekit.cloud",
     "SNX_ORIGIN":  "https://shadownexussocial.online",
-    "SNX_ORIGIN2": "https://chrislegendofshadows.com"
+    "SNX_ORIGIN2": "https://chrislegendofshadows.com",
+    // BUCKET_NAME is referenced by handleMpuPresign for S3-presigned URL construction
+    "BUCKET_NAME": "legend"
   }
+
+  // ── REQUIRED SECRETS (set via wrangler secret put <NAME>) ──────────────────
+  // FIREBASE_WEB_API_KEY   — Firebase Web API Key; required for ALL auth/upload endpoints
+  // LIVEKIT_API_KEY        — LiveKit API key
+  // LIVEKIT_API_SECRET     — LiveKit API secret
+  // CLOUDFLARE_ACCOUNT_ID  — Cloudflare Account ID (for Stream upload)
+  // CLOUDFLARE_API_TOKEN   — Cloudflare API token with Stream:Edit permission
+  // R2_ACCESS_KEY_ID       — R2 S3 access key (optional, for presigned part URLs)
+  // R2_SECRET_ACCESS_KEY   — R2 S3 secret key (optional, for presigned part URLs)
+  // ADMIN_UIDS             — Comma-separated admin Firebase UIDs
 
 }
