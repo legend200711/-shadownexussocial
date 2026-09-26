@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-09-26-SIDEBAR-SCROLL-FIX",
-  "swVersion": "v73",
-  "deployedAt": "2026-09-26T00:00:00Z",
+  "buildId": "SNS-2026-10-GLOBAL-REPAIR-001",
+  "swVersion": "v74",
+  "deployedAt": "2026-10-01T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
-  "nexusVersion": "3.2.0",
-  "note": "SNS-2026-09-26-SIDEBAR-SCROLL-FIX: Production sync. sw.js v73, iPhone cinematic intro full-screen safe-area fix, Android sidebar open/close scroll unlock. Build ID unified across sw.js/index.html/version.json."
+  "nexusVersion": "3.2.1",
+  "note": "SNS-2026-10-GLOBAL-REPAIR-001: Global repair update. Removed dead nexus-rooms cache entries, fixed duplicate SW registration in index.html, bumped SW to v74, fixed firebase.json standalone page routing, cleaned cohost comment from snx-net.js."
 }

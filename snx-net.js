@@ -19,7 +19,7 @@
  *
  * SAFETY RULES (strictly followed):
  *  - Zero changes to existing HTML / CSS / Firebase / chat / posts / comments.
- *  - Zero changes to live.js, cohost.js, script.js, or sw.js internals.
+ *  - Zero changes to live.js, script.js, or sw.js internals.
  *  - Operates only through the public window.SNX_NET API and CustomEvents.
  *  - Fully tree-shakeable: if this file is removed, nothing else breaks.
  */

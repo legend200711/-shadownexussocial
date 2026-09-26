@@ -31828,33 +31828,30 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = 'SNS-2026-09-26-SIDEBAR-SCROLL-FIX';
-  var SW_VER   = 'v73';
+  var BUILD_ID = 'SNS-2026-10-GLOBAL-REPAIR-001';
+  var SW_VER   = 'v74';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
-  window.SNX_BUILD_ID               = 'SNS-2026-09-26-SIDEBAR-SCROLL-FIX';
+  window.SNX_BUILD_ID               = 'SNS-2026-10-GLOBAL-REPAIR-001';
 
   /* ══════════════════════════════════════════════════════
-     SERVICE WORKER REGISTRATION & UPDATE HANDLING
-     ── Runs on every page load ──
-     The SW uses skipWaiting()+clients.claim() so it
-     activates immediately on install. The controllerchange
-     event reloads the page ONCE (guarded by sessionStorage)
-     to ensure the new SW serves fresh assets.
+     SERVICE WORKER UPDATE HANDLING
+     ── SW registration is handled by script.js (loaded
+        below) to avoid duplicate registrations.
+     ── This block only:
+        1. Exposes build/version globals for diagnostics.
+        2. Installs the controllerchange → single-reload
+           guard so fresh assets are served after a new
+           SW activates via skipWaiting()+clients.claim().
+        3. Fetches /version.json for the Founder panel.
      ══════════════════════════════════════════════════════ */
   if ('serviceWorker' in navigator) {
 
-    /* ── Register the app service worker ── */
-    navigator.serviceWorker.register('/sw.js?v=' + BUILD_ID)
-      .then(function(reg) {
-        /* Trigger an update check immediately and every 10 minutes */
-        reg.update().catch(function() {});
-        setInterval(function() { reg.update().catch(function() {}); }, 10 * 60 * 1000);
-      })
-      .catch(function() {});
-
     /* ── On controllerchange, reload ONCE to get fresh assets ──
-         Guard with sessionStorage so a loop can never form. */
+         Guard with sessionStorage so a loop can never form.
+         sw.js uses skipWaiting()+clients.claim() so the new SW
+         controller fires immediately after install — the reload
+         ensures the page gets the latest HTML/CSS/JS bundle. */
     navigator.serviceWorker.addEventListener('controllerchange', function() {
       var key = 'snx_sw_reload_' + BUILD_ID;
       if (!sessionStorage.getItem(key)) {
