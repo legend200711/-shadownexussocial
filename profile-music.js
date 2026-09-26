@@ -1573,12 +1573,24 @@
       console.error('[SNS Music] deleteSong error:', e);
       return;
     }
-    // Remove from playlists
+    // Remove from playlists — log failures instead of silently ignoring them
+    let _playlistCleanupFailed = false;
     for (const pl of state.playlists) {
       const ids = (pl.songIds || []).filter(id => id !== songId);
-      if (ids.length !== (pl.songIds || []).length) await updatePlaylist(pl.id, { songIds: ids }).catch(() => {});
+      if (ids.length !== (pl.songIds || []).length) {
+        try {
+          await updatePlaylist(pl.id, { songIds: ids });
+        } catch (cleanupErr) {
+          _playlistCleanupFailed = true;
+          console.error('[SNS Music] Playlist cleanup failed:', cleanupErr.message || cleanupErr);
+        }
+      }
     }
-    toast('Track deleted.');
+    if (_playlistCleanupFailed) {
+      toast('Track deleted, but some playlist references could not be cleaned up. Please check your playlists.', 'error');
+    } else {
+      toast('Track deleted.');
+    }
     await reload();
   }
 
