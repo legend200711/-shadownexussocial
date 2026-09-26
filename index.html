@@ -44,10 +44,10 @@
 
 <!-- ── Shared stylesheet ── -->
 <link rel="stylesheet" href="snx-living-bg.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
-<link rel="stylesheet" href="style.css?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001">
-<link rel="stylesheet" href="album.css?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001">
-<link rel="stylesheet" href="profile-music.css?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001">
-<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001">
+<link rel="stylesheet" href="style.css?v=SNS-2026-10-STAGE5-FEED-001">
+<link rel="stylesheet" href="album.css?v=SNS-2026-10-STAGE5-FEED-001">
+<link rel="stylesheet" href="profile-music.css?v=SNS-2026-10-STAGE5-FEED-001">
+<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-10-STAGE5-FEED-001">
 <!-- ── Shadow Nexus Social Realm — full immersive redesign ── -->
 <link rel="stylesheet" href="realm.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
 <!-- ── Mobile responsive design layer ── -->
@@ -55,17 +55,17 @@
 <!-- cloud-stream.css belongs to the standalone cloud-stream.html page only;
      do NOT load it on the main app — it caused global style pollution. -->
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library / Upload / Playlists / Queue ── -->
-<link rel="stylesheet" href="studio.css?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001">
+<link rel="stylesheet" href="studio.css?v=SNS-2026-10-STAGE5-FEED-001">
 <!-- ── Nexus Global Theme Engine ── -->
-<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001">
+<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-10-STAGE5-FEED-001">
 <!-- ── Shadow Nexus Cinematic Welcome Experience ── -->
 <link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-LOGO-INTRO-004">
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Egyptian/Horror theme ── -->
-<link rel="stylesheet" href="nexus.css?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001">
+<link rel="stylesheet" href="nexus.css?v=SNS-2026-10-STAGE5-FEED-001">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001">
+<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-10-STAGE5-FEED-001">
 <!-- ── Shadow Nexus Adaptive Cinematic Performance System ── -->
-<link rel="stylesheet" href="snx-perf.css?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001">
+<link rel="stylesheet" href="snx-perf.css?v=SNS-2026-10-STAGE5-FEED-001">
 <!-- ── Nexus Cinematic Glass Visual Upgrade (loads last — overrides land above perf quality gates) ── -->
 <link rel="stylesheet" href="nexus-glass.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
 
@@ -13283,6 +13283,12 @@ div.snx-gate-logo {
           window._snxAuthResolved = false;
           // ── Tear down EVERY real-time listener so nothing fires against a null user ──
           if (feedUnsubscribe)     { feedUnsubscribe();     feedUnsubscribe     = null; }
+          // Reset feed state so a subsequent login starts clean (no previous-account bleed)
+          _renderedPostIds.clear();
+          _feedInitialized = false;
+          _pendingNewPosts = 0;
+          const _feedContainer = document.getElementById('feedPosts');
+          if (_feedContainer) _feedContainer.innerHTML = '';
           if (presenceUnsubscribe) { presenceUnsubscribe(); presenceUnsubscribe = null; }
           // notifUnsubscribe removed — notifications are now handled inside userDataUnsubscribe
           if (userDataUnsubscribe) { userDataUnsubscribe(); userDataUnsubscribe = null; }
@@ -13696,15 +13702,23 @@ div.snx-gate-logo {
       return `<span class="post-expiry${soon ? ' expiry-soon' : ''}" title="Auto-deletes in ${label}">⏳ ${label}</span>`;
   }
 
-  /* ── Helper: format a timestamp as "2 hours ago" / "July 16 at 5:30 PM" ── */
+  /* ── Helper: format a timestamp as "2 hours ago" / "July 16 at 5:30 PM" ──
+     Handles: Firestore Timestamp objects (.toDate()), numeric ms, ISO strings.
+     Legacy posts with missing/malformed timestamps return '' safely (no crash). */
   function _postTimeAgo(ts) {
       if (!ts) return '';
-      const d   = (ts && ts.toDate) ? ts.toDate() : new Date(ts);
+      let d;
+      try {
+          d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
+          // Guard: Date.parse failure returns NaN — treat as missing
+          if (isNaN(d.getTime())) return '';
+      } catch(_) { return ''; }
       const diff = Math.floor((Date.now() - d) / 1000);
+      if (diff < 0)    return 'just now';   // clock skew guard
       if (diff < 60)   return diff + 's ago';
       if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
       if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-      // Older than 24h — shouldn't normally be visible, but format as full date
+      // Older than 24h — format as full date
       return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
            + ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   }
@@ -14078,8 +14092,9 @@ div.snx-gate-logo {
                       : buildBadgeHtml(post.authorBadges || [], post.authorRole || 'member');
 
                   const authorUid    = post.isRepost ? post.originalAuthorUid    : post.uid;
-                  const authorName   = post.isRepost ? post.originalAuthorName   : post.authorName;
-                  const authorHandle = post.isRepost ? post.originalAuthorHandle : post.authorHandle;
+                  // Fallback labels prevent permanent "Unknown User" if profile fields are missing
+                  const authorName   = post.isRepost ? (post.originalAuthorName   || 'Unknown User') : (post.authorName   || 'Unknown User');
+                  const authorHandle = post.isRepost ? (post.originalAuthorHandle || 'unknown')      : (post.authorHandle || 'unknown');
                   const authorAvatar = post.isRepost ? (post.originalAuthorAvatar || '') : (post.authorAvatar || '');
                   const avatarStyle  = authorAvatar
                       ? `background-image:url('${escFeed(authorAvatar)}');`
@@ -14142,7 +14157,7 @@ div.snx-gate-logo {
           // ── Firestore error handler ──
           // Fires on permission denial, missing index, or network failure.
           // Without this, the feed silently stays blank with no user feedback.
-          console.error('[Feed] onSnapshot error:', feedErr.code || feedErr.message || feedErr);
+          console.error('[SNS Feed] onSnapshot error:', feedErr.code || feedErr.message || feedErr);
           const container = document.getElementById("feedPosts");
           if (!container) return;
           // Only replace the loading placeholder — don't wipe live posts on a transient error
@@ -14308,9 +14323,14 @@ div.snx-gate-logo {
       if (!ok) return;
       try {
           await deleteDoc(doc(db, 'posts', id));
+          // UI removal is handled by the real-time onSnapshot listener — do NOT
+          // manually remove the DOM node here; that would cause a double-remove
+          // race and could hide the post even if Firebase rejected the delete.
           toastNotification('🗑️ Post deleted.');
       } catch(e) {
-          toastNotification('Delete failed: ' + (e.message || 'unknown error'));
+          console.error('[SNS Feed] Post deletion failed:', e);
+          toastNotification('❌ Delete failed: ' + (e.message || 'unknown error'));
+          // Do NOT remove the post from the UI — Firebase rejected the deletion.
       }
   };
 
@@ -14374,15 +14394,23 @@ div.snx-gate-logo {
       const trigger = document.getElementById("infiniteLoadTrigger");
       if (!trigger || !('IntersectionObserver' in window)) return;
 
+      // Debounce: prevent multiple rapid triggers while initTimelineStream is re-subscribing.
+      let _scrollBusy = false;
+
       const io = new IntersectionObserver((entries) => {
           if (!entries[0].isIntersecting) return;
           // Only load more if we are on the feed page and logged in
           if (!currentUser) return;
           const feedPage = document.getElementById('feed');
           if (!feedPage || !feedPage.classList.contains('active')) return;
+          // Guard: don't fire while a re-subscription is already in progress
+          if (_scrollBusy) return;
+          _scrollBusy = true;
           scrollLimit += BATCH_SIZE;
           trigger.textContent = 'Loading more…';
           initTimelineStream();
+          // Allow next trigger after the new snapshot has had time to arrive
+          setTimeout(() => { _scrollBusy = false; }, 1500);
       }, { rootMargin: '200px' });
 
       io.observe(trigger);
@@ -14530,6 +14558,8 @@ div.snx-gate-logo {
       }
 
       if (!currentUser) { toastNotification("You must be logged in to post."); return; }
+      // Guard: userData snapshot must have fired before we attempt to read displayName etc.
+      if (!userData) { toastNotification("Profile is still loading — please try again in a moment."); return; }
 
       _postBusy = true;
       const btn = document.getElementById("btnBroadcast");
@@ -14603,8 +14633,13 @@ div.snx-gate-logo {
               imageURL:     mediaUrlsRaw[0] || '',   // explicit alias for clarity
               mediaType:    _savedMediaType,          // 'image' | 'video' | 'audio' | ''
               fileName:     _savedFileName,           // original filename for display
-              timestamp:    now,
-              createdAt:    now,
+              // Use server timestamp for authoritative ordering — client clock is fallback.
+              // Both fields written so legacy & new consumers both work.
+              timestamp:    serverTimestamp(),
+              createdAt:    serverTimestamp(),
+              // Store client ms as a numeric fallback for legacy sort consumers that
+              // don't handle Firestore Timestamps (e.g. old post cleanup queries).
+              clientTs:     now,
               expiresAt,
               visibility:   'public',
               likes:        0,
@@ -15035,6 +15070,7 @@ div.snx-gate-logo {
 
   window.submitPostComment = async (id) => {
       if (!currentUser) { toastNotification("You must be logged in to comment."); return; }
+      if (!userData) { toastNotification("Profile is still loading — please try again."); return; }
       const el = document.getElementById(`input-comm-${id}`);
       const btn = document.getElementById(`comm-submit-${id}`);
       const txt = el.value.trim();
@@ -15094,18 +15130,27 @@ div.snx-gate-logo {
   window.deletePostComment = async (postId, commentTs, commentAuthorUid) => {
       if (!currentUser) return;
       const ref = doc(db, "posts", postId);
-      await runTransaction(db, async (transaction) => {
-          const snap = await transaction.get(ref);
-          if (!snap.exists()) return;
-          const post = snap.data();
-          const isMod = window._snxRole === 'founder' || window._snxRole === 'moderator' || window._snxRole === 'admin';
-          // Guard: only comment author, post owner, or moderator/founder
-          if (commentAuthorUid !== currentUser.uid && post.uid !== currentUser.uid && !isMod) return;
-          const filtered = (post.comments || []).filter(
-              c => !(c.ts === commentTs && c.authorUid === commentAuthorUid)
-          );
-          transaction.update(ref, { comments: filtered });
-      });
+      try {
+          await runTransaction(db, async (transaction) => {
+              const snap = await transaction.get(ref);
+              if (!snap.exists()) return;
+              const post = snap.data();
+              const isMod = window._snxRole === 'founder' || window._snxRole === 'moderator' || window._snxRole === 'admin';
+              // Guard: only comment author, post owner, or moderator/founder
+              if (commentAuthorUid !== currentUser.uid && post.uid !== currentUser.uid && !isMod) {
+                  throw new Error('permission-denied');
+              }
+              const filtered = (post.comments || []).filter(
+                  c => !(c.ts === commentTs && c.authorUid === commentAuthorUid)
+              );
+              transaction.update(ref, { comments: filtered });
+          });
+          // UI update is handled by the real-time onSnapshot — no manual DOM removal needed.
+      } catch(e) {
+          console.error('[SNS Feed] Comment deletion failed:', e);
+          toastNotification('❌ Could not delete comment — please try again.');
+          // Do NOT permanently remove the comment from the UI on failure.
+      }
   };
 
   /* ── Build a single comment DOM node ── */
@@ -15128,7 +15173,7 @@ div.snx-gate-logo {
       d.innerHTML = `
         <div class="comment-body">
             <span style="display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap;">
-                <b class="comment-author">${escFeed(c.author)}</b>${badgeHtml}${commentMoodHtml}
+                <b class="comment-author">${escFeed(c.author || 'Unknown User')}</b>${badgeHtml}${commentMoodHtml}
             </span>
             <span class="comment-text" style="margin-left:4px;">${escFeed(c.text)}</span>
             ${tsLabel ? `<span class="comment-ts">${tsLabel}</span>` : ''}
@@ -25375,18 +25420,18 @@ function _supportStopCanvas() {
      ═══════════════════════════════════════════════════════════ -->
 
 <!-- ── Global Background Internet Manager (must load before script.js) ── -->
-<script src="snx-net.js?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001"></script>
+<script src="snx-net.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
 
-<script src="script.js?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001"></script>
+<script src="script.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
 
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library, Upload, Playlists, Queue ── -->
-<script src="studio.js?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001"></script>
+<script src="studio.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
 
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Eternal Stream + Studio ── -->
-<script src="nexus.js?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001"></script>
+<script src="nexus.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
 
 <!-- ── Moderator & Administrator Panel (extracted to js/moderator.js) ── -->
-<script src="js/moderator.js?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001"></script>
+<script src="js/moderator.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════
@@ -29875,16 +29920,16 @@ window.switchAdminTab = function(tab) {
 </script>
 
 <!-- ── Profile Photo Album module (must load after the main IIFE) ── -->
-<script src="album.js?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001"></script>
+<script src="album.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
 
 <!-- ── Profile Music System (loads after Firebase is initialized) ── -->
-<script src="profile-music.js?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001"></script>
+<script src="profile-music.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
 
 <!-- ── Profile Theme System (loads after Firebase is initialized) ── -->
-<script src="profile-theme.js?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001"></script>
+<script src="profile-theme.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
 
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<script src="shadow-nexus-upgrade.js?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001"></script>
+<script src="shadow-nexus-upgrade.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
 
 <!-- ═══════════════════ GRIM AI ASSISTANT PANEL ═══════════════════ -->
 
@@ -31871,11 +31916,11 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = 'SNS-2026-10-STAGE4-AUTH-PROFILE-001';
+  var BUILD_ID = 'SNS-2026-10-STAGE5-FEED-001';
   var SW_VER   = 'v77';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
-  window.SNX_BUILD_ID               = 'SNS-2026-10-STAGE4-AUTH-PROFILE-001';
+  window.SNX_BUILD_ID               = 'SNS-2026-10-STAGE5-FEED-001';
 
   /* ══════════════════════════════════════════════════════
      SERVICE WORKER UPDATE HANDLING
@@ -32025,7 +32070,7 @@ document.addEventListener('click', function(e) {
   /* ── Single authoritative source for Founder diagnostics.
        These must match sw.js CACHE_VERSION / BUILD_ID and version.json.
        window._SNX_BUILD is read by shadow-nexus-upgrade.js diagnostic copy. ── */
-  var _SNX_BUILD    = 'SNS-2026-10-STAGE4-AUTH-PROFILE-001';
+  var _SNX_BUILD    = 'SNS-2026-10-STAGE5-FEED-001';
   var _SNX_SW_VER   = 'v77';
   var _SNX_DEPLOY   = '2026-10-01T00:00:00Z';
   var _SNX_PROJECT  = 'horr-a08f4';
@@ -33341,12 +33386,18 @@ window.snxEditPost = async function(postId) {
         else textEl.textContent = newText;
         if (typeof toastNotification === 'function') toastNotification('✅ Post updated.');
       } catch(e) {
-        if (typeof toastNotification === 'function') toastNotification('Edit failed: ' + e.message);
+        console.error('[SNS Feed] Post update failed:', e);
+        // Restore original content — do not pretend the edit succeeded
+        textEl.innerHTML = '';
+        if (typeof renderPostText === 'function') textEl.innerHTML = renderPostText(original);
+        else textEl.textContent = original;
+        if (typeof toastNotification === 'function') toastNotification('❌ Edit failed: ' + (e.message || 'unknown error'));
         saveBtn.disabled = false; saveBtn.textContent = '💾 Save';
       }
     };
   } catch(e) {
-    if (typeof toastNotification === 'function') toastNotification('Edit failed: ' + e.message);
+    console.error('[SNS Feed] Post update failed:', e);
+    if (typeof toastNotification === 'function') toastNotification('❌ Edit failed: ' + (e.message || 'unknown error'));
   }
 };
 
@@ -33694,7 +33745,7 @@ window.snxFounderPanelCleanup = (function() {
      Loaded before the Welcome Experience so quality is applied
      before any cinematic assets render.
      ═══════════════════════════════════════════════════════════ -->
-<script src="snx-perf.js?v=SNS-2026-10-STAGE4-AUTH-PROFILE-001"></script>
+<script src="snx-perf.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
 
 <!-- ═══════════════════════════════════════════════════════════
      PERFORMANCE SETTINGS UI — Settings page + Founder dashboard

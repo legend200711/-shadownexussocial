@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-10-STAGE4-AUTH-PROFILE-001",
-  "swVersion": "v77",
+  "buildId": "SNS-2026-10-STAGE5-FEED-001",
+  "swVersion": "v78",
   "deployedAt": "2026-10-01T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
   "nexusVersion": "3.2.2",
-  "note": "SNS-2026-10-STAGE4-AUTH-PROFILE-001: Stage 4 targeted auth/profile reliability repair. Added login in-flight guard to prevent double-click causing duplicate signInWithEmailAndPassword calls. setPersistence failure now logs [SNS Auth] error instead of silent catch. Profile save failure now logs [SNS Profile] error to console. Profile Music song-deletion playlist cleanup changed from .catch(()=>{}) to try/catch with [SNS Music] error logging and partial-failure warning toast. Bumped SW to v77."
+  "note": "SNS-2026-10-STAGE5-FEED-001: Stage 5 targeted Feed/Posts/Likes/Comments reliability repair. deleteTimelinePost now logs [SNS Feed] Post deletion failed: and does not remove post from UI on error. deletePostComment wrapped in try/catch with [SNS Feed] Comment deletion failed: logging and toast on failure. snxEditPost now logs [SNS Feed] Post update failed: and restores original text on failure. Post creation guards userData null before accessing displayName/username. serverTimestamp() used for createdAt/timestamp fields for authoritative server ordering; clientTs retained as numeric fallback. Feed onSnapshot error log normalized to [SNS Feed] prefix. Infinite scroll debounced to prevent duplicate initTimelineStream() calls. Feed state (_renderedPostIds, _feedInitialized, _pendingNewPosts, feedPosts DOM) fully cleared on logout to prevent previous-account data bleed. _postTimeAgo hardened against malformed/missing timestamps. Author name/handle fallbacks to 'Unknown User'/'unknown' in post and comment rendering. submitPostComment guards userData null. Bumped SW to v78."
 }
