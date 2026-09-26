@@ -314,16 +314,55 @@
         np.classList.add('snxi-np-visible');
     }
 
+    // ── Scroll / touch lock — called when overlay is shown ───────────────────
+    // Uses the iOS Safari scroll-lock pattern (position:fixed on body).
+    // Stores the current scrollY so _unlockScroll can restore it.
+    var _savedScrollY = 0;
+    function _lockScroll() {
+        _savedScrollY = window.pageYOffset || window.scrollY || 0;
+        // position:fixed on body is the only reliable iOS Safari scroll lock.
+        // It prevents rubber-band overscroll from exposing content below the gate.
+        document.body.style.position   = 'fixed';
+        document.body.style.top        = '-' + _savedScrollY + 'px';
+        document.body.style.left       = '0';
+        document.body.style.right      = '0';
+        document.body.style.width      = '100%';
+        document.body.style.overflow   = 'hidden';
+        document.body.style.overflowY  = 'hidden';
+        document.documentElement.style.overflow  = 'hidden';
+        document.documentElement.style.overflowY = 'hidden';
+        // overscroll-behavior stops Android pull-to-refresh exposing content
+        document.body.style.overscrollBehavior = 'none';
+        document.documentElement.style.overscrollBehavior = 'none';
+        document.documentElement.classList.add('snxi-gate-active');
+        document.body.classList.add('snxi-gate-active');
+    }
+
     // ── Scroll / touch unlock — MUST be called on every exit path ────────────
     function _unlockScroll() {
-        // Restore body/html overflow that may have been locked by any other system
-        document.body.style.overflow = '';
+        // Remove gate classes
+        document.documentElement.classList.remove('snxi-gate-active');
+        document.body.classList.remove('snxi-gate-active');
+        // Restore body/html overflow that may have been locked
+        document.body.style.position  = '';
+        document.body.style.top       = '';
+        document.body.style.left      = '';
+        document.body.style.right     = '';
+        document.body.style.width     = '';
+        document.body.style.overflow  = '';
         document.body.style.overflowY = '';
-        document.documentElement.style.overflow = '';
+        document.documentElement.style.overflow  = '';
         document.documentElement.style.overflowY = '';
+        document.body.style.overscrollBehavior = '';
+        document.documentElement.style.overscrollBehavior = '';
         // Restore touch-action on body/html — critical for Android vertical scroll
         document.body.style.touchAction = '';
         document.documentElement.style.touchAction = '';
+        // Restore scroll position (iOS Safari position:fixed shifts the page)
+        if (_savedScrollY) {
+            window.scrollTo(0, _savedScrollY);
+            _savedScrollY = 0;
+        }
     }
 
     // ── Exit sequence ─────────────────────────────────────────────────────────
@@ -546,6 +585,10 @@
         // property is set when the browser first lays out the overlay.
         // This prevents Android address-bar motion from resizing the intro.
         _applyStableHeight(_overlay);
+
+        // Lock scroll BEFORE inserting overlay — prevents any flash of scrollable
+        // background content on iOS Safari before the fixed overlay paints.
+        _lockScroll();
 
         document.body.insertBefore(_overlay, document.body.firstChild);
         _injectCrows(document.getElementById('snxIntroCrows'));

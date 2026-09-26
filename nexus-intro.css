@@ -1,15 +1,39 @@
 /*
- * nexus-intro.css  v4
+ * nexus-intro.css  v4.1
  * Shadow Nexus Social — Logo-Focused Cinematic Brand Intro
  * Namespaced: #snxIntro* / .snxi-*   Zero collision with existing styles.
  * NO flashing / strobe effects.  Atmospheric only.
  * Logo is the hero — environment supports, never competes.
  */
 
+/* ─── Gate scroll lock — applied to html+body while overlay is active ────── */
+/* CSS classes applied by _lockScroll() in nexus-intro.js.
+   The position:fixed technique is the most reliable iOS Safari scroll lock.
+   overscroll-behavior stops Android pull-to-refresh from exposing content.
+   These classes are removed immediately by _unlockScroll() when the user
+   taps ENTER THE NEXUS or SKIP INTRO. */
+html.snxi-gate-active,
+body.snxi-gate-active {
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+}
+
 /* ─── Overlay ───────────────────────────────────────────────────────────── */
 #snxIntroOverlay {
     position: fixed;
     inset: 0;
+    /* Explicit height stack: CSS cascade uses last supported value.
+       100vh = legacy; 100svh = small viewport (address bar visible);
+       100dvh = dynamic (Safari toolbar excluded) — preferred, last wins.
+       Without an explicit height some Android Chrome builds allow the
+       fixed layer to fall short of the screen bottom by the height of
+       the URL/tab bar. */
+    height: 100vh;
+    height: 100svh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
     z-index: 999999;
     background: #000204;
     overflow: hidden;
@@ -745,14 +769,29 @@
 
 /* ─── Mobile performance ─────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-    /* ── Viewport stability: use fixed pixel height captured by JS on load.
-       The CSS fallback uses 100svh (small viewport = with chrome) so the intro
-       never resizes when Android Chrome's address bar slides in/out.
-       JS will override this with a stable pixel value via --snxi-stable-h. */
+    /* ── Viewport stability ─────────────────────────────────────────────────
+       Priority order (most to least reliable):
+       1. JS-captured stable px value via --snxi-stable-h (set synchronously
+          before overlay is inserted into DOM)
+       2. 100dvh — dynamic viewport height, excludes browser chrome (iOS 15.4+,
+          Chrome 108+) — best fallback when JS value not yet set
+       3. 100svh — small viewport = address bar visible = most conservative
+       4. 100vh  — legacy fallback for very old browsers
+
+       The JS-captured value prevents Android address-bar
+       slide-in/out from resizing the overlay mid-animation. ── */
     #snxIntroOverlay {
-        height: calc(var(--snxi-stable-h, 100svh));
+        /* Cascade: property overrides in source order — last supported value wins.
+           All four values are set; browsers use the last one they understand. */
+        height: 100vh;
+        height: 100svh;
+        height: 100dvh;
+        height: calc(var(--snxi-stable-h, 100dvh));
+        min-height: 100svh;
+        min-height: 100dvh;
+        min-height: calc(var(--snxi-stable-h, 100dvh));
         /* Prevent the overlay from stretching when Android address bar hides */
-        max-height: calc(var(--snxi-stable-h, 100svh));
+        max-height: calc(var(--snxi-stable-h, 100dvh));
     }
 
     /* ── iPhone logo sizing: constrain by BOTH width AND height.
@@ -859,8 +898,13 @@
 @media (min-width: 641px) and (max-width: 1024px) {
     /* Stable height for tablets too (landscape orientation changes) */
     #snxIntroOverlay {
-        height: calc(var(--snxi-stable-h, 100svh));
-        max-height: calc(var(--snxi-stable-h, 100svh));
+        height: 100vh;
+        height: 100svh;
+        height: 100dvh;
+        height: calc(var(--snxi-stable-h, 100dvh));
+        min-height: 100svh;
+        min-height: 100dvh;
+        max-height: calc(var(--snxi-stable-h, 100dvh));
     }
     /* Slightly reduce blur on tablets */
     .snxi-fog:nth-child(4)   { filter: blur(32px); }

@@ -1,5 +1,5 @@
 /**
- * SHADOW NEXUS — 24-HOUR NEXUS (nexus.js)
+ * SHADOW NEXUS — 24-HOUR CLOUD STREAM (nexus.js)
  * ─────────────────────────────────────────
  * Community Streaming Network.
  * ANY authenticated user can discover public streams and create their own channel.
@@ -132,8 +132,8 @@ function _showAuthGate() {
   var body = _el('nxDiscoverSection');
   if (body) body.innerHTML =
     '<div class="nx-empty" style="padding:60px 20px;">' +
-      '<div class="nx-empty-icon">𓂀</div>' +
-      '<div class="nx-empty-text">Sign in to enter the 24-Hour Nexus.</div>' +
+      '<div class="nx-empty-icon">☁️</div>' +
+      '<div class="nx-empty-text">Sign in to watch 24-Hour Cloud Streams.</div>' +
     '</div>';
 }
 
@@ -747,7 +747,7 @@ function _loadMyChannelWatch() {
   } else {
     _show('nxWatchOffline', true);
     _show('nxWatchOnline', false);
-    var el = _el('nxNtTitle'); if (el) el.textContent = 'YOUR ETERNAL STREAM AWAITS';
+    var el = _el('nxNtTitle'); if (el) el.textContent = 'YOUR CLOUD STREAM AWAITS';
     var ae = _el('nxNtArtist'); if (ae) ae.textContent = 'Start your channel in the CHANNEL tab';
   }
 }
@@ -933,7 +933,7 @@ window.snxNexusStartStream = function() {
         _subscribeMyStream(streamId);
       }).catch(function(){});
     }, 3000);
-    _toastOk('Starting your Eternal Stream…');
+    _toastOk('Starting your 24-Hour Cloud Stream…');
   } else {
     _toastError('Stream system not ready. Try the Studio page first.');
   }
@@ -1157,7 +1157,7 @@ window.snxNexusStreamPlayNow = function() {
   if (!plId) return;
   if (typeof snxCSMusicSelectPlaylist === 'function') snxCSMusicSelectPlaylist(plId);
   if (typeof snxCSMusicPlayPause === 'function') { setTimeout(function() { if (!window._csMusic || !window._csMusic.playing) snxCSMusicPlayPause(); }, 500); }
-  _toastOk('Playlist sent to Eternal Stream — Playing Now.');
+  _toastOk('Playlist sent to Cloud Stream — Playing Now.');
   snxNexusSwitchTab('watch');
 };
 

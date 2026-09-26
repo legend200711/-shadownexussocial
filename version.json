@@ -1,10 +1,9 @@
 {
-  "buildId": "SNS-2026-10-STAGE6-MESSAGES-001",
-  "swVersion": "v79",
-  "deployedAt": "2026-10-02T00:00:00Z",
+  "buildId": "SNS-2026-10-CLOUDSTREAM-RECONNECT-001",
+  "swVersion": "v80",
+  "deployedAt": "2026-10-03T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
-  "cloudStreamVersion": "eternal-3.0",
-  "nexusVersion": "3.2.2",
-  "note": "SNS-2026-10-STAGE6-MESSAGES-001: Stage 6 targeted Messages/DMs reliability repair. Active DM system: /chats/{chatId} (messages stored as array in doc). _ibSending flag added to _ibSend() to prevent double-send on rapid Enter/tap. _ibSending correctly reset on all early-return paths (block gate, empty input, AI scan). Send failure now logs [SNS Messages] Send failed: and restores user text on error. Conversation list snapshot error now logs [SNS Messages] Conversation load failed:. _ibToMs() helper added to safely coerce Firestore Timestamp objects, plain timestamp objects, and numeric ms — prevents crash on legacy message records. Messages sorted oldest→newest via _ibToMs before rendering. sortedList hoisted to function scope so lastMsg read-receipt check is correct. Conversation list displayName now falls back to username before truncated UID. Normal feed posts no longer receive expiresAt — permanent by default. Reposts also made permanent. Legacy posts with expiresAt continue to expire. Stories and announcements retain their own separate TTL. TTL_MS constant kept for legacy cleanup query only. SW bumped to v79."
+  "cloudStreamVersion": "3.1.0",
+  "note": "SNS-2026-10-CLOUDSTREAM-RECONNECT-001: Cloud System Cleanup. Removed old '24-Hour Cloud Nexus' / 'Cloud Nexus' / 'Nexus Cloud' branding and replaced with canonical '24-Hour Cloud Stream' throughout navigation, comments, and diagnostics. Stale v77 diagnostic constants corrected to v80. SW bumped from v79 to v80. Navigation labels updated: '24-Hour Nexus' -> '24-Hour Cloud Stream'. Studio stream tab updated. watchChannel routing preserved. studio-viewer.html connections verified. Firebase paths unchanged (cloudStreams, liveRooms, studioCloudStreamMusic). Cloudflare Worker URL verified (snx-cloudstream.nthntjrn.workers.dev). Storm Rooms untouched."
 }

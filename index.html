@@ -44,10 +44,10 @@
 
 <!-- ── Shared stylesheet ── -->
 <link rel="stylesheet" href="snx-living-bg.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
-<link rel="stylesheet" href="style.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
-<link rel="stylesheet" href="album.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
-<link rel="stylesheet" href="profile-music.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
-<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
+<link rel="stylesheet" href="style.css?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001">
+<link rel="stylesheet" href="album.css?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001">
+<link rel="stylesheet" href="profile-music.css?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001">
+<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001">
 <!-- ── Shadow Nexus Social Realm — full immersive redesign ── -->
 <link rel="stylesheet" href="realm.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
 <!-- ── Mobile responsive design layer ── -->
@@ -55,17 +55,17 @@
 <!-- cloud-stream.css belongs to the standalone cloud-stream.html page only;
      do NOT load it on the main app — it caused global style pollution. -->
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library / Upload / Playlists / Queue ── -->
-<link rel="stylesheet" href="studio.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
+<link rel="stylesheet" href="studio.css?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001">
 <!-- ── Nexus Global Theme Engine ── -->
-<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
+<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001">
 <!-- ── Shadow Nexus Cinematic Welcome Experience ── -->
-<link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-LOGO-INTRO-004">
-<!-- ── Shadow Nexus 24-HOUR NEXUS — unified Egyptian/Horror theme ── -->
-<link rel="stylesheet" href="nexus.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
+<link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001">
+<!-- ── Shadow Nexus 24-HOUR CLOUD STREAM — unified streaming channel system ── -->
+<link rel="stylesheet" href="nexus.css?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
+<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001">
 <!-- ── Shadow Nexus Adaptive Cinematic Performance System ── -->
-<link rel="stylesheet" href="snx-perf.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
+<link rel="stylesheet" href="snx-perf.css?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001">
 <!-- ── Nexus Cinematic Glass Visual Upgrade (loads last — overrides land above perf quality gates) ── -->
 <link rel="stylesheet" href="nexus-glass.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
 
@@ -6733,10 +6733,10 @@ div.snx-gate-logo {
             <span class="sc-item-icon">📡</span>
             <span class="sc-item-label">Go Live</span>
         </button>
-        <!-- 24-HOUR NEXUS (unified) -->
-        <button class="sc-item" id="scNavNexus" onclick="realmNavTo('nexusPage')" aria-label="24-HOUR NEXUS" style="color:#c5a41d;">
+        <!-- 24-HOUR CLOUD STREAM -->
+        <button class="sc-item" id="scNavNexus" onclick="realmNavTo('nexusPage')" aria-label="24-Hour Cloud Stream" style="color:#c5a41d;">
             <span class="sc-item-icon">𓂀</span>
-            <span class="sc-item-label">24-Hour Nexus</span>
+            <span class="sc-item-label">24-Hour Cloud Stream</span>
         </button>
         <!-- Arcade -->
         <button class="sc-item" id="scNavArcade" onclick="openArcadeHub()" aria-label="Arcade">
@@ -6858,7 +6858,7 @@ div.snx-gate-logo {
             <span id="navLiveDot" class="nav-badge" style="display:none;background:#ff3344;"></span>
         </button>
         <button class="nav-item" id="navNexus" onclick="realmNavTo('nexusPage')" style="color:#c5a41d;border-left:3px solid rgba(197,164,29,0.55);">
-            <span class="nav-icon">𓂀</span> 24-HOUR NEXUS
+            <span class="nav-icon">𓂀</span> 24-HR CLOUD STREAM
         </button>
         <button class="nav-item" id="navArcade" onclick="openArcadeHub()">
             <span class="nav-icon">🕹️</span> Arcade
@@ -7133,9 +7133,9 @@ div.snx-gate-logo {
                     <span class="nx-portal-btn-icon">⛈</span>
                     Storm
                 </button>
-                <button class="nx-portal-btn" onclick="realmNavTo('nexusPage')" aria-label="24-Hour Nexus" style="border-color:rgba(197,164,29,0.35);color:rgba(197,164,29,0.8);">
+                <button class="nx-portal-btn" onclick="realmNavTo('nexusPage')" aria-label="24-Hour Cloud Stream" style="border-color:rgba(197,164,29,0.35);color:rgba(197,164,29,0.8);">
                     <span class="nx-portal-btn-icon">𓂀</span>
-                    24H Nexus
+                    Cloud Stream
                 </button>
                 <button class="nx-portal-btn" onclick="realmNavTo('searchPage')" aria-label="Search">
                     <span class="nx-portal-btn-icon">🔍</span>
@@ -11137,7 +11137,7 @@ div.snx-gate-logo {
 <!-- ══════════════════════════════════════════════════════════
      24-HOUR STUDIO PAGE
      Music Library, Upload, Playlists, Queue, Now Playing.
-     The Eternal Stream (24-Hour Nexus) is now the canonical 24-hour streaming feature.
+     The 24-Hour Cloud Stream (nexusPage) is the canonical 24-hour streaming feature.
      ══════════════════════════════════════════════════════════ -->
 <div class="page" id="studioPage">
 
@@ -11164,7 +11164,7 @@ div.snx-gate-logo {
     <button class="snx-studio-tab"         id="snxStudioTabBtn_playlists" onclick="snxStudioTabSwitch('playlists',this)" style="flex:1;min-width:56px;padding:10px 4px 8px;background:none;border:none;border-bottom:2px solid transparent;color:#5a80a8;font-size:10px;font-weight:700;text-align:center;cursor:pointer;white-space:nowrap;">&#128203;<br>Playlists</button>
     <button class="snx-studio-tab"         id="snxStudioTabBtn_queue"    onclick="snxStudioTabSwitch('queue',this)"    style="flex:1;min-width:56px;padding:10px 4px 8px;background:none;border:none;border-bottom:2px solid transparent;color:#5a80a8;font-size:10px;font-weight:700;text-align:center;cursor:pointer;white-space:nowrap;">&#127926;<br>Queue</button>
     <button class="snx-studio-tab"         id="snxStudioTabBtn_nowplaying" onclick="snxStudioTabSwitch('nowplaying',this)" style="flex:1;min-width:56px;padding:10px 4px 8px;background:none;border:none;border-bottom:2px solid transparent;color:#5a80a8;font-size:10px;font-weight:700;text-align:center;cursor:pointer;white-space:nowrap;">&#9654;&#65039;<br>Playing</button>
-    <button class="snx-studio-tab"         id="snxStudioTabBtn_stream"   onclick="realmNavTo('nexusPage')" style="flex:1;min-width:56px;padding:10px 4px 8px;background:none;border:none;border-bottom:2px solid transparent;color:#c5a41d;font-size:10px;font-weight:700;text-align:center;cursor:pointer;white-space:nowrap;">𓂀<br>Nexus</button>
+    <button class="snx-studio-tab"         id="snxStudioTabBtn_stream"   onclick="realmNavTo('nexusPage')" style="flex:1;min-width:56px;padding:10px 4px 8px;background:none;border:none;border-bottom:2px solid transparent;color:#c5a41d;font-size:10px;font-weight:700;text-align:center;cursor:pointer;white-space:nowrap;">☁️<br>Stream</button>
   </nav>
 
   <!-- ══════════════════════════════════════════════════════
@@ -11336,42 +11336,40 @@ div.snx-gate-logo {
   </div><!-- end Now Playing tab -->
 
   <!-- ══════════════════════════════════════════════════════
-       STREAM TAB — opens 24-Hour Nexus (new system)
-       The old standalone cloud-stream.html has been retired.
-       All streaming traffic now goes through 24-HOUR NEXUS.
+      STREAM TAB — opens 24-Hour Cloud Stream
   ═══════════════════════════════════════════════════════ -->
-  <div id="snxStudioTab_stream" style="display:none;padding:32px 16px;text-align:center;">
-    <div style="background:rgba(197,164,29,0.07);border:1px solid rgba(197,164,29,0.25);border-radius:16px;padding:32px 20px;max-width:420px;margin:0 auto;">
-      <div style="font-size:32px;margin-bottom:12px;">𓂀</div>
-      <div style="font-size:15px;font-weight:800;color:#c5a41d;letter-spacing:1.5px;margin-bottom:6px;">24-HOUR NEXUS</div>
-      <div style="font-size:12px;color:#8a7a5a;margin-bottom:20px;line-height:1.6;">
-        THE ETERNAL STREAM · COMMUNITY CHANNELS<br>
-        Egyptian · Horror · Cosmic
-      </div>
-      <button onclick="realmNavTo('nexusPage')" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#c5a41d,#7a6010);border-radius:10px;color:#000;font-weight:800;font-size:13px;cursor:pointer;letter-spacing:1px;border:none;">
-        𓂀 OPEN 24-HOUR NEXUS
-      </button>
-      <div style="margin-top:16px;font-size:11px;color:#4a3a1a;">
-        DISCOVER · MY CHANNEL · WATCH · VAULT<br>
-        PLAYLISTS · QUEUE · UPLOAD · CHANNEL
-      </div>
-    </div>
-  </div><!-- end snxStudioTab_stream -->
+ <div id="snxStudioTab_stream" style="display:none;padding:32px 16px;text-align:center;">
+   <div style="background:rgba(0,174,239,0.07);border:1px solid rgba(0,174,239,0.25);border-radius:16px;padding:32px 20px;max-width:420px;margin:0 auto;">
+     <div style="font-size:32px;margin-bottom:12px;">☁️</div>
+     <div style="font-size:15px;font-weight:800;color:#00AEEF;letter-spacing:1.5px;margin-bottom:6px;">24-HOUR CLOUD STREAM</div>
+     <div style="font-size:12px;color:#3a6a8a;margin-bottom:20px;line-height:1.6;">
+       ALWAYS-ON COMMUNITY CHANNEL<br>
+       Music · Video · Pictures
+     </div>
+     <button onclick="realmNavTo('nexusPage')" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#0077cc,#004488);border-radius:10px;color:#fff;font-weight:800;font-size:13px;cursor:pointer;letter-spacing:1px;border:none;">
+       ☁️ OPEN 24-HOUR CLOUD STREAM
+     </button>
+     <div style="margin-top:16px;font-size:11px;color:#2a4a6a;">
+       DISCOVER · MY CHANNEL · WATCH · VAULT<br>
+       PLAYLISTS · QUEUE · UPLOAD · CHANNEL
+     </div>
+   </div>
+ </div><!-- end snxStudioTab_stream -->
 
 </div><!-- end studioPage -->
 
 <!-- ████████████████████████████████████████████████████████
-     𓂀  SHADOW NEXUS — 24-HOUR NEXUS
-     Unified Eternal Stream + Studio in Egyptian/Horror theme
+     ☁️  SHADOW NEXUS — 24-HOUR CLOUD STREAM
+     Unified Cloud Stream + Studio
      ████████████████████████████████████████████████████████ -->
 <div class="page" id="nexusPage">
 
   <!-- ── HEADER ── -->
   <header class="nx-header">
-    <div class="nx-header-eye" onclick="snxNexusSwitchTab('discover')" title="Discover">𓂀</div>
+    <div class="nx-header-eye" onclick="snxNexusSwitchTab('discover')" title="Discover">☁️</div>
     <div class="nx-header-center">
-      <div class="nx-header-title">24-HOUR NEXUS</div>
-      <div class="nx-header-sub">DISCOVER ETERNAL STREAMS · SHADOW NEXUS</div>
+      <div class="nx-header-title">24-HOUR CLOUD STREAM</div>
+      <div class="nx-header-sub">DISCOVER LIVE CHANNELS · SHADOW NEXUS</div>
     </div>
     <div class="nx-viewers-badge">
       <div class="nx-viewers-dot"></div>
@@ -11382,7 +11380,7 @@ div.snx-gate-logo {
   <!-- ── TOP ACTION BAR (Discover / My Channel) ── -->
   <div class="nx-top-action-bar">
     <button class="nx-action-btn active" id="nxActionDiscover" onclick="snxNexusSwitchMain('discover')">
-      𓂀 DISCOVER
+      ☁️ DISCOVER
     </button>
     <button class="nx-action-btn" id="nxActionMyChannel" onclick="snxNexusSwitchMain('mychannel')">
       ⚡ MY CHANNEL
@@ -11437,7 +11435,7 @@ div.snx-gate-logo {
         <div id="nxLiveNowCount" class="nx-discover-count"></div>
       </div>
       <div id="nxLiveNowList" class="nx-channel-grid">
-        <div class="nx-discover-loading">𓂀 Scanning the Eternal Streams…</div>
+        <div class="nx-discover-loading">☁️ Scanning Live Cloud Streams…</div>
       </div>
     </div>
 
@@ -11445,7 +11443,7 @@ div.snx-gate-logo {
     <div id="nxNewChannelsSection" style="margin-top:20px;">
       <div class="nx-section-title">✨ NEW CHANNELS</div>
       <div id="nxNewChannelsList" class="nx-channel-grid">
-        <div class="nx-discover-loading">𓂀 Loading new channels…</div>
+        <div class="nx-discover-loading">☁️ Loading new channels…</div>
       </div>
     </div>
 
@@ -11459,7 +11457,7 @@ div.snx-gate-logo {
   ═══════════════════════════════════════════════════════════ -->
   <div class="nx-main-section" id="nxMyChannelSection" style="display:none;">
 
-    <!-- ── WATCH — The Eternal Stream (viewer for this channel) ── -->
+    <!-- ── WATCH — 24-Hour Cloud Stream viewer for this channel ── -->
     <div class="nx-panel active" id="nxWatchPanel" data-nxtab="watch" style="padding:12px 14px 80px;">
 
       <!-- Portal -->
@@ -11470,8 +11468,8 @@ div.snx-gate-logo {
 
         <!-- Offline state -->
         <div class="nx-watch-offline" id="nxWatchOffline">
-          <div class="nx-watch-offline-eye">𓂀</div>
-          <div class="nx-watch-offline-msg">YOUR ETERNAL STREAM AWAITS<br><span style="font-size:10px;opacity:0.6;">Start your channel to go live</span></div>
+          <div class="nx-watch-offline-eye">☁️</div>
+          <div class="nx-watch-offline-msg">YOUR CLOUD STREAM AWAITS<br><span style="font-size:10px;opacity:0.6;">Start your channel to go live</span></div>
         </div>
         <!-- Online state overlay (hidden when offline) -->
         <div id="nxWatchOnline" style="display:none;position:absolute;bottom:8px;left:10px;">
@@ -11486,7 +11484,7 @@ div.snx-gate-logo {
       <!-- Now Transmitting -->
       <div class="nx-now-transmitting">
         <div class="nx-nt-label">NOW TRANSMITTING</div>
-        <div class="nx-nt-title" id="nxNtTitle">THE ETERNAL SILENCE</div>
+        <div class="nx-nt-title" id="nxNtTitle">NOT BROADCASTING</div>
         <div class="nx-nt-artist" id="nxNtArtist"></div>
         <div style="font-size:10px;color:var(--nx-text3);margin-top:4px;" id="nxNtNext"></div>
       </div>
@@ -11678,8 +11676,8 @@ div.snx-gate-logo {
 
       <!-- CREATE CHANNEL (shown if no channel yet) -->
       <div id="nxCreateChannelCard" class="nx-card" style="display:none;">
-        <div style="font-size:18px;text-align:center;margin-bottom:6px;">𓂀</div>
-        <div style="font-size:15px;font-weight:800;color:var(--nx-gold-text);text-align:center;margin-bottom:4px;letter-spacing:1px;">CREATE YOUR ETERNAL STREAM</div>
+        <div style="font-size:18px;text-align:center;margin-bottom:6px;">☁️</div>
+        <div style="font-size:15px;font-weight:800;color:var(--nx-gold-text);text-align:center;margin-bottom:4px;letter-spacing:1px;">CREATE YOUR CLOUD STREAM CHANNEL</div>
         <div style="font-size:12px;color:var(--nx-text2);text-align:center;margin-bottom:16px;">Build your own 24-hour channel on Shadow Nexus</div>
         <div class="nx-form-group">
           <label class="nx-form-label">Channel Name</label>
@@ -11702,7 +11700,7 @@ div.snx-gate-logo {
           </select>
         </div>
         <button class="nx-btn nx-btn-primary" style="width:100%;padding:14px;font-size:14px;border-radius:14px;margin-top:8px;" onclick="snxNexusCreateChannel()">
-          𓂀 CREATE CHANNEL
+          ☁️ CREATE CHANNEL
         </button>
       </div>
 
@@ -11737,7 +11735,7 @@ div.snx-gate-logo {
 
         <!-- Start stream -->
         <div class="nx-card" id="nxChannelStartCard">
-          <div style="font-size:12px;font-weight:700;color:var(--nx-gold);margin-bottom:10px;">START YOUR ETERNAL STREAM</div>
+          <div style="font-size:12px;font-weight:700;color:var(--nx-gold);margin-bottom:10px;">START YOUR 24-HOUR CLOUD STREAM</div>
           <div class="nx-form-group">
             <label class="nx-form-label">Broadcast Title</label>
             <input class="nx-input" id="nxChannelStreamTitle" placeholder="My Channel — Now Live" maxlength="100">
@@ -11867,14 +11865,14 @@ div.snx-gate-logo {
   <!-- SEND TO STREAM MODAL -->
   <div class="nx-stream-modal" id="nxStreamModal">
     <div class="nx-stream-modal-inner">
-      <div class="nx-stream-modal-title">▶ SEND TO YOUR ETERNAL STREAM</div>
+      <div class="nx-stream-modal-title">▶ SEND TO YOUR CLOUD STREAM</div>
       <button class="nx-stream-option" onclick="snxNexusStreamPlayNow()">
         <span class="nx-stream-option-icon">▶</span>
         <div><strong>PLAY NOW</strong><br><span style="font-size:11px;color:var(--nx-text2);">Start playing immediately on your stream</span></div>
       </button>
       <button class="nx-stream-option" onclick="snxNexusStreamAddToQueue()">
         <span class="nx-stream-option-icon">+ Q</span>
-        <div><strong>ADD TO QUEUE</strong><br><span style="font-size:11px;color:var(--nx-text2);">Add all tracks to end of Prophecy Queue</span></div>
+        <div><strong>ADD TO QUEUE</strong><br><span style="font-size:11px;color:var(--nx-text2);">Add all tracks to end of queue</span></div>
       </button>
       <button class="nx-stream-option" onclick="snxNexusStreamAddNext()">
         <span class="nx-stream-option-icon">↩</span>
@@ -12382,7 +12380,7 @@ div.snx-gate-logo {
       const initial  = (room.hostName || room.hostUsername || '?')[0].toUpperCase();
       const isCloudStream    = room.type === '24hour_cloudstream';
       const isStudioLive     = room.type === '24hour_studio_live';
-      // Cloud Stream: route to the canonical 24-Hour Nexus SPA via watchChannel=uid.
+      // Cloud Stream: route to the canonical 24-Hour Cloud Stream SPA via watchChannel=uid.
       // Studio Live: route to the existing live.html viewer.
       // The 24-hour-cloud-stream/ standalone folder is NOT deployed — using it causes 404.
       const watchUrl = isCloudStream
@@ -12646,7 +12644,7 @@ div.snx-gate-logo {
         ? `<img class="flc-thumb-img" src="${escL(avatar)}" alt="${name}" loading="lazy">`
         : `<div class="flc-thumb-initial">${initial}</div>`;
 
-      // Cloud Stream: route to the canonical 24-Hour Nexus SPA via watchChannel=uid.
+      // Cloud Stream: route to the canonical 24-Hour Cloud Stream SPA via watchChannel=uid.
       // Studio Live: route to the existing live.html viewer.
       // The 24-hour-cloud-stream/ standalone folder is NOT deployed — using it causes 404.
       const isCloudStream = room.type === '24hour_cloudstream';
@@ -21424,7 +21422,7 @@ function navTo(pageId) {
         // Load blocked users (Security tab might be active)
         if (typeof window.snxLoadBlockedUsers === 'function') window.snxLoadBlockedUsers();
     }
-    // Initialize 24-HOUR NEXUS when nexusPage or studioPage opens
+    // Initialize 24-Hour Cloud Stream when nexusPage or studioPage opens
     if (pageId === 'nexusPage' || pageId === 'studioPage') {
         if (typeof window.snxNexusInit === 'function') window.snxNexusInit();
         // Also kick off studio.js init for backend functions (tracks, playlists, queue)
@@ -25447,18 +25445,18 @@ function _supportStopCanvas() {
      ═══════════════════════════════════════════════════════════ -->
 
 <!-- ── Global Background Internet Manager (must load before script.js) ── -->
-<script src="snx-net.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
+<script src="snx-net.js?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001"></script>
 
-<script src="script.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
+<script src="script.js?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001"></script>
 
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library, Upload, Playlists, Queue ── -->
-<script src="studio.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
+<script src="studio.js?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001"></script>
 
-<!-- ── Shadow Nexus 24-HOUR NEXUS — unified Eternal Stream + Studio ── -->
-<script src="nexus.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
+<!-- ── Shadow Nexus 24-HOUR CLOUD STREAM — unified Cloud Stream + Studio ── -->
+<script src="nexus.js?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001"></script>
 
 <!-- ── Moderator & Administrator Panel (extracted to js/moderator.js) ── -->
-<script src="js/moderator.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
+<script src="js/moderator.js?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════
@@ -29947,16 +29945,16 @@ window.switchAdminTab = function(tab) {
 </script>
 
 <!-- ── Profile Photo Album module (must load after the main IIFE) ── -->
-<script src="album.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
+<script src="album.js?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001"></script>
 
 <!-- ── Profile Music System (loads after Firebase is initialized) ── -->
-<script src="profile-music.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
+<script src="profile-music.js?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001"></script>
 
 <!-- ── Profile Theme System (loads after Firebase is initialized) ── -->
-<script src="profile-theme.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
+<script src="profile-theme.js?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001"></script>
 
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<script src="shadow-nexus-upgrade.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
+<script src="shadow-nexus-upgrade.js?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001"></script>
 
 <!-- ═══════════════════ GRIM AI ASSISTANT PANEL ═══════════════════ -->
 
@@ -31933,7 +31931,8 @@ document.addEventListener('click', function(e) {
 })(); // end IIFE
 </script>
 
-<!-- Cloud Stream SPA re-init hook removed — Eternal Stream is now a standalone page (cloud-stream.html). -->
+<!-- 24-Hour Cloud Stream is the canonical streaming feature (nexusPage SPA + nexus.js). -->
+<!-- cloud-stream.html is the standalone Eternal Stream page and shares the same Firebase project. -->
 
 <!-- ════════════════════════════════════════════════════════
      SHADOW NEXUS BUILD VERSION, SW UPDATE-CHECK & DEBUG PANEL
@@ -31943,11 +31942,11 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = 'SNS-2026-10-STAGE6-MESSAGES-001';
-  var SW_VER   = 'v77';
+  var BUILD_ID = 'SNS-2026-10-CLOUDSTREAM-RECONNECT-001';
+  var SW_VER   = 'v80';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
-  window.SNX_BUILD_ID               = 'SNS-2026-10-STAGE6-MESSAGES-001';
+  window.SNX_BUILD_ID               = 'SNS-2026-10-CLOUDSTREAM-RECONNECT-001';
 
   /* ══════════════════════════════════════════════════════
      SERVICE WORKER UPDATE HANDLING
@@ -32097,9 +32096,9 @@ document.addEventListener('click', function(e) {
   /* ── Single authoritative source for Founder diagnostics.
        These must match sw.js CACHE_VERSION / BUILD_ID and version.json.
        window._SNX_BUILD is read by shadow-nexus-upgrade.js diagnostic copy. ── */
-  var _SNX_BUILD    = 'SNS-2026-10-STAGE6-MESSAGES-001';
-  var _SNX_SW_VER   = 'v77';
-  var _SNX_DEPLOY   = '2026-10-01T00:00:00Z';
+  var _SNX_BUILD    = 'SNS-2026-10-CLOUDSTREAM-RECONNECT-001';
+  var _SNX_SW_VER   = 'v80';
+  var _SNX_DEPLOY   = '2026-10-03T00:00:00Z';
   var _SNX_PROJECT  = 'horr-a08f4';
 
   /* Expose on window so shadow-nexus-upgrade.js can read them */
@@ -33772,7 +33771,7 @@ window.snxFounderPanelCleanup = (function() {
      Loaded before the Welcome Experience so quality is applied
      before any cinematic assets render.
      ═══════════════════════════════════════════════════════════ -->
-<script src="snx-perf.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
+<script src="snx-perf.js?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001"></script>
 
 <!-- ═══════════════════════════════════════════════════════════
      PERFORMANCE SETTINGS UI — Settings page + Founder dashboard
@@ -33998,7 +33997,7 @@ window.snxFounderPanelCleanup = (function() {
      SHADOW NEXUS CINEMATIC WELCOME EXPERIENCE
      Loaded last so it never blocks main app init.
      ═══════════════════════════════════════════════════════════ -->
-<script src="nexus-intro.js?v=SNS-2026-LOGO-INTRO-004"></script>
+<script src="nexus-intro.js?v=SNS-2026-10-CLOUDSTREAM-RECONNECT-001"></script>
 <script>
   /* ── snxIntroCompleted: called by nexus-intro.js when the user clicks
      "Enter the Nexus" or "Skip Intro".  By this point Firebase auth may

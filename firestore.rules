@@ -736,7 +736,7 @@ service cloud.firestore {
         && (resource.data.ownerUid == request.auth.uid || isFounder());
     }
 
-    // ── 24-Hour Nexus Channels ────────────────────────────────────────────────
+    // ── 24-Hour Cloud Stream Channels ────────────────────────────────────────
     //
     //   /nexusChannels/{channelId}
     //     channelId == ownerUid (one channel per user)

@@ -2365,7 +2365,7 @@ function _csMusicLoadPlaylists() {
     }
     console.log('[SNX Studio] Playlists loaded:', _csMusic.playlists.length);
     _renderCSPlaylistPanel();
-    // Notify 24-Hour Nexus so its playlist tab refreshes immediately after Firestore load
+    // Notify 24-Hour Cloud Stream so its playlist tab refreshes immediately after Firestore load
     if (typeof window.snxNexusOnPlaylistsLoaded === 'function') window.snxNexusOnPlaylistsLoaded();
   }).catch(function(e) {
     console.error('[SNX Studio] _csMusicLoadPlaylists failed:', e.code || '', e.message);
@@ -3425,7 +3425,7 @@ function _mlLoadTracks() {
     _renderNowPlayingBar();
     // Also populate the CS library list if it is currently visible
     if (typeof _renderCSLibrary === 'function') { _renderCSLibrary(); }
-    // Notify 24-Hour Nexus Vault to refresh immediately
+    // Notify 24-Hour Cloud Stream Vault to refresh immediately
     if (typeof window.snxNexusOnTracksLoaded === 'function') window.snxNexusOnTracksLoaded();
   }).catch(function() {});
 }
@@ -3570,7 +3570,7 @@ function _uploadOneTrack(job) {
         var existing = _music.tracks.findIndex(function(t) { return t.id === job.trackId; });
         if (existing === -1) _music.tracks.unshift(Object.assign({}, trackDoc));
         else _music.tracks[existing] = Object.assign({}, trackDoc);
-        // Notify 24-Hour Nexus Vault to refresh — track is now ready
+        // Notify 24-Hour Cloud Stream Vault to refresh — track is now ready
         if (typeof window.snxNexusOnTracksLoaded === 'function') window.snxNexusOnTracksLoaded();
       } else {
         var errMsg = 'HTTP ' + xhr.status;
@@ -5088,7 +5088,7 @@ function _sqRenderQueue() {
 function _sqRenderLibraryButtons() {
   // Refresh the CS library list so "Add to Queue" buttons reflect queue state
   if (typeof _renderCSLibrary === 'function') _renderCSLibrary();
-  // Notify 24-Hour Nexus queue tab to refresh
+  // Notify 24-Hour Cloud Stream queue tab to refresh
   if (typeof window.snxNexusOnQueueUpdate === 'function') window.snxNexusOnQueueUpdate();
 }
 
@@ -5498,7 +5498,7 @@ function _snxsUpdateStatus(state) {
 }
 
 /* ── START STREAM — bridges simplified UI to existing snxStartCloudStream ── */
-/* snxsStartStream — opens 24-Hour Nexus (the canonical streaming system). */
+/* snxsStartStream — opens 24-Hour Cloud Stream (the canonical streaming system). */
 window.snxsStartStream = function() {
   if (typeof window.realmNavTo === 'function') {
     window.realmNavTo('nexusPage');
