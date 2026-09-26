@@ -1,10 +1,10 @@
 {
-  "buildId": "SNS-2026-10-STAGE5-FEED-001",
-  "swVersion": "v78",
-  "deployedAt": "2026-10-01T00:00:00Z",
+  "buildId": "SNS-2026-10-STAGE6-MESSAGES-001",
+  "swVersion": "v79",
+  "deployedAt": "2026-10-02T00:00:00Z",
   "project": "horr-a08f4",
   "studioVersion": "3.0.1",
   "cloudStreamVersion": "eternal-3.0",
   "nexusVersion": "3.2.2",
-  "note": "SNS-2026-10-STAGE5-FEED-001: Stage 5 targeted Feed/Posts/Likes/Comments reliability repair. deleteTimelinePost now logs [SNS Feed] Post deletion failed: and does not remove post from UI on error. deletePostComment wrapped in try/catch with [SNS Feed] Comment deletion failed: logging and toast on failure. snxEditPost now logs [SNS Feed] Post update failed: and restores original text on failure. Post creation guards userData null before accessing displayName/username. serverTimestamp() used for createdAt/timestamp fields for authoritative server ordering; clientTs retained as numeric fallback. Feed onSnapshot error log normalized to [SNS Feed] prefix. Infinite scroll debounced to prevent duplicate initTimelineStream() calls. Feed state (_renderedPostIds, _feedInitialized, _pendingNewPosts, feedPosts DOM) fully cleared on logout to prevent previous-account data bleed. _postTimeAgo hardened against malformed/missing timestamps. Author name/handle fallbacks to 'Unknown User'/'unknown' in post and comment rendering. submitPostComment guards userData null. Bumped SW to v78."
+  "note": "SNS-2026-10-STAGE6-MESSAGES-001: Stage 6 targeted Messages/DMs reliability repair. Active DM system: /chats/{chatId} (messages stored as array in doc). _ibSending flag added to _ibSend() to prevent double-send on rapid Enter/tap. _ibSending correctly reset on all early-return paths (block gate, empty input, AI scan). Send failure now logs [SNS Messages] Send failed: and restores user text on error. Conversation list snapshot error now logs [SNS Messages] Conversation load failed:. _ibToMs() helper added to safely coerce Firestore Timestamp objects, plain timestamp objects, and numeric ms — prevents crash on legacy message records. Messages sorted oldest→newest via _ibToMs before rendering. sortedList hoisted to function scope so lastMsg read-receipt check is correct. Conversation list displayName now falls back to username before truncated UID. Normal feed posts no longer receive expiresAt — permanent by default. Reposts also made permanent. Legacy posts with expiresAt continue to expire. Stories and announcements retain their own separate TTL. TTL_MS constant kept for legacy cleanup query only. SW bumped to v79."
 }

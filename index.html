@@ -44,10 +44,10 @@
 
 <!-- ── Shared stylesheet ── -->
 <link rel="stylesheet" href="snx-living-bg.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
-<link rel="stylesheet" href="style.css?v=SNS-2026-10-STAGE5-FEED-001">
-<link rel="stylesheet" href="album.css?v=SNS-2026-10-STAGE5-FEED-001">
-<link rel="stylesheet" href="profile-music.css?v=SNS-2026-10-STAGE5-FEED-001">
-<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-10-STAGE5-FEED-001">
+<link rel="stylesheet" href="style.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
+<link rel="stylesheet" href="album.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
+<link rel="stylesheet" href="profile-music.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
+<link rel="stylesheet" href="profile-theme.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
 <!-- ── Shadow Nexus Social Realm — full immersive redesign ── -->
 <link rel="stylesheet" href="realm.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
 <!-- ── Mobile responsive design layer ── -->
@@ -55,17 +55,17 @@
 <!-- cloud-stream.css belongs to the standalone cloud-stream.html page only;
      do NOT load it on the main app — it caused global style pollution. -->
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library / Upload / Playlists / Queue ── -->
-<link rel="stylesheet" href="studio.css?v=SNS-2026-10-STAGE5-FEED-001">
+<link rel="stylesheet" href="studio.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
 <!-- ── Nexus Global Theme Engine ── -->
-<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-10-STAGE5-FEED-001">
+<link rel="stylesheet" href="theme-engine.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
 <!-- ── Shadow Nexus Cinematic Welcome Experience ── -->
 <link rel="stylesheet" href="nexus-intro.css?v=SNS-2026-LOGO-INTRO-004">
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Egyptian/Horror theme ── -->
-<link rel="stylesheet" href="nexus.css?v=SNS-2026-10-STAGE5-FEED-001">
+<link rel="stylesheet" href="nexus.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-10-STAGE5-FEED-001">
+<link rel="stylesheet" href="shadow-nexus-upgrade.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
 <!-- ── Shadow Nexus Adaptive Cinematic Performance System ── -->
-<link rel="stylesheet" href="snx-perf.css?v=SNS-2026-10-STAGE5-FEED-001">
+<link rel="stylesheet" href="snx-perf.css?v=SNS-2026-10-STAGE6-MESSAGES-001">
 <!-- ── Nexus Cinematic Glass Visual Upgrade (loads last — overrides land above perf quality gates) ── -->
 <link rel="stylesheet" href="nexus-glass.css?v=SNS-2026-FINAL-NEXUS-REALM-001">
 
@@ -13687,7 +13687,10 @@ div.snx-gate-logo {
   }
 
   /* TIMELINE DYNAMIC TIMELINE STREAM ENGINE WITH MEDIA INTERPRETATION */
-  const TTL_MS = 48 * 60 * 60 * 1000; // 48 hours — posts auto-expire after this
+  // NOTE: Normal feed posts no longer receive expiresAt — they are permanent.
+  // Legacy posts that already have expiresAt will continue to expire naturally.
+  // Stories and announcements retain their own separate TTL logic.
+  const TTL_MS = 48 * 60 * 60 * 1000; // kept for legacy cleanup query only
 
   /* ── Helper: format remaining lifetime as "⏳ 23h 59m" or "⏳ 45m" ── */
   function _postExpiryLabel(expiresAt) {
@@ -14577,7 +14580,8 @@ div.snx-gate-logo {
 
       try {
           const now = Date.now();
-          const expiresAt = now + 48 * 60 * 60 * 1000; // auto-delete after 48 hours
+          // Normal feed posts are permanent — no expiresAt set.
+          // Stories and announcements manage their own separate TTL.
           const mediaUrlsRaw = mediaUrl.split(',').map(u => u.trim()).filter(Boolean);
 
           // Determine if this is a photo post (image URL)
@@ -14640,7 +14644,7 @@ div.snx-gate-logo {
               // Store client ms as a numeric fallback for legacy sort consumers that
               // don't handle Firestore Timestamps (e.g. old post cleanup queries).
               clientTs:     now,
-              expiresAt,
+              // expiresAt intentionally omitted — normal posts are permanent.
               visibility:   'public',
               likes:        0,
               likedBy:      [],
@@ -14891,7 +14895,7 @@ div.snx-gate-logo {
       }
 
       const now = Date.now();
-      const expiresAt = now + 48 * 60 * 60 * 1000; // auto-delete after 48 hours
+      // Reposts are permanent — no expiresAt set (mirrors normal post behaviour).
       // Create the repost as a new post document
       await addDoc(collection(db, 'posts'), {
           uid:            currentUser.uid,
@@ -14903,7 +14907,7 @@ div.snx-gate-logo {
           mediaUrl:       orig.mediaUrl || '',
           timestamp:      now,
           createdAt:      now,
-          expiresAt,
+          // expiresAt intentionally omitted — reposts are permanent.
           likes:          0,
           likedBy:        [],
           comments:       [],
@@ -17395,7 +17399,7 @@ div.snx-gate-logo {
                 totalUnread += (muted ? 0 : unread); // muted convs don't count to badge
                 return {
                     chatId: d.id, otherUid: othUid,
-                    otherName: uInfo.displayName || othUid.substring(0,8),
+                    otherName: uInfo.displayName || uInfo.username || othUid.substring(0,8),
                     otherAvatar: uInfo.avatar || '',
                     otherStatus: uInfo.status || 'offline',
                     otherTyping, lastText, lastTs: data.lastMsgTs || 0,
@@ -17409,7 +17413,7 @@ div.snx-gate-logo {
 
             // If partner data changed (avatar, name), update header
             if (_ibActiveUid) _ibRefreshHeader();
-        }, err => { console.warn('[Inbox List]', err.code||err.message); });
+        }, err => { console.warn('[SNS Messages] Conversation load failed:', err.code||err.message); });
     }
 
     // ── Refresh header from current conversation data ─────────
@@ -17587,6 +17591,16 @@ div.snx-gate-logo {
     }
 
     // ── Render messages into the chat pane ────────────────────
+    // ── Safely coerce a timestamp field to ms (handles numbers, Firestore Timestamp objects, and null) ──
+    function _ibToMs(ts) {
+        if (!ts) return 0;
+        if (typeof ts === 'number') return ts;
+        if (typeof ts.toMillis === 'function') return ts.toMillis(); // Firestore Timestamp
+        if (typeof ts.seconds === 'number') return ts.seconds * 1000; // Firestore Timestamp plain object
+        const n = Number(ts);
+        return isNaN(n) ? 0 : n;
+    }
+
     function _ibRenderMessages(cData, forceBottom) {
         const list    = cData.messages || [];
         const isSeen  = cData.readReceipt === true;
@@ -17604,19 +17618,22 @@ div.snx-gate-logo {
         const atBot = forceBottom || msgBox.scrollHeight - msgBox.scrollTop <= msgBox.clientHeight + 100;
         msgBox.innerHTML = '';
 
-        if (!list.length) {
+        // Sort messages oldest → newest using timestamp (hoisted so lastMsg reference below is in scope)
+        const sortedList = list.slice().sort((a, b) => _ibToMs(a.timestamp) - _ibToMs(b.timestamp));
+
+        if (!sortedList.length) {
             msgBox.innerHTML = `<div class="ipc-modal-empty"><div class="ipc-modal-empty-icon">👋</div>
                 <div class="ipc-modal-empty-text">Say hello to <strong style="color:#4db8ff">${_ibEsc(_ibActiveData?.displayName||'?')}</strong>!<br>
                 <span style="font-size:12px;color:#2a4a6a;">Messages are saved and visible to both of you.</span></div></div>`;
         } else {
             let lastDate = '';
-            list.forEach((m, idx) => {
+            sortedList.forEach((m, idx) => {
                 // Skip messages soft-deleted for this user
                 if (m[`deletedFor_${currentUser.uid}`]) return;
 
                 const isMine = m.sender === currentUser.uid;
-                const isLast = idx === list.length - 1;
-                const dl = _ibFmtDate(m.timestamp);
+                const isLast = idx === sortedList.length - 1;
+                const dl = _ibFmtDate(_ibToMs(m.timestamp));
 
                 // Date separator
                 if (dl !== lastDate) {
@@ -17699,7 +17716,7 @@ div.snx-gate-logo {
                 meta.className = 'ipc-modal-meta';
                 const ts = document.createElement('span');
                 ts.className = 'ipc-modal-ts';
-                ts.textContent = _ibFmtTime(m.timestamp) + (m.edited ? ' ✏️' : '');
+                ts.textContent = _ibFmtTime(_ibToMs(m.timestamp)) + (m.edited ? ' ✏️' : '');
                 meta.appendChild(ts);
                 if (isMine) {
                     const tick = document.createElement('span');
@@ -17737,7 +17754,7 @@ div.snx-gate-logo {
         if (atBot) msgBox.scrollTop = msgBox.scrollHeight;
 
         // Mark as read
-        const lastMsg = list[list.length - 1];
+        const lastMsg = sortedList[sortedList.length - 1];
         if (lastMsg && lastMsg.sender === _ibActiveUid) {
             const upd = { readReceipt: true };
             upd[`unread_${currentUser.uid}`] = 0;
@@ -17746,24 +17763,28 @@ div.snx-gate-logo {
     }
 
     // ── Send a message ─────────────────────────────────────────
+    let _ibSending = false; // in-flight send guard (prevents double-send on rapid Enter/tap)
     async function _ibSend() {
         if (!currentUser || !_ibActiveChId || !_ibReady) return;
+        if (_ibSending) return;
+        _ibSending = true;
 
         // Block gate: prevent sending to users who have blocked you or who you blocked
         if (_ibActiveUid && typeof window.snxIsBlocked === 'function' && window.snxIsBlocked(_ibActiveUid)) {
             if (typeof toastNotification === 'function') toastNotification('🚫 You cannot message this user.');
+            _ibSending = false;
             return;
         }
 
         const inp = document.getElementById('inboxChatInput');
         const text = inp ? inp.value.trim() : '';
         const hasMedia = !!_ibMediaUrl;
-        if (!text && !hasMedia) return;
+        if (!text && !hasMedia) { _ibSending = false; return; }
 
         // AI Safety scan
         if (text && typeof window.snxAIScan === 'function') {
             const blocked = await window.snxAIScan(text, 'chat');
-            if (blocked) return;
+            if (blocked) { _ibSending = false; return; }
         }
 
         // Capture reply state before async
@@ -17806,9 +17827,12 @@ div.snx-gate-logo {
             } catch(_) {}
 
         } catch(err) {
+            console.error('[SNS Messages] Send failed:', err.code || err.message);
             toastNotification('Message failed — please try again.');
-            console.error('[Inbox Send]', err);
+            // Restore the message text so the user doesn't lose it
+            if (inp && !inp.value.trim()) inp.value = text;
         } finally {
+            _ibSending = false;
             if (sendBtn) { sendBtn.style.opacity=''; sendBtn.style.transform=''; }
             const inp2 = document.getElementById('inboxChatInput');
             if (inp2 && !inp2.disabled) inp2.focus();
@@ -18303,6 +18327,9 @@ div.snx-gate-logo {
     };
 
     // ── Wire send button and Enter key ────────────────────────
+    // Note: _ibSend() has its own _ibSending flag, so all call-sites are
+    // automatically de-duplicated. The click handler additionally tracks
+    // its own _busy flag so visual feedback is consistent.
     (function() {
         const btn = document.getElementById('inboxChatSendBtn');
         let _busy = false;
@@ -25420,18 +25447,18 @@ function _supportStopCanvas() {
      ═══════════════════════════════════════════════════════════ -->
 
 <!-- ── Global Background Internet Manager (must load before script.js) ── -->
-<script src="snx-net.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
+<script src="snx-net.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
 
-<script src="script.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
+<script src="script.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
 
 <!-- ── Shadow Nexus 24-Hour Studio — Music Library, Upload, Playlists, Queue ── -->
-<script src="studio.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
+<script src="studio.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
 
 <!-- ── Shadow Nexus 24-HOUR NEXUS — unified Eternal Stream + Studio ── -->
-<script src="nexus.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
+<script src="nexus.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
 
 <!-- ── Moderator & Administrator Panel (extracted to js/moderator.js) ── -->
-<script src="js/moderator.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
+<script src="js/moderator.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════
@@ -29920,16 +29947,16 @@ window.switchAdminTab = function(tab) {
 </script>
 
 <!-- ── Profile Photo Album module (must load after the main IIFE) ── -->
-<script src="album.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
+<script src="album.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
 
 <!-- ── Profile Music System (loads after Firebase is initialized) ── -->
-<script src="profile-music.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
+<script src="profile-music.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
 
 <!-- ── Profile Theme System (loads after Firebase is initialized) ── -->
-<script src="profile-theme.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
+<script src="profile-theme.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
 
 <!-- ── Shadow Nexus Platform Upgrade (Status, Announcements, Search, Security, Maintenance, Audit) ── -->
-<script src="shadow-nexus-upgrade.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
+<script src="shadow-nexus-upgrade.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
 
 <!-- ═══════════════════ GRIM AI ASSISTANT PANEL ═══════════════════ -->
 
@@ -31916,11 +31943,11 @@ document.addEventListener('click', function(e) {
   'use strict';
 
   /* ── Build identifier ─────────────────────────────────── */
-  var BUILD_ID = 'SNS-2026-10-STAGE5-FEED-001';
+  var BUILD_ID = 'SNS-2026-10-STAGE6-MESSAGES-001';
   var SW_VER   = 'v77';
   window.SHADOW_NEXUS_BUILD_VERSION = BUILD_ID;
   window.SHADOW_NEXUS_SW_VERSION    = SW_VER;
-  window.SNX_BUILD_ID               = 'SNS-2026-10-STAGE5-FEED-001';
+  window.SNX_BUILD_ID               = 'SNS-2026-10-STAGE6-MESSAGES-001';
 
   /* ══════════════════════════════════════════════════════
      SERVICE WORKER UPDATE HANDLING
@@ -32070,7 +32097,7 @@ document.addEventListener('click', function(e) {
   /* ── Single authoritative source for Founder diagnostics.
        These must match sw.js CACHE_VERSION / BUILD_ID and version.json.
        window._SNX_BUILD is read by shadow-nexus-upgrade.js diagnostic copy. ── */
-  var _SNX_BUILD    = 'SNS-2026-10-STAGE5-FEED-001';
+  var _SNX_BUILD    = 'SNS-2026-10-STAGE6-MESSAGES-001';
   var _SNX_SW_VER   = 'v77';
   var _SNX_DEPLOY   = '2026-10-01T00:00:00Z';
   var _SNX_PROJECT  = 'horr-a08f4';
@@ -33745,7 +33772,7 @@ window.snxFounderPanelCleanup = (function() {
      Loaded before the Welcome Experience so quality is applied
      before any cinematic assets render.
      ═══════════════════════════════════════════════════════════ -->
-<script src="snx-perf.js?v=SNS-2026-10-STAGE5-FEED-001"></script>
+<script src="snx-perf.js?v=SNS-2026-10-STAGE6-MESSAGES-001"></script>
 
 <!-- ═══════════════════════════════════════════════════════════
      PERFORMANCE SETTINGS UI — Settings page + Founder dashboard
