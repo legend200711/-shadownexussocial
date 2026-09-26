@@ -1,0 +1,247 @@
+/*
+ * ████████████████████████████████████████████████████████████████
+ *  SHADOW NEXUS REALM — nexus-realm.css
+ *  Official Nexus Realm artwork as the primary environmental background.
+ *
+ *  Load order: AFTER nexus-glass.css so this wins the body background race.
+ *
+ *  Architecture:
+ *    Layer 1 (z-index: 0) — #snxRealmBg — the Realm artwork, position:fixed
+ *    Layer 2 (z-index: 1) — existing rain/stars/canvas particles (pointer-events:none)
+ *    Layer 3 (z-index: 2) — readability vignette (body::before / body::after kept)
+ *    Layer 4 (z-index: 10+) — all real application UI
+ *    Layer 5 (z-index: 4000+) — menus / modals / critical controls
+ *
+ *  CRITICAL: does NOT use overflow:hidden, touch-action:none, or
+ *  preventDefault() anywhere. Body scrolling is fully preserved.
+ * ████████████████████████████████████████████████████████████████
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   REALM BACKGROUND ELEMENT — fixed behind everything
+   ═══════════════════════════════════════════════════════════════ */
+
+#snxRealmBg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;          /* NEVER block scrolling / touch */
+
+  /* Use the WebP for modern browsers; PNG fallback handled by <picture>
+     in HTML — here we use the WebP path directly since all modern
+     Android/iOS/desktop support WebP. The PNG is kept as source of truth. */
+  background-image: url('assets/images/nexus-realm-background.webp');
+  background-repeat: no-repeat;
+
+  /* ── DESKTOP: cinematic full-screen, preserve aspect ratio ──
+     "cover" fills the viewport while keeping the image undistorted.
+     The focal point is set toward the LEFT 35% / vertical center so
+     the Grim Reaper + wolf + cats stay visible; the castle + moon are
+     in the image centre-right so they are always in frame. */
+  background-size: cover;
+  background-position: 35% center;
+
+  /* background-attachment: fixed causes GPU-compositing issues on
+     mobile (iOS rubber-band, Android viewport-unit jitter).
+     We achieve stability WITHOUT it — the element itself is fixed. */
+  background-attachment: scroll;
+
+  /* Ensure the image fills on every orientation without being distorted */
+  will-change: auto;
+}
+
+/* ── Fallback: browsers that don't support WebP get the PNG ── */
+@supports not (background-image: url('x.webp')) {
+  #snxRealmBg {
+    background-image: url('assets/images/nexus-realm-background.png');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BODY — remove the opaque gradient that was hiding the Realm.
+   We keep a very light colour for any gap between panels; the
+   real background is now the artwork above.
+   ═══════════════════════════════════════════════════════════════ */
+body {
+  /* Override nexus-glass.css which painted a solid #03080f gradient.
+     We want near-transparent so the artwork shows through. */
+  background: rgba(0,4,12,0.35) !important;
+  background-attachment: scroll !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BODY::BEFORE — vignette overlay
+   Softens the very bright outer edges of the artwork so the UI
+   stays readable without covering the Realm completely.
+   ═══════════════════════════════════════════════════════════════ */
+body::before {
+  /* Tone down from the previous rgba(0,0,0,0.55) hard vignette —
+     that was designed for a plain dark background, not an artwork.
+     Use a gentler 0.30 max so the Realm still breathes. */
+  background:
+    radial-gradient(ellipse at 50% 50%,  transparent 25%, rgba(0,0,0,0.30) 100%),
+    radial-gradient(ellipse at 0%   0%,  rgba(0,0,0,0.35) 0%, transparent 60%),
+    radial-gradient(ellipse at 100% 0%,  rgba(0,0,0,0.35) 0%, transparent 60%),
+    radial-gradient(ellipse at 0%   100%,rgba(0,0,0,0.28) 0%, transparent 60%),
+    radial-gradient(ellipse at 100% 100%,rgba(0,0,0,0.28) 0%, transparent 60%) !important;
+  /* Keep the z-index that index.html and nexus-glass.css set */
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BODY::AFTER — fog/lightning ambience overlay
+   Keep it subtle so the Realm artwork is not drowned out.
+   ═══════════════════════════════════════════════════════════════ */
+body::after {
+  background:
+    radial-gradient(ellipse 120% 60% at 20% 80%, rgba(0,80,160,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 80%  40% at 80% 90%, rgba(0,50,110,0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 100% 50% at 50% 95%, rgba(0,60,130,0.07) 0%, transparent 70%) !important;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   STARS CANVAS — keep it, just make it play nicely above artwork.
+   Reduce opacity so the digital stars don't compete with the
+   dramatic lightning already in the artwork.
+   ═══════════════════════════════════════════════════════════════ */
+#snxStarsCanvas {
+  opacity: 0.35;                 /* was 1.0 — stars are now a subtle enhancement */
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RAIN DROPS — pull opacity down so they complement the artwork's
+   own rain, not double it.
+   ═══════════════════════════════════════════════════════════════ */
+.rain-drop {
+  opacity: 0.18 !important;     /* was ~0.35 — softer above the painted rain */
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ENERGY WAVES — keep low; artwork already has energy
+   ═══════════════════════════════════════════════════════════════ */
+.realm-energy-wave {
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   READABILITY LAYER — glass panels must remain readable.
+   Slight increase in panel opacity so text pops against the
+   richly detailed background.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Feed post cards */
+.postBox {
+  background: linear-gradient(145deg, rgba(0,8,20,0.88) 0%, rgba(0,16,38,0.85) 100%) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+/* Section cards / composer */
+.section-card {
+  background: rgba(0,8,20,0.87) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+/* Profile header */
+.profile-header {
+  background: linear-gradient(165deg, rgba(0,10,30,0.92) 0%, rgba(0,22,55,0.88) 100%) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+/* Desktop nav sidebar — keep opaque so controls are always readable */
+#shadowCore {
+  background: linear-gradient(180deg,
+    rgba(0,4,14,0.97) 0%,
+    rgba(0,10,26,0.97) 60%,
+    rgba(0,3,10,0.98) 100%) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+/* Mobile slide-out sidebar */
+.sidebar {
+  background: linear-gradient(180deg,
+    rgba(0,5,16,0.98) 0%,
+    rgba(0,12,30,0.98) 60%,
+    rgba(0,4,12,0.99) 100%) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE — responsive background positioning
+   On phones the artwork is wider than the viewport, so we shift
+   the focal point toward the castle/moon area (55–65% X) which
+   keeps the important centre subjects visible.
+   The Reaper side is partly off-screen on narrow phones but the
+   blue lightning from the left still bleeds in.
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  #snxRealmBg {
+    /* Shift focal point right on portrait phones so castle/moon are centred */
+    background-position: 60% center;
+    background-size: cover;
+  }
+
+  /* Reduce rain particle count effect — mobile already uses fewer DOM drops
+     via the JS (18 drops vs 35 on desktop); just lower their opacity more */
+  .rain-drop {
+    opacity: 0.12 !important;
+  }
+}
+
+/* Landscape phone — same as desktop, the artwork fits better */
+@media (max-width: 900px) and (orientation: landscape) {
+  #snxRealmBg {
+    background-position: 40% center;
+    background-size: cover;
+  }
+}
+
+/* Tablet portrait — split the difference */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+  #snxRealmBg {
+    background-position: 45% center;
+    background-size: cover;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PERFORMANCE GATES — respect snx-perf.css quality classes
+   On lite/minimal devices: keep the artwork (it's just a CSS bg,
+   no JS cost) but strip the backdrop-filter blurs.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Lite — keep artwork, remove backdrop-filter on panels */
+.snx-quality-lite .postBox,
+.snx-quality-lite .section-card,
+.snx-quality-lite .profile-header {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Minimal — keep artwork, hide rain drops, no blurs */
+.snx-quality-minimal .rain-drop { display: none !important; }
+.snx-quality-minimal #snxStarsCanvas { display: none !important; }
+.snx-quality-minimal .postBox,
+.snx-quality-minimal .section-card,
+.snx-quality-minimal .profile-header,
+.snx-quality-minimal #shadowCore,
+.snx-quality-minimal .sidebar {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  /* Increase opacity slightly to compensate for no blur */
+  background: rgba(0,5,15,0.94) !important;
+}
+
+/* Live/camera active — Realm still shows; camera UI is above it */
+.snx-live-active body,
+.snx-camera-active body {
+  background: rgba(0,2,8,0.55) !important;
+}

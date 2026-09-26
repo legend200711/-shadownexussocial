@@ -1,0 +1,33 @@
+# ── Secrets / credentials ──────────────────────────────────────────
+.env
+.env.*
+*.pem
+*.p12
+service-account*.json
+*-service-account.json
+serviceAccountKey*.json
+cloudflare-credentials.*
+
+# ── Node / build ───────────────────────────────────────────────────
+node_modules/
+dist/
+.cache/
+
+# ── OS / editor ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.orig
+*~
+
+# ── Backups / temp ─────────────────────────────────────────────────
+*.zip
+*.tar.gz
+*.bak
+*.tmp
+backup/
+tmp/
+
+# ── Bob / IDE ──────────────────────────────────────────────────────
+.bob/
