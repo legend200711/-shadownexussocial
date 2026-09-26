@@ -1,4 +1,9 @@
-name: Deploy to Firebase Hosting
+name: Firebase Hosting (Disabled — GitHub Pages is production frontend)
+
+# Firebase Hosting deployment is intentionally disabled.
+# shadownexussocial.online is served by GitHub Pages (master branch root).
+# Firebase continues to serve Auth, Firestore, Realtime Database, and Storage.
+# To re-enable: add FIREBASE_TOKEN to repository secrets and restore the deploy step.
 
 on:
   push:
@@ -7,57 +12,27 @@ on:
       - main
 
 jobs:
-  deploy:
-    name: Firebase Deploy
+  skipped:
+    name: Firebase Hosting — SKIPPED (GitHub Pages is production)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Firebase CLI
-        run: npm install -g firebase-tools
-
-      - name: Verify version.json is present
+      - name: Report skipped status
         run: |
-          if [ ! -f version.json ]; then
-            echo "ERROR: version.json is missing — aborting deploy"
-            exit 1
-          fi
-          echo "=== version.json contents ==="
-          cat version.json
-
-      - name: Inject git commit SHA into index.html meta tag
-        run: |
-          COMMIT_SHA=$(git rev-parse --short HEAD)
-          sed -i "s|content=\"local\"|content=\"${COMMIT_SHA}\"|g" index.html || true
-          echo "Injected commit SHA: ${COMMIT_SHA}"
-
-      - name: Deploy to Firebase Hosting (via FIREBASE_TOKEN)
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: |
-          if [ -z "$FIREBASE_TOKEN" ]; then
-            echo "WARNING: FIREBASE_TOKEN secret is not configured."
-            echo "To enable automatic Firebase deployment, add FIREBASE_TOKEN to:"
-            echo "  GitHub → Settings → Secrets and variables → Actions → New repository secret"
-            echo "  Name: FIREBASE_TOKEN"
-            echo "  Value: (run 'firebase login:ci' on your machine to get the token)"
-            echo ""
-            echo "Skipping Firebase deploy — code is on GitHub Pages and was deployed manually."
-            exit 0
-          fi
-          firebase deploy --only hosting --token "$FIREBASE_TOKEN" --non-interactive
-
-      - name: Verify deployment
-        if: ${{ env.FIREBASE_TOKEN != '' }}
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: |
-          echo "Fetching live version.json to confirm deployment..."
-          sleep 10
-          curl -sf "https://horr-a08f4.web.app/version.json" | python3 -c "
-          import json,sys
-          d=json.load(sys.stdin)
-          print('Live buildId   :', d.get('buildId'))
-          print('Live swVersion :', d.get('swVersion'))
-          " || echo "Could not verify — check Firebase Console"
+          echo "╔══════════════════════════════════════════════════════╗"
+          echo "║  FIREBASE HOSTING DEPLOY — SKIPPED                  ║"
+          echo "║                                                      ║"
+          echo "║  Production frontend: GitHub Pages (master branch)  ║"
+          echo "║  Custom domain:       shadownexussocial.online       ║"
+          echo "║                                                      ║"
+          echo "║  Firebase services still active:                     ║"
+          echo "║    • Firebase Auth                                   ║"
+          echo "║    • Firestore                                       ║"
+          echo "║    • Realtime Database                               ║"
+          echo "║    • Storage                                         ║"
+          echo "║                                                      ║"
+          echo "║  This job is a placeholder. It does NOT deploy       ║"
+          echo "║  to Firebase Hosting (horr-a08f4.web.app).          ║"
+          echo "╚══════════════════════════════════════════════════════╝"
+          echo ""
+          echo "RESULT: SKIPPED — Firebase Hosting deployment is disabled."
+          echo "GitHub Pages is the authoritative production frontend host."
